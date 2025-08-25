@@ -189,6 +189,27 @@ docs_agent = Agent(
 - Agent editing restrictions
 - Test execution limits
 
+## Message Detail Expansion (v1)
+
+### Frontend Enhancement
+```typescript
+// Click any message in conversation history to expand full details
+interface ExpandedMessage {
+  full_patch: string;        // Complete diff, not just preview
+  original_code: string;      // Full original code
+  modified_code: string;      // Full modified code  
+  evaluator_reasoning: string; // Complete reasoning
+  trace_id: string;          // OpenAI trace link
+  raw_response: any;         // Full OpenAI response object
+}
+
+// Implementation:
+// - GET /messages/:id/full returns complete details
+// - Modal or inline expansion UI
+// - Syntax highlighting for code/diffs
+// - Copy buttons for code sections
+```
+
 ## Offline-First Architecture (v2)
 
 ### Technology Choice

@@ -149,36 +149,8 @@ See `plans/frontend-phase-*.md` for detailed requirements:
 6. **Phase 006**: Code Viewer → `plans/frontend-phase-006-code-viewer.md`
 7. **Phase 007**: Diff Handling → `plans/frontend-phase-007-diff.md`
 8. **Phase 008**: Human Review UI → `plans/frontend-phase-008-human-review.md`
+   - **IMPORTANT**: Contains critical E2E test for complete vibecoder workflow
 9. **Phase 009**: Production Deployment → `plans/frontend-phase-009-deployment.md`
-
-## Required E2E Test: Vibecoder Workflow
-
-### DELIVERABLE: `frontend/tests/e2e/vibecoder-workflow.spec.ts`
-Write a comprehensive Playwright test that validates the full vibecoder workflow:
-
-```typescript
-// Test the complete iteration loop described in spec_datamodel_v0.md section "Vibecoder Interactive Workflow"
-test('vibecoder iterative refinement workflow', async ({ page }) => {
-  // 1. Test max iterations scenario
-  //    - Send prompt that will fail evaluator 3 times
-  //    - Verify "evaluator_feedback" events appear in UI
-  //    - Verify error message after 3 iterations
-  //    - Verify user can continue with new message
-  
-  // 2. Test successful patch flow
-  //    - Send prompt that generates valid patch
-  //    - Verify DiffReviewModal opens automatically
-  //    - Test Accept/Reject/Refine flows
-  //    - Verify commit clears evaluator context
-  
-  // 3. Test conversation persistence
-  //    - Send multiple messages in same session
-  //    - Verify VibeCoder maintains context
-  //    - Verify token usage accumulates correctly
-});
-```
-
-CRITICAL: This test validates that VibeCoder persists context while evaluator resets after commit.
 
 ## Critical Requirements
 

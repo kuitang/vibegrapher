@@ -39,7 +39,17 @@ The vibecoder maintains conversation context via SQLiteSession persistence. This
 1. User sends prompt → VibeCoder attempts patch
 2. Evaluator reviews → may approve or reject with feedback
 3. If rejected, VibeCoder retries with evaluator feedback (up to 3x)
-4. Frontend receives "evaluator_feedback" events via Socket.io during iterations
+
+**Frontend displays ALL interactions in conversation history:**
+- User message: "Add Spanish translation"
+- Assistant (VibeCoder): "Generated patch: [brief summary]" + patch preview
+- Assistant (Evaluator): "Rejected: Missing error handling" (iteration 1)
+- Assistant (VibeCoder): "Updated patch with error handling" + patch preview
+- Assistant (Evaluator): "Approved: Looks good" + suggested commit message
+- Each message shows token usage badge (💵 245 tokens)
+
+Socket.io delivers each message with enough content to display directly.
+Future enhancement: Click message to expand full code/patch/reasoning details.
 
 ### After Max Iterations
 - Backend returns: `{error: "Max iterations reached", final_feedback: "...", message: "..."}`
@@ -186,10 +196,18 @@ GET    /projects/:id/tests/quick  - Get quick tests (30s timeout) for review
   token_usage?: TokenUsage;  // Real-time usage data
 }
 
-// Event: 'evaluator_feedback' (during iteration loop)
+// Event: 'conversation_message' (each agent interaction)
 {
-  reasoning: string;    // Why evaluator rejected
-  iteration: number;    // Which iteration (1-3)
+  message_id: string;
+  session_id: string;
+  role: 'assistant';
+  agent: 'vibecoder' | 'evaluator' | 'user';
+  content: string;      // Brief summary for display
+  patch_preview?: string;  // First 10 lines of patch if applicable
+  iteration: number;
+  token_usage: TokenUsage;
+  created_at: string;
+  // Future: full_details_url for expansion
 }
 
 // Event: 'code_changed'

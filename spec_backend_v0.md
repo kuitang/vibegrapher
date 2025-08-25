@@ -81,42 +81,59 @@ class VibecodeService:
         db_path = f"media/projects/{project.slug}_conversations.db"
         session = SQLiteSession(session_key, db_path)  # MUST use file persistence, not in-memory
         
-        for iteration in range(MAX_ITERATIONS=3):
-            # Run VibeCoder
-            if iteration == 0:
-                input = prompt
-            else:
-                input = f"Rejected. Feedback: {evaluator_feedback}. Original: {prompt}"
+        # Create trace for entire vibecode session (all iterations)
+        from agents import trace
+        with trace(
+            workflow_name="vibecode_session",
+            group_id=session_key,
+            metadata={
+                "project_id": project_id,
+                "node_id": node_id,
+                "prompt": prompt[:200]  # First 200 chars for debugging
+            }
+        ) as session_trace:
+            trace_id = session_trace.trace_id
             
-            # Using OpenAI SDK's Runner with tenacity retry decorator
-            vibecoder_result = await Runner.run(
-                vibecoder_agent, input, 
-                session=session, 
-                context={"current_code": current_code}
-            )
-            
-            # CRITICAL: Log and stream token usage immediately
-            if vibecoder_result.context_wrapper.usage:
-                usage_data = {
-                    "prompt_tokens": vibecoder_result.context_wrapper.usage.input_tokens,
-                    "completion_tokens": vibecoder_result.context_wrapper.usage.output_tokens,
-                    "total_tokens": vibecoder_result.context_wrapper.usage.total_tokens,
-                    "model": "gpt-5-thinking",
-                    "agent": "vibecoder",
-                    "iteration": iteration + 1,
-                    "response_id": vibecoder_result.last_response_id,
-                    "session_id": session.id
-                }
+            for iteration in range(MAX_ITERATIONS=3):
+                # Run VibeCoder
+                if iteration == 0:
+                    input = prompt
+                else:
+                    input = f"Rejected. Feedback: {evaluator_feedback}. Original: {prompt}"
                 
-                await self.socketio_manager.emit_to_room(
-                    f"project_{project_id}",
-                    "token_usage",
-                    usage_data
+                # Using OpenAI SDK's Runner with tenacity retry decorator
+                vibecoder_result = await Runner.run(
+                    vibecoder_agent, input, 
+                    session=session, 
+                    context={"current_code": current_code}
                 )
+                
+                # CRITICAL: Log and stream token usage immediately
+                if vibecoder_result.context_wrapper.usage:
+                    usage_data = {
+                        "prompt_tokens": vibecoder_result.context_wrapper.usage.input_tokens,
+                        "completion_tokens": vibecoder_result.context_wrapper.usage.output_tokens,
+                        "total_tokens": vibecoder_result.context_wrapper.usage.total_tokens,
+                        "model": "gpt-5-thinking",
+                        "agent": "vibecoder",
+                        "iteration": iteration + 1,
+                        "response_id": vibecoder_result.last_response_id,
+                        "session_id": session.id,
+                        "trace_id": trace_id  # Session-wide trace
+                    }
+                    
+                    await self.socketio_manager.emit_to_room(
+                        f"project_{project_id}",
+                        "token_usage",
+                        usage_data
+                    )
             
-            # Check if patch submitted
-            if not vibecoder_result.context.state.get("submitted_patch"):
-                return {"response": vibecoder_result.final_output}  # Text response
+                # Check if patch submitted
+                if not vibecoder_result.context.state.get("submitted_patch"):
+                    return {
+                        "response": vibecoder_result.final_output,  # Text response
+                        "trace_id": trace_id  # Include for debugging
+                    }
             
             # Run Evaluator (also using OpenAI SDK's Runner) - track usage
             evaluator_result = await Runner.run(evaluator_agent, patch_details, session=session)
@@ -131,7 +148,8 @@ class VibecodeService:
                     "agent": "evaluator", 
                     "iteration": iteration + 1,
                     "response_id": evaluator_result.last_response_id,
-                    "session_id": session.id
+                    "session_id": session.id,
+                    "trace_id": trace_id  # Session-wide trace
                 }
                 
                 await self.socketio_manager.emit_to_room(
@@ -153,7 +171,8 @@ class VibecodeService:
                     "diff_id": diff.id,
                     "diff": submitted_patch,
                     "status": "pending_human_review",
-                    "commit_message": evaluator_result.commit_message
+                    "commit_message": evaluator_result.commit_message,
+                    "trace_id": trace_id  # Include for debugging
                 }
             else:
                 evaluator_feedback = evaluator_result.reasoning
@@ -161,16 +180,21 @@ class VibecodeService:
                 await self.socketio_manager.emit_to_room(
                     f"project_{project_id}",
                     "evaluator_feedback",
-                    {"reasoning": evaluator_feedback, "iteration": iteration + 1}
+                    {
+                        "reasoning": evaluator_feedback, 
+                        "iteration": iteration + 1,
+                        "trace_id": trace_id
+                    }
                 )
         
-        # After max iterations, return error with all feedback to user
-        # User can continue conversation - VibeCoder maintains context via SQLiteSession
-        return {
-            "error": "Max iterations reached", 
-            "final_feedback": evaluator_feedback,
-            "message": "Please provide additional guidance or adjust your request"
-        }
+            # After max iterations, return error with all feedback to user
+            # User can continue conversation - VibeCoder maintains context via SQLiteSession
+            return {
+                "error": "Max iterations reached", 
+                "final_feedback": evaluator_feedback,
+                "message": "Please provide additional guidance or adjust your request",
+                "trace_id": trace_id  # Include for debugging
+            }
 ```
 
 ### 2. Git Service
@@ -206,10 +230,10 @@ class GitService:
 ### 3. Socket.io Manager
 ```python
 # SocketIOManager: Handle real-time events
-# - emit_to_room: Send events with trace_id to project rooms
+# - emit_to_room: Send events to project rooms (all events include trace_id when available)
 # - join_project_room: Subscribe clients to project updates
 # - start_heartbeat: Send alive status every 30s for debugging
-# Events: vibecode_response, token_usage, heartbeat
+# Events: vibecode_response (includes trace_id), token_usage (includes trace_id), evaluator_feedback, heartbeat
 ```
 
 ## Database Models
@@ -293,11 +317,20 @@ async def send_message(session_id: str, request: MessageRequest):
         session_id=session_id,
         openai_response=result,  # Store everything!
         token_usage=token_usage,  # Track usage separately
-        response_id=result.last_response_id  # Track response_id for audit trail
+        response_id=result.last_response_id,  # Track response_id for audit trail
+        trace_id=result.get("trace_id")  # Store trace_id from vibecode result
     )
     
-    # Emit vibecode_response with diff_id for human review
-    # Emit token_usage for tracking
+    # Emit vibecode_response with diff_id and trace_id for human review
+    await socketio_manager.emit_to_room(
+        f"project_{project_id}",
+        "vibecode_response",
+        {
+            "diff_id": result.get("diff_id"),
+            "trace_id": result.get("trace_id"),
+            "status": result.get("status", "completed")
+        }
+    )
 ```
 
 ### Human Review Endpoints (NEW)
@@ -329,11 +362,11 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Log ALL OpenAI calls (not in exception handler, always log):
-logger.info(f"OPENAI REQUEST: {prompt[:200]}...")
+# Log ALL OpenAI calls with trace_id (not in exception handler, always log):
+logger.info(f"[{trace_id}] OPENAI REQUEST: {prompt[:200]}...")
 result = await Runner.run(agent, prompt, session)
-logger.info(f"OPENAI RESPONSE: {result.content[:200]}...")  
-logger.info(f"💵 OPENAI TOKENS: prompt={result.usage.prompt_tokens}, completion={result.usage.completion_tokens}, total={result.usage.total_tokens}")
+logger.info(f"[{trace_id}] OPENAI RESPONSE: {result.final_output[:200]}...")  
+logger.info(f"[{trace_id}] 💵 OPENAI TOKENS: prompt={result.context_wrapper.usage.input_tokens}, completion={result.context_wrapper.usage.output_tokens}, total={result.context_wrapper.usage.total_tokens}")
 
 # Only use logger.exception() when you DO catch for a reason:
 try:
