@@ -128,7 +128,7 @@ See `plans/backend-phase-*.md` for detailed requirements:
 - ALL tests MUST use real OpenAI API calls with valid API key
 - NO mock responses, NO fake agents, NO stubbed models
 - This ensures real token usage tracking and authentic responses
-- ALWAYS extract and log usage: result.usage and trace_ids.
+- ALWAYS extract and log usage: result.usage data.
 
 ## Quality Checklist
 
@@ -143,7 +143,7 @@ Before EVERY commit:
 - [ ] All functions have type hints
 - [ ] Pydantic models validate all API data
 - [ ] SQLiteSession used correctly with file persistence
-- [ ] Full OpenAI responses stored with trace_id AND token usage
+- [ ] Full OpenAI responses stored with token usage data
 - [ ] OpenAI calls logged with 💵 token counts
 - [ ] Integration tests cover full flows
 - [ ] NO MOCKED OpenAI calls anywhere

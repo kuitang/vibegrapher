@@ -9,18 +9,23 @@ Build a React TypeScript interface for vibecoding agents via natural language wi
 
 ### Node Environment (REQUIRED)
 ```bash
-# Use Node 18+ and npm
+# IMPORTANT: Work from PROJECT ROOT, use --prefix frontend for npm commands
+
+# Check Node version
 node --version  # Should be 18.x or higher
 npm --version   # Should be 9.x or higher
 
-# Install dependencies
-npm install
+# Install frontend dependencies (from project root)
+npm --prefix frontend install
 
-# Development server
-npm run dev
+# PREREQUISITE: Check backend is running before starting frontend
+curl http://localhost:8000/projects || { echo "Backend not running! Start it first."; exit 1; }
 
-# Build for production
-npm run build
+# Start development server (from project root)
+npm --prefix frontend run dev
+
+# Build for production (from project root)
+npm --prefix frontend run build
 ```
 
 ### Environment Configuration
@@ -42,21 +47,28 @@ VITE_WS_URL=https://your-api.fly.dev
 
 ### Code Structure
 ```
-# Start from project root, then cd frontend
-frontend/
-├── src/
-│   ├── components/
-│   │   ├── layout/      # Layout components
-│   │   ├── vibecode/    # Vibecode panel components
-│   │   ├── code/        # Code viewer components
-│   │   └── test/        # Test runner components
-│   ├── hooks/           # Custom React hooks
-│   ├── services/        # API and WebSocket services
-│   └── store/           # Zustand state management
-├── tests/
-│   ├── integration/     # Vitest + Testing Library
-│   └── e2e/            # Playwright (HEADLESS)
-└── validated_test_evidence/  # Test artifacts (frontend/validated_test_evidence/phase-XXX/)
+# IMPORTANT: Always work from PROJECT ROOT directory
+# Run ALL commands from project root (NOT from frontend subdirectory)
+# Use --prefix frontend for npm commands
+
+PROJECT_ROOT/
+├── frontend/           # Frontend React app (created as subdirectory)
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── layout/      # Layout components
+│   │   │   ├── vibecode/    # Vibecode panel components
+│   │   │   ├── code/        # Code viewer components
+│   │   │   └── test/        # Test runner components
+│   │   ├── hooks/           # Custom React hooks
+│   │   ├── services/        # API and WebSocket services
+│   │   └── store/           # Zustand state management
+│   ├── tests/
+│   │   ├── integration/     # Vitest + Testing Library
+│   │   └── e2e/            # Playwright (HEADLESS)
+│   └── validated_test_evidence/  # Test artifacts (phase-XXX/)
+├── backend/            # Backend FastAPI app
+├── plans/             # Implementation phases
+└── spec_*.md          # Specifications
 ```
 
 ### Testing Strategy (Vitest + Playwright)
@@ -87,29 +99,34 @@ Before writing Playwright test scripts, use the Playwright MCP server to:
 
 ### Running Tests
 ```bash
+# IMPORTANT: Stay in PROJECT ROOT - do NOT cd into frontend/
+# All commands run from project root using --prefix frontend
+
 # PREREQUISITE: Backend must be running!
 # Check backend health first:
 curl http://localhost:8000/projects || { echo "Backend not running!"; exit 1; }
 
 # IMPORTANT: Always use --watchAll=false for CI/automation
-npm test -- --watchAll=false
+npm --prefix frontend test -- --watchAll=false
 
 # Run Vitest tests (headless by default)
-npm test -- --run  # Runs once and exits
+npm --prefix frontend test -- --run  # Runs once and exits
 
 # Run specific test file
-npm test -- --run tests/integration/phase001-layout.test.tsx
+npm --prefix frontend test -- --run tests/integration/phase001-layout.test.tsx
 
 # Run E2E tests with Playwright (headless)
 # IMPORTANT: Playwright tests MUST use max 30s timeout
 # Do NOT set arbitrarily long timeouts
-npx playwright test
+# SAFE cd: guaranteed return to project root
+PROJECT_ROOT=$(pwd)
+cd frontend && npx playwright test; cd "$PROJECT_ROOT"
 
 # Run E2E with UI (for debugging only)
-npx playwright test --ui
+cd frontend && npx playwright test --ui; cd "$PROJECT_ROOT"
 
 # Generate coverage report
-npm run test:coverage
+npm --prefix frontend run test:coverage
 ```
 
 
@@ -117,22 +134,28 @@ npm run test:coverage
 
 ### Initial Setup (One-time)
 ```bash
-# STAY IN PROJECT ROOT
-# Create Vite app from root
+# IMPORTANT: Start in PROJECT ROOT, never leave project root
+pwd  # Should show: /path/to/vibegrapher-specs (or your project root)
+
+# Create Vite app as subdirectory (FROM PROJECT ROOT)
 npm create vite@latest frontend -- --template react-ts
 
-# Install and configure Tailwind + shadcn
-cd frontend
-npm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init -p
-npx shadcn-ui@latest init
+# Configure frontend dependencies (use --prefix from project root)
+npm --prefix frontend install -D tailwindcss postcss autoprefixer
 
-# Add ALL required components upfront
-npx shadcn-ui@latest add alert alert-dialog avatar badge button
-npx shadcn-ui@latest add card collapsible dialog drawer dropdown-menu
-npx shadcn-ui@latest add input popover progress scroll-area separator
-npx shadcn-ui@latest add sheet sonner table tabs textarea tooltip
-cd ..  # Return to project root
+# SAFE cd operations - always return to project root even if commands fail
+PROJECT_ROOT=$(pwd)
+cd frontend && npx tailwindcss init -p; cd "$PROJECT_ROOT"  # Semicolon ensures cd back
+cd frontend && npx shadcn-ui@latest init; cd "$PROJECT_ROOT"
+
+# Add ALL required components upfront (safe cd with guaranteed return)
+cd frontend && npx shadcn-ui@latest add alert alert-dialog avatar badge button; cd "$PROJECT_ROOT"
+cd frontend && npx shadcn-ui@latest add card collapsible dialog drawer dropdown-menu; cd "$PROJECT_ROOT"
+cd frontend && npx shadcn-ui@latest add input popover progress scroll-area separator; cd "$PROJECT_ROOT"
+cd frontend && npx shadcn-ui@latest add sheet sonner table tabs textarea tooltip; cd "$PROJECT_ROOT"
+
+# Verify you're back in project root
+pwd  # Should show project root
 ```
 
 ## Implementation Phases
@@ -157,7 +180,7 @@ See `plans/frontend-phase-*.md` for detailed requirements:
 ### Real Backend Integration
 - ALL data comes from REAL OpenAI API calls
 - NEVER mock token usage or API responses
-- Socket.io messages must include trace_id and token usage
+- Socket.io messages must include token usage data
 - See `spec_frontend_v0.md` for detailed Socket.io integration and state management patterns
 
 ### Environment-Aware URLs
@@ -205,25 +228,45 @@ Before EVERY commit:
 ## Deployment Scenarios
 
 ### Local Development (from project root)
-- Backend: `uvicorn backend.app.main:app --host 0.0.0.0 --port 8000`
-- Frontend: `npm --prefix frontend run dev` (runs on :5173)
-- Use `frontend/.env.local` with `VITE_API_URL=http://localhost:8000`
+```bash
+# PREREQUISITE: Backend must already be running
+# Check backend health before starting frontend:
+curl http://localhost:8000/projects || { echo "Backend not running! Start it first."; exit 1; }
+
+# Start frontend (from project root)
+npm --prefix frontend run dev  # Runs on :5173
+
+# Use frontend/.env.local with VITE_API_URL=http://localhost:8000
+```
 
 ### Remote Development Access
-- Backend: Same as local but accessible via server IP
-- Frontend: Use `.env.development` with `VITE_API_URL=http://YOUR_SERVER_IP:8000`
-- Replace `YOUR_SERVER_IP` with actual server IP (e.g., `192.168.1.100`)
+```bash
+# PREREQUISITE: Backend must already be running on remote server
+# Check backend health before starting frontend:
+curl http://YOUR_SERVER_IP:8000/projects || { echo "Remote backend not accessible!"; exit 1; }
+
+# Start frontend (from project root)
+npm --prefix frontend run dev
+
+# Use frontend/.env.development with VITE_API_URL=http://YOUR_SERVER_IP:8000
+# Replace YOUR_SERVER_IP with actual server IP (e.g., 192.168.1.100)
+```
 
 ### Production (fly.io)
-- Backend: Deployed with volumes and PostgreSQL
-- Frontend: Use `.env.production` with `VITE_API_URL=https://your-api.fly.dev`
-- All connections over HTTPS
+```bash
+# PREREQUISITE: Backend must already be deployed to fly.io
+# Check backend health before deploying frontend:
+curl https://your-api.fly.dev/projects || { echo "Production backend not accessible!"; exit 1; }
+
+# Use frontend/.env.production with VITE_API_URL=https://your-api.fly.dev
+# All connections over HTTPS
+```
 
 ## Remember
 - Use shadcn/ui components everywhere
 - Vitest for integration tests (not Jest)
 - Playwright runs HEADLESS
-- Log ALL Socket.io messages with trace_id and token usage
+- Log ALL Socket.io messages with token usage
 - Mobile-first responsive design
 - Environment variables for ALL URLs
 

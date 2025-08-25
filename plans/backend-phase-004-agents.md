@@ -6,13 +6,14 @@ Implement VibeCoder and Evaluator agents with patch submission workflow per spec
 ## Implementation Tasks
 1. Create `app/agents/all_agents.py` with ALL agents in ONE file
 2. Implement submit_patch tool that validates patches before submission
-3. VibeCoder agent with TWO modes:
+3 Apply tenacity for exponential backoff on OpenAI API calls
+4. VibeCoder agent with TWO modes:
    - submit_patch() → triggers evaluator loop
    - return text → direct response to user
-4. Evaluator agent that reviews patches
-5. VibecodeService with MAX 3 iteration loop
-6. **CREATE Diff model** (see spec_datamodel_v0.md lines 229-258 for full schema)
-7. Implement diff creation when evaluator approves patches
+5. Evaluator agent that reviews patches
+6. VibecodeService with MAX 3 iteration loop
+7. **CREATE Diff model** (see spec_datamodel_v0.md lines 229-258 for full schema)
+8. Implement diff creation when evaluator approves patches
 
 ## Acceptance Criteria
 - ✅ VibeCoder can submit patches via submit_patch tool
@@ -146,6 +147,11 @@ evaluator_agent = Agent(
 
 class VibecodeService:
     async def vibecode(project_id, prompt, current_code, node_id=None):
+        # Create session key with correct format (uses project.slug for consistency)
+        session_key = f"project_{project.slug}_node_{node_id}" if node_id else f"project_{project.slug}"
+        # Use project.slug for filesystem paths to ensure valid filenames
+        db_path = f"media/projects/{project.slug}_conversations.db"
+        session = SQLiteSession(session_key, db_path)  # MUST use file persistence, not in-memory
         for iteration in range(3):  # MAX 3 iterations
             # Run VibeCoder with context
             # Check if patch submitted

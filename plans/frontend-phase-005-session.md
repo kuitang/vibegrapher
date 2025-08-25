@@ -26,6 +26,9 @@ Implement session management and message flow with shadcn components.
 - ✅ Send message on Enter key
 - ✅ "Clear Session" Button resets conversation
 - ✅ Session persists in Zustand store
+- ✅ Conversation restores after Socket.io disconnect/reconnect
+- ✅ Full message history recovers via REST API on page refresh
+- ✅ All agent interactions shown in chat (not just final results)
 
 ## Integration Tests (Vitest + MSW v2)
 ```typescript
@@ -99,6 +102,24 @@ describe('Phase 005: Session Management', () => {
     
     expect(textarea.clientHeight).toBeGreaterThan(initialHeight)
   })
+  
+  test('restores conversation after Socket.io disconnect', async () => {
+    // Mock GET /sessions/:id/messages with full history
+    // Render component with active session
+    // Simulate Socket.io disconnect event
+    // Simulate reconnect event
+    // Verify restoreConversation called
+    // Verify all messages restored including agent interactions
+  })
+  
+  test('shows all agent interactions in chat history', async () => {
+    // Mock Socket.io events for conversation_message
+    // Send user message
+    // Verify vibecoder message appears
+    // Verify evaluator message appears
+    // Verify evaluator_feedback appears
+    // Verify token usage displayed for each
+  })
 })
 ```
 
@@ -127,6 +148,22 @@ test.describe('Phase 005: Session E2E', () => {
     // Clear session
     await page.click('button:has-text("Clear Session")')
     await expect(page.locator('.badge:has-text("active")')).not.toBeVisible()
+  })
+  
+  test('recovery after page refresh', async ({ page }) => {
+    // Start session and send message
+    // Refresh page
+    // Verify session restored from localStorage
+    // Verify messages restored via GET /sessions/:id/messages
+    // Verify can continue conversation
+  })
+  
+  test('shows agent iterations in chat', async ({ page }) => {
+    // Send vibecode request
+    // Wait for vibecoder message to appear
+    // Wait for evaluator message to appear
+    // Verify all messages visible in order
+    // Verify token usage shown for each
   })
 })
 ```

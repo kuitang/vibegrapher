@@ -199,7 +199,7 @@ interface ExpandedMessage {
   original_code: string;      // Full original code
   modified_code: string;      // Full modified code  
   evaluator_reasoning: string; // Complete reasoning
-  trace_id: string;          // OpenAI trace link
+  timestamp: string;         // When message was created
   raw_response: any;         // Full OpenAI response object
 }
 

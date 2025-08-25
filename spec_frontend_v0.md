@@ -85,7 +85,7 @@ interface CodeViewerProps {
 // DiffReviewModal: Shows diff with test execution + Accept/Reject
 //   - Run Tests dropdown (Quick/All/Specific tests)
 //   - Test results display with pass/fail badges
-//   - OpenAI trace_id shown as clickable link
+//   - Token usage shown with badge
 //   - Token usage prominent (prompt/completion/total)
 //   - Requires rejection reason if rejecting
 // CommitMessageModal: Edit/refine commit message, calls evaluator for suggestions
@@ -164,7 +164,7 @@ class WebSocketService {
     
     this.socket.on('test_completed', (data) => {
       console.log('[WS] Test completed:', data);
-      console.log('[WS] Test trace:', data.trace_id);
+      console.log('[WS] Test status:', data.status);
       // Update test results
     });
     
@@ -177,6 +177,26 @@ class WebSocketService {
     this.socket.onAny((event, ...args) => {
       console.log(`[Socket.io] ${event}:`, args);
     });
+    
+    // Handle reconnection
+    this.socket.on('connect', async () => {
+      if (this.wasDisconnected) {
+        console.log('[Socket.io] Reconnected - restoring conversation');
+        // Restore conversation from backend
+        await this.restoreConversation();
+      }
+    });
+    
+    this.socket.on('disconnect', () => {
+      this.wasDisconnected = true;
+      console.log('[Socket.io] Disconnected - data recoverable via REST');
+    });
+  }
+  
+  async restoreConversation() {
+    // Call GET /sessions/:id/messages to restore full history
+    // Compare with local state to detect missing messages
+    // Re-sync any pending diffs
   }
 }
 ```
@@ -241,7 +261,7 @@ class WebSocketService {
 - Sonner (shadcn toast) for notifications
 - Alert component for inline errors
 - AlertDialog for critical errors
-- Show trace_id in error messages for debugging
+- Show error context for debugging
 - FAIL LOUDLY: Log all errors with stack traces to console
 - Display all network errors to user immediately
 - Never swallow exceptions silently

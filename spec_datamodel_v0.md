@@ -22,7 +22,7 @@ interface Project {
 interface VibecodeSession {
   id: string;
   project_id: string;
-  openai_session_key: string;  // Format: `project_{id}` or `project_{id}_node_{node_id}`
+  openai_session_key: string;  // Format: `project_{project.slug}` or `project_{project.slug}_node_{node_id}`
   conversations_db_path: string; // Path to SQLiteSession file: media/projects/{project.slug}_conversations.db
   session_type: 'global' | 'node';
   node_id?: string;            // If node-specific session
@@ -74,7 +74,6 @@ interface ConversationMessage {
   openai_response?: any;        // FULL OpenAI response (untyped JSON)
   token_usage?: TokenUsage;     // Extracted usage data
   diff_id?: string;            // Reference to Diff if changes proposed
-  trace_id?: string;           // OpenAI trace for debugging
   created_at: string;
 }
 ```
@@ -102,7 +101,6 @@ interface TestRun {
   output?: string;             // stdout/stderr from test execution
   error?: string;              // Error message if failed
   execution_time_ms: number;
-  trace_id?: string;           // OpenAI trace if test involved API calls
   created_at: string;
 }
 // Note: TestRuns are aggregated and cached in Diff.test_results as JSON
@@ -129,7 +127,6 @@ interface TestResult {
   output?: string;
   error?: string;
   execution_time_ms?: number;
-  trace_id?: string;
 }
 // Note: This is derived from TestRun records for frontend display
 ```
@@ -143,19 +140,20 @@ interface TestResult {
 
 ### Projects
 ```
-POST   /projects                 - Create new project
-GET    /projects/:id             - Get project with current code
-DELETE /projects/:id             - Delete project
+GET    /projects                  - List projects (also serves as health check)
+POST   /projects                  - Create project (generates unique slug from name)
+GET    /projects/:id              - Get project with code
+DELETE /projects/:id              - Delete project
 ```
 
 ### Sessions & Vibecoding
 ```
-POST   /projects/:id/sessions    - Start new vibecode session (global or node-specific)
-GET    /projects/:id/sessions    - List active sessions for project
-POST   /sessions/:id/messages    - Send message to existing session (triggers VibeCoder → Evaluator loop)
-GET    /sessions/:id/messages    - Get conversation history
-DELETE /sessions/:id             - Clear/reset session
-GET    /messages/:id/full        - Get full OpenAI response data (returns complete OpenAI response JSON)
+POST   /projects/:id/sessions     - Start vibecode session (global or node)
+GET    /projects/:id/sessions     - List active sessions for project
+POST   /sessions/:id/messages     - Send message to session (triggers VibeCoder → Evaluator loop)
+GET    /sessions/:id/messages     - Get conversation history
+DELETE /sessions/:id              - Clear session
+GET    /messages/:id/full         - Get full OpenAI response data (returns complete OpenAI response JSON)
 ```
 
 ### Diff Management & Human Review
@@ -175,12 +173,11 @@ POST   /diffs/:id/refine-message  - Get new commit message suggestion
 ```
 POST   /projects/:id/tests        - Create test case for diff validation
 GET    /projects/:id/tests        - List available tests
-GET    /projects/:id/tests/quick  - Get quick tests (30s timeout) for review
+GET    /projects/:id/tests/quick  - Get quick tests (5s timeout) for human review
 ```
 
 
 ## Key Response Fields
-- `trace_id?: string` - OpenAI trace for debugging  
 - `token_usage?: TokenUsage` - Real-time usage data
 - `GET /messages/:id/full` returns untyped JSON with complete OpenAI response
 
@@ -192,8 +189,7 @@ GET    /projects/:id/tests/quick  - Get quick tests (30s timeout) for review
   session_id: string;
   message_id: string;
   diff?: string;
-  trace_id?: string;    // OpenAI trace for debugging
-  token_usage?: TokenUsage;  // Real-time usage data
+  token_usage?: TokenUsage;     // Real-time usage data
 }
 
 // Event: 'conversation_message' (each agent interaction)
@@ -222,8 +218,8 @@ GET    /projects/:id/tests/quick  - Get quick tests (30s timeout) for review
   test_name: string;
   status: 'passed' | 'failed' | 'error';
   output?: string;
-  trace_id?: string;
 }
+
 
 
 // Client → Server Events
@@ -257,8 +253,9 @@ GET    /projects/:id/tests/quick  - Get quick tests (30s timeout) for review
 ### Session Management
 - Each project has one global SQLiteSession
 - Each node can have its own SQLiteSession
-- Session key format: `project_{id}` or `project_{id}_node_{node_id}`
+- openai_session_key format: `project_{project.slug}` or `project_{project.slug}_node_{node_id}`
 - Sessions persist conversation history automatically
+- Uses project slug for filesystem-safe identifiers
 
 ### Agent Handoffs
 - Vibecoder → SyntaxFixer (on syntax error)
