@@ -40,13 +40,15 @@ The vibecoder maintains conversation context via SQLiteSession persistence. This
 2. Evaluator reviews → may approve or reject with feedback
 3. If rejected, VibeCoder retries with evaluator feedback (up to 3x)
 
-**Frontend displays ALL interactions in conversation history:**
+**CRITICAL: Frontend displays ALL AI interactions in real-time as they happen:**
 - User message: "Add Spanish translation"
 - Assistant (VibeCoder): "Generated patch: [brief summary]" + patch preview
 - Assistant (Evaluator): "Rejected: Missing error handling" (iteration 1)
 - Assistant (VibeCoder): "Updated patch with error handling" + patch preview
 - Assistant (Evaluator): "Approved: Looks good" + suggested commit message
 - Each message shows token usage badge (💵 245 tokens)
+
+**IMPORTANT: Every AI response is immediately sent to frontend via Socket.io as soon as we receive it from OpenAI. ConversationMessage records are saved to database asynchronously in the background. No batching, no waiting - real-time streaming of ALL agent interactions.**
 
 Socket.io delivers each message with enough content to display directly.
 Future enhancement: Click message to expand full code/patch/reasoning details.
@@ -75,36 +77,10 @@ interface ConversationMessage {
   token_usage?: TokenUsage;     // Extracted usage data
   diff_id?: string;            // Reference to Diff if changes proposed
   created_at: string;
+  last_response_id?: string;    // OpenAI response ID for audit trail
 }
 ```
 
-### TestCase (for Diff Testing Only)
-```typescript
-interface TestCase {
-  id: string;
-  project_id: string;
-  name: string;
-  test_code: string;           // Python code that tests the agent functionality
-  quick_test: boolean;         // If true, runs with 30s timeout during review
-  created_at: string;
-  updated_at: string;
-}
-```
-
-### TestRun (for Diff Testing Only)
-```typescript
-interface TestRun {
-  id: string;
-  diff_id: string;             // Which diff this test was run against
-  test_case_id: string;
-  status: 'passed' | 'failed' | 'error' | 'timeout';
-  output?: string;             // stdout/stderr from test execution
-  error?: string;              // Error message if failed
-  execution_time_ms: number;
-  created_at: string;
-}
-// Note: TestRuns are aggregated and cached in Diff.test_results as JSON
-```
 
 ### TokenUsage
 ```typescript
@@ -118,18 +94,6 @@ interface TokenUsage {
 }
 ```
 
-### TestResult (Frontend Display Type)
-```typescript
-interface TestResult {
-  test_id: string;
-  test_name: string;
-  status: 'passed' | 'failed' | 'error' | 'timeout' | 'running';
-  output?: string;
-  error?: string;
-  execution_time_ms?: number;
-}
-// Note: This is derived from TestRun records for frontend display
-```
 
 **Critical fields in ConversationMessage**:
 - `openai_response?: any` - FULL OpenAI response (untyped JSON)
@@ -164,17 +128,10 @@ GET    /sessions/:id/diffs/pending - Pending review diffs
 GET    /diffs/:id                 - Single diff details
 GET    /diffs/:id/preview         - Preview applied diff
 POST   /diffs/:id/review          - Human approve/reject with feedback
-POST   /diffs/:id/test            - Run tests on uncommitted diff
 POST   /diffs/:id/commit          - Commit approved diff
 POST   /diffs/:id/refine-message  - Get new commit message suggestion
 ```
 
-### Test Management (Minimal - Only for Diff Testing)
-```
-POST   /projects/:id/tests        - Create test case for diff validation
-GET    /projects/:id/tests        - List available tests
-GET    /projects/:id/tests/quick  - Get quick tests (5s timeout) for human review
-```
 
 
 ## Key Response Fields
@@ -184,14 +141,6 @@ GET    /projects/:id/tests/quick  - Get quick tests (5s timeout) for human revie
 ### Socket.io Events
 ```typescript
 // Server → Client Events
-// Event: 'vibecode_response'
-{
-  session_id: string;
-  message_id: string;
-  diff?: string;
-  token_usage?: TokenUsage;     // Real-time usage data
-}
-
 // Event: 'conversation_message' (each agent interaction)
 {
   message_id: string;
@@ -284,7 +233,7 @@ interface Diff {
   diff_content: string;     // Unified diff format (like git diff output)
   
   // Status tracking
-  status: 'evaluator_approved' | 'human_reviewing' | 'human_rejected' | 'committed';
+  status: 'evaluator_approved' | 'human_rejected' | 'committed';
   
   // Test execution tracking (for human review)
   test_results?: string;    // JSON string of test results

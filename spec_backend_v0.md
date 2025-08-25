@@ -15,10 +15,17 @@ FastAPI backend for vibecoding OpenAI Agents SDK workflows via natural language.
 
 ```python
 # SQLAlchemy models - see spec_datamodel_v0.md for full schemas
-# Project (with UNIQUE slug constraint), VibecodeSession, ConversationMessage, TestCase, Diff
+# Project (with UNIQUE slug constraint), VibecodeSession, ConversationMessage, Diff
 # Project.slug: UniqueConstraint, generated from name using slugify
 # All models follow the TypeScript interfaces defined in spec_datamodel_v0.md
 ```
+
+### Key Method: vibecode
+```python
+result = vibecode_servce.vibecode(...)
+# result is of type VibecodeResult. If content is set, result is failure and we send this message back to client.
+# If diff_id is set, result is success, and we display the diff.
+````
 
 ### Key Endpoint: Start Session
 ```python
@@ -31,35 +38,53 @@ FastAPI backend for vibecoding OpenAI Agents SDK workflows via natural language.
 ```python
 @app.post("/sessions/{session_id}/messages")
 async def send_message(session_id: str, request: MessageRequest):
-    # Run vibecoder with OpenAI session (may loop with evaluator)
-    # Ensure this Vibecoder is use the SQLiteSession
-    # See plans/backend-phase-004-agents.md
-    result = await vibecode_service.vibecode(
+    # IMPORTANT: This endpoint returns immediately after starting the vibecode process
+    # All results (success/failure) are delivered via Socket.io events
+    
+    # Start vibecode process in background
+    asyncio.create_task(run_vibecode_process(
+        session_id,
         session.project_id,
         prompt,
-        current_code,  # Pass current code for patching
+        current_code,
         session.node_id
+    ))
+    
+    # Return immediately - frontend gets results via Socket.io
+    return {"status": "processing", "message": "Vibecode process started"}
+
+async def run_vibecode_process(session_id, project_id, prompt, current_code, node_id):
+    # Run vibecoder with OpenAI session (may loop with evaluator)
+    # See plans/backend-phase-004-agents.md
+    
+    # CRITICAL REQUIREMENT: Stream every AI response immediately to frontend
+    # Each time we get a response from VibeCoder or Evaluator:
+    # 1. IMMEDIATELY emit via Socket.io conversation_message event (priority #1)
+    # 2. Asynchronously save ConversationMessage to database (background task)
+    # 3. Frontend displays each message in real-time as conversation unfolds
+    
+    result = await vibecode_service.vibecode(
+        project_id,
+        prompt,
+        current_code,
+        node_id
     )
     
     # CRITICAL: Store FULL OpenAI response AND extract usage
     token_usage = {...}
     
+    # Not all fields shown; fill them in
     message = ConversationMessage(
         session_id=session_id,
         openai_response=result,  # Store everything!
         token_usage=token_usage,  # Track usage separately
-        response_id=result.last_response_id,  # Track response_id for audit trail
+        last_response_id=result.openai_response.last_response_id,  # Track response_id for audit trail
+        diff_id=result.diff_id
+        ...
     )
     
-    # Emit vibecode_response with diff_id and trace_id for human review
-    await socketio_manager.emit_to_room(
-        f"project_{project_id}",
-        "vibecode_response",
-        {
-            "diff_id": result.get("diff_id"),
-            "status": result.get("status", "completed")
-        }
-    )
+    # IMPORTANT: All AI responses streamed via conversation_message events in real-time
+    # VibecodeService handles the Socket.io emission internally for each agent response
 ```
 
 ### Human Review Endpoints
@@ -75,7 +100,6 @@ async def send_message(session_id: str, request: MessageRequest):
 ```python
 # DELETE /sessions/{session_id} - Clear OpenAI SQLiteSession
 # GET /messages/{id}/full - Return full openai_response JSON  
-# POST /tests/{id}/run - Run test in sandbox
 ```
 
 

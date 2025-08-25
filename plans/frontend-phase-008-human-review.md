@@ -1,32 +1,31 @@
-# Frontend Phase 008: Human Review UI with Test Execution
+# Frontend Phase 008: Human Review UI
 
 ## ⚠️ BACKEND DEPENDENCY CHECK
 **REQUIRED**: Backend phases must be completed:
 - `plans/backend-phase-004-agents.md` - For Diff model creation
 - `plans/backend-phase-005-sessions.md` - For session management
-- `plans/backend-phase-006-human-review.md` - For all diff endpoints including /diffs/:id/test
+- `plans/backend-phase-006-human-review.md` - For all diff endpoints
 
 **VERIFICATION**: Check each backend file header for "# DONE as of commit". If ANY are missing, DO NOT START this phase and inform the user which backend dependencies are not ready.
 
 ## Objectives
-Implement UI components for human diff review with test execution, commit message editing, and page refresh recovery.
+Implement UI components for human diff review, commit message editing, and page refresh recovery. No test execution in v0.
 
 ## Implementation Tasks
-1. Create DiffReviewModal component with test execution
+1. Create DiffReviewModal component
 2. Create CommitMessageModal component  
-3. Add diff management and test results to Zustand store
+3. Add diff management to Zustand store
 4. Implement page refresh recovery
-5. Handle WebSocket events for diff status and test results
+5. Handle WebSocket events for diff status updates
 
 ## Key Components
 
 ### DiffReviewModal
 ```typescript
-// Shows Monaco diff editor with evaluator reasoning and test execution
-// handleRunTests: Runs selected tests on diff
-// handleApprove: Opens CommitMessageModal (with or without tests)
+// Shows Monaco diff editor with evaluator reasoning
+// handleApprove: Opens CommitMessageModal
 // handleReject: Requires reason, sends 'human_rejection' message type
-// UI: Dialog with Badge status, MonacoDiffEditor, Test runner, Accept/Reject buttons
+// UI: Dialog with Badge status, MonacoDiffEditor, Accept/Reject buttons
 
 interface DiffReviewModalProps {
   diff: Diff;
@@ -34,13 +33,11 @@ interface DiffReviewModalProps {
 }
 
 // Key features:
-// - "Run Tests" button with dropdown to select quick/all/specific tests
-// - Test results display with pass/fail badges inline
-// - OpenAI trace_id shown prominently as clickable link
+// - Diff viewer with Monaco editor
+// - Evaluator reasoning displayed prominently
 // - Token usage displayed clearly (prompt/completion/total)
-// - Three approval modes: "Accept", "Test & Accept", "Accept without Testing"
-// - Progress indicator during test execution
-// - Cached test results shown if already run
+// - Accept/Reject buttons with clear workflow
+// - Rejection requires feedback reason
 ```
 
 ### CommitMessageModal
@@ -53,24 +50,20 @@ interface DiffReviewModalProps {
 
 ### Updated Zustand Store
 ```typescript
-// DiffState: pendingDiffs, currentReviewDiff, testResults, modal visibility flags
+// DiffState: pendingDiffs, currentReviewDiff, modal visibility flags
 // loadPendingDiffs: Auto-opens modal if pending diff exists
-// runDiffTests: Calls POST /diffs/:id/test endpoint
 // sendHumanRejection: Sends message with 'human_rejection' type
 
 interface DiffState {
   pendingDiffs: Diff[];
   currentReviewDiff: Diff | null;
-  testResults: TestResult[] | null;
-  isRunningTests: boolean;
   showDiffReviewModal: boolean;
   showCommitMessageModal: boolean;
-  approvalMode: 'accept' | 'test-accept' | 'test-first';
 }
 
 // Actions:
-// runDiffTests(diffId, testIds?): Run tests and store results
-// setApprovalMode(mode): Set user preference for approval workflow
+// approveDiff(diffId): Approve diff and open commit modal
+// rejectDiff(diffId, reason): Reject diff with feedback
 ```
 
 ### Page Refresh Recovery
@@ -82,45 +75,35 @@ interface DiffState {
 
 ### WebSocket Event Handling
 ```typescript
-// vibecode_response: Opens DiffReviewModal if status='pending_human_review'
+// conversation_message: Handle agent responses and diff creation
 // diff_committed: Shows success toast, refreshes project code
 ```
 
 ## Acceptance Criteria
-- ✅ DiffReviewModal shows diff with Accept/Reject/Test options
-- ✅ "Run Tests" button executes tests on uncommitted diff
-- ✅ Test results displayed with pass/fail badges
-- ✅ Quick tests run with 5s timeout
-- ✅ Three approval modes: Accept, Test & Accept, Test First
-- ✅ Test results cached to avoid re-running
+- ✅ DiffReviewModal shows diff with Accept/Reject options
 - ✅ Rejection requires reason and triggers new vibecode
 - ✅ CommitMessageModal allows editing and refining message
-- ✅ Page refresh recovers pending diff state and test results
+- ✅ Page refresh recovers pending diff state
 - ✅ WebSocket events trigger appropriate modals
 - ✅ Successful commit refreshes project code
 - ✅ Toast notifications for all actions
-- ✅ Loading states during test execution and async operations
+- ✅ Loading states during async operations
 
 ## Integration Tests
 ```typescript
 // Test: Auto-opens modal for pending diff
-// Test: Run Tests button executes tests and shows results
-// Test: Test results cached on second run
 // Test: Approval flow → CommitMessageModal
-// Test: Test & Accept mode runs tests then auto-approves if all pass
 // Test: Rejection flow → New vibecode with feedback
-// Test: Page refresh recovery restores modal state and test results
-// Test: Failed tests shown but don't block approval
+// Test: Page refresh recovery restores modal state
 ```
 
 ## Deliverables
-- [ ] DiffReviewModal component with test runner
+- [ ] DiffReviewModal component
 - [ ] CommitMessageModal component
-- [ ] Test results display with OpenAI trace links
-- [ ] Updated Zustand store with diff and test management
+- [ ] Updated Zustand store with diff management
 - [ ] useDiffRecovery hook for page refresh
-- [ ] WebSocket event handlers for diff and test updates
-- [ ] Tests in tests/integration/test_phase_007_human_review.tsx
+- [ ] WebSocket event handlers for diff updates
+- [ ] Tests in tests/integration/test_phase_008_human_review.tsx
 - [ ] Validation evidence in frontend/validated_test_evidence/phase-008/
 
 ## 🔴 CRITICAL E2E TEST: Complete Vibecoder Workflow

@@ -25,6 +25,40 @@ class ASTParserService:
 
 ## Test Sandbox & Runner (v1)
 
+### Test Data Models
+```typescript
+interface TestCase {
+  id: string;
+  project_id: string;
+  name: string;
+  test_code: string;           // Python code that tests the agent functionality
+  quick_test: boolean;         // If true, runs with 30s timeout during review
+  created_at: string;
+  updated_at: string;
+}
+
+interface TestRun {
+  id: string;
+  diff_id: string;             // Which diff this test was run against
+  test_case_id: string;
+  status: 'passed' | 'failed' | 'error' | 'timeout';
+  output?: string;             // stdout/stderr from test execution
+  error?: string;              // Error message if failed
+  execution_time_ms: number;
+  created_at: string;
+}
+
+interface TestResult {
+  test_id: string;
+  test_name: string;
+  status: 'passed' | 'failed' | 'error' | 'timeout' | 'running';
+  output?: string;
+  error?: string;
+  execution_time_ms?: number;
+}
+// Note: TestResult is derived from TestRun records for frontend display
+```
+
 ### Backend Sandbox Service
 ```python
 class SandboxService:
@@ -32,6 +66,15 @@ class SandboxService:
     # Resource limits: 30s timeout, 512MB memory
     # Security: No network, file system restrictions
     # Stream output via WebSocket
+```
+
+### Test API Endpoints
+```
+POST   /projects/:id/tests        - Create test case for diff validation
+GET    /projects/:id/tests        - List available tests
+GET    /projects/:id/tests/quick  - Get quick tests (30s timeout) for human review
+POST   /diffs/:id/test            - Run tests on uncommitted diff
+POST   /tests/:id/run             - Run test in sandbox
 ```
 
 ### Frontend Test Runner UI

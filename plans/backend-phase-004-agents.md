@@ -22,6 +22,10 @@ Implement VibeCoder and Evaluator agents with patch submission workflow per spec
 - ✅ VibeCoder can return text without patching
 - ✅ Evaluator reviews patches AND suggests commit messages
 - ✅ Loop runs max 3 iterations between agents
+- ✅ **CRITICAL: Every AI response immediately streamed to frontend via Socket.io**
+- ✅ **Socket.io emission is priority #1 - no waiting for database saves**
+- ✅ **ConversationMessage saved to database asynchronously in background**
+- ✅ **No batching - frontend sees conversation unfold in real-time**
 - ✅ **Diff model created and stored in database** (status='evaluator_approved')
 - ✅ Approved diffs accessible via GET /sessions/:id/diffs/pending endpoint
 - ✅ Human rejection triggers new vibecode iteration
@@ -124,12 +128,13 @@ def validate_patch(original: str, patch: str) -> dict:
     # 3. Return {valid: bool, error?: str} with VERBATIM error if invalid
 
 @function_tool
-async def submit_patch(ctx, patch: str, description: str) -> dict:
+async def submit_patch(ctx, patch: str, description: str) -> EvaluationResult:
     # 1. Get current_code from ctx.state
     # 2. Run validate_patch() - single step validation
     # 3. If invalid, return verbatim error to user
-    # 4. If valid, store in ctx.state["submitted_patch"]
-    # 5. Return {status: "submitted", handoff_to_evaluator: True}
+    # 4. If valid, call the evaluator. Evaluator's session is stored in ctx.
+    # NOTE: we don't run the code yet; we just send to evaluator for now.
+    # 5. Return with the evaluator's decision (dict).
 
 vibecoder_agent = Agent(
     name="Vibecoder",
@@ -145,22 +150,60 @@ evaluator_agent = Agent(
     output_type=EvaluationResult  # Now includes commit_message field
 )
 
+class VibecodeResult(BaseModel):
+    content: Optional[str] = None  # if we fail
+    diff_id: Optional[str] = None  # if we succeed
+    openai_response: Any  # Full OpenAI response object
+
+
 class VibecodeService:
-    async def vibecode(project_id, prompt, current_code, node_id=None):
+    async def vibecode(project_id, prompt, current_code, node_id=None) -> VibecodeResult:
+        # CRITICAL REQUIREMENT: Real-time AI Response Streaming
+        # Every time we get a response from VibeCoder or Evaluator:
+        # 1. Emit Socket.io 'conversation_message' event immediately (priority #1)
+        # 2. Asynchronously save ConversationMessage to database (background task)
+        # 3. Frontend displays message in real-time
+        # DO NOT wait for database save - stream first, save second
+        
         # Create session key with correct format (uses project.slug for consistency)
         session_key = f"project_{project.slug}_node_{node_id}" if node_id else f"project_{project.slug}"
         # Use project.slug for filesystem paths to ensure valid filenames
         db_path = f"media/projects/{project.slug}_conversations.db"
         session = SQLiteSession(session_key, db_path)  # MUST use file persistence, not in-memory
+        evaluator_session_key = session_key + "_evaluator"
+        evaluator_session = SQLiteSession(evaluator_session_key, db_path)  # MUST use file persistence, not in-memory
+        [[put evaluator_session in agent's ctx somehow]]
+
         for iteration in range(3):  # MAX 3 iterations
             # Run VibeCoder with context
+            vibecoder_response = await Runner.run(vibecoder_agent, user_prompt, session)
+            
+            # CRITICAL: Immediately stream VibeCoder response to frontend
+            await self._stream_agent_response(vibecoder_response, 'vibecoder', iteration, session_id)
+            
             # Check if patch submitted
             # If not, return text response
             # If yes, run Evaluator
+            evaluator_response = await Runner.run(evaluator_agent, patch_prompt, evaluator_session)
+            
+            # CRITICAL: Immediately stream Evaluator response to frontend
+            await self._stream_agent_response(evaluator_response, 'evaluator', iteration, session_id)
+            
             # If approved:
             #   - Create Diff record with status='evaluator_approved'
-            #   - Return diff_id for human review
+            #   - Return VibecodeResult with diff_id
             # If rejected, loop with feedback
+            
+    async def _stream_agent_response(self, response, agent_type, iteration, session_id):
+        # 1. IMMEDIATELY emit Socket.io 'conversation_message' event (no delay)
+        # 2. Fire-and-forget background task to save ConversationMessage to database
+        # 3. Include agent type, iteration, and token usage in Socket.io event
+        
+        # Emit first (priority #1 - user sees response immediately)
+        await socketio_manager.emit_to_room(...)
+        
+        # Database save in background (priority #2)
+        asyncio.create_task(self._save_conversation_message_async(response, agent_type, iteration, session_id))
     
     async def handle_human_rejection(diff_id, feedback):
         # Get rejected diff

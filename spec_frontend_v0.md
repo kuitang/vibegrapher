@@ -108,7 +108,6 @@ interface AppState {
 // React Query for server data
 useProject(id: string)
 useMessages(sessionId: string)
-useTestCases(projectId: string)
 usePendingDiffs(sessionId: string)
 ```
 
