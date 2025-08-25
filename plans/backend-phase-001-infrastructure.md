@@ -49,29 +49,12 @@ def test_database_schema():
     pass
 ```
 
-## Validation Script
-```bash
-#!/bin/bash
-OUTPUT_DIR="backend/validated_test_evidence/phase-001"
-mkdir -p $OUTPUT_DIR
-
-# Run integration tests
-pytest tests/integration/test_phase_001_infrastructure.py -v --tb=short > $OUTPUT_DIR/test_output.log 2>&1
-
-# Test API endpoints
-curl -X POST http://localhost:8000/projects \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Test Project"}' > $OUTPUT_DIR/create_project.json
-
-# Verify git repo created
-ls -la media/projects/ > $OUTPUT_DIR/git_repos.txt
-
-# Database state (using test database)
-sqlite3 test_vibegrapher.db ".schema" > $OUTPUT_DIR/db_schema.sql
-sqlite3 test_vibegrapher.db "SELECT * FROM projects;" > $OUTPUT_DIR/projects.txt
-
-echo "Phase 001 validation complete"
-```
+## Validation Requirements
+- Write pytest + httpx integration tests covering all acceptance criteria
+- Test manually with curl commands for POST /projects, GET /projects/{id}, DELETE /projects/{id}
+- Verify git repositories are created in media/projects/{project_id}/
+- Check database schema and sample data with sqlite3 commands
+- Save test evidence in validated_test_evidence/phase-001/
 
 ## Setup Commands
 ```bash

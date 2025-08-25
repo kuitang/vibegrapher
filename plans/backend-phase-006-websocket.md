@@ -82,62 +82,13 @@ async def test_disconnection_handling():
     # Verify server reports 0 active connections
 ```
 
-## Validation Script
-```bash
-#!/bin/bash
-OUTPUT_DIR="validated_test_evidence/phase-006"
-mkdir -p $OUTPUT_DIR
-
-# Run WebSocket integration tests
-pytest tests/integration/test_phase_006_websocket.py -v > $OUTPUT_DIR/test_output.log 2>&1
-
-# Manual WebSocket test with wscat
-cat > $OUTPUT_DIR/ws_test.sh << 'EOF'
-#!/bin/bash
-# Install wscat if needed
-npm install -g wscat
-
-# Create project
-PROJECT_ID=$(curl -X POST http://localhost:8000/projects \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Manual WS Test"}' | jq -r .id)
-
-# Test Socket.io connection with node.js client
-cat > socketio_test.js << 'EOL'
-const { io } = require('socket.io-client');
-const socket = io('http://localhost:8000', { path: '/socket.io/' });
-socket.on('connect', () => console.log('Connected'));
-socket.on('vibecode_response', (data) => console.log('Received:', data));
-socket.emit('subscribe', { project_id: process.argv[2] });
-setTimeout(() => process.exit(0), 5000);
-EOL
-
-node socketio_test.js ${PROJECT_ID} > ws_output.log &
-WS_PID=$!
-
-# Create session and send message
-SESSION_ID=$(curl -X POST http://localhost:8000/projects/${PROJECT_ID}/sessions | jq -r .session_id)
-
-curl -X POST http://localhost:8000/sessions/${SESSION_ID}/messages \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "Add feature"}' > http_response.json
-
-sleep 2
-kill $WS_PID
-
-# Check if Socket.io received message
-if grep -q "vibecode_response" ws_output.log; then
-    echo "Socket.io broadcast received"
-else
-    echo "Socket.io broadcast failed"
-fi
-EOF
-
-chmod +x $OUTPUT_DIR/ws_test.sh
-$OUTPUT_DIR/ws_test.sh > $OUTPUT_DIR/ws_manual.log 2>&1
-
-echo "Phase 006 validation complete"
-```
+## Validation Requirements
+- Write pytest + python-socketio integration tests for real-time broadcasting
+- Test manually with Socket.io client: connect, subscribe to rooms, verify events received
+- Test with curl: create projects/sessions, send messages, confirm Socket.io broadcasts
+- Verify token usage data is streamed in real-time via 'token_usage' events
+- Test disconnection handling and room cleanup
+- Save test evidence in validated_test_evidence/phase-006/
 
 ## Deliverables
 - [ ] SocketIOManager in app/services/socketio_service.py

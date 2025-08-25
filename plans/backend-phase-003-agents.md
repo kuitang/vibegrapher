@@ -66,33 +66,13 @@ def test_evaluator_iteration():
     assert service.last_iteration_count <= 3
 ```
 
-## Validation Script
-```bash
-#!/bin/bash
-OUTPUT_DIR="validated_test_evidence/phase-003"
-mkdir -p $OUTPUT_DIR
-
-# Test vibecode functionality with REAL OpenAI API
-# CRITICAL: Requires valid OPENAI_API_KEY in environment
-pytest tests/integration/test_phase_003_agents.py -v > $OUTPUT_DIR/test_output.log 2>&1
-echo "Real API token usage logged in test_output.log"
-
-# Test session creation and message sending
-PROJECT_ID="test-project-id"
-curl -X POST http://localhost:8000/projects/${PROJECT_ID}/sessions \
-  > $OUTPUT_DIR/session_create.json
-
-SESSION_ID=$(cat $OUTPUT_DIR/session_create.json | jq -r .session_id)
-curl -X POST http://localhost:8000/sessions/${SESSION_ID}/messages \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "Create a triage agent"}' \
-  > $OUTPUT_DIR/vibecode_response.json
-
-# Verify OpenAI session files created
-ls -la *.db > $OUTPUT_DIR/sqlite_sessions.txt
-
-echo "Phase 003 validation complete"
-```
+## Validation Requirements
+- Write pytest + httpx integration tests with REAL OpenAI API calls (requires OPENAI_API_KEY)
+- Test manually with curl: create sessions, send messages, verify vibecode responses
+- Verify SQLiteSession files are created and token usage is logged
+- Test both patch submission and text response modes
+- Confirm evaluator loop works with max 3 iterations
+- Save test evidence in validated_test_evidence/phase-003/
 
 ## Key Code Structure (from spec_backend_v0.md)
 ```python

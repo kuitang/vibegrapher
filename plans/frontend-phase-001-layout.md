@@ -92,25 +92,21 @@ test.describe('Phase 001: Layout E2E', () => {
 })
 ```
 
-## Validation Script
+## IMPORTANT: Pre-Development Check
+**CRITICAL**: Ensure Playwright MCP server works headless before starting:
 ```bash
-#!/bin/bash
-OUTPUT_DIR="frontend/validated_test_evidence/phase-001"
-mkdir -p $OUTPUT_DIR
-
-# IMPORTANT: Use --watchAll=false to ensure tests exit after running
-# Run Vitest integration tests (headless)
-npm test -- --run --watchAll=false tests/integration/phase_001_layout.test.tsx > $OUTPUT_DIR/vitest.log 2>&1
-
-# Run Playwright E2E tests (headless)
-npx playwright test tests/e2e/phase001-layout.e2e.ts --reporter=json > $OUTPUT_DIR/playwright.json
-
-# Take screenshots (headless)
-npx playwright screenshot http://localhost:5173 $OUTPUT_DIR/home.png
-npx playwright screenshot http://localhost:5173/project/test $OUTPUT_DIR/project.png
-
-echo "Phase 001 validation complete"
+npx playwright test --headed=false
+# Must run without browser windows - fix if it doesn't work headless
 ```
+
+## Validation Requirements  
+- Write Vitest + React Testing Library integration tests for layout components
+- Write Playwright E2E tests (headless) for full user flows
+- **CRITICAL**: Use `npm test -- --run --watchAll=false` to ensure tests exit
+- Test TypeScript compilation with `npm run typecheck`  
+- Verify shadcn Card components render with proper test IDs
+- Test dark mode toggle functionality
+- Save test evidence in validated_test_evidence/phase-001/
 
 ## Setup Commands
 ```bash
