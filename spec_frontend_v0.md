@@ -14,26 +14,9 @@ React TypeScript interface for vibecoding agents via natural language. No graph 
 - IMPORTANT: Tests must hit real backend (no mocking)
 
 ## Layout (v0 - Simple)
-```
-┌──────────────────────────────────────────┐
-│ Header (Project name, User)              │
-├──────────────────────────────────────────┤
-│                                          │
-│  ┌──────────────┬──────────────────┐    │
-│  │              │                   │    │
-│  │              │  Code View        │    │
-│  │  Vibecode    │  (Read-only)      │    │
-│  │  Panel       │  Python code      │    │
-│  │              │                   │    │
-│  │  [Session]   │  Monaco Editor    │    │
-│  │  Messages    │                   │    │
-│  │  Input       │  (Full Height)    │    │
-│  │              │                   │    │
-│  │ (Full Height)│                   │    │
-│  └──────────────┴──────────────────┘    │
-│                                          │
-└──────────────────────────────────────────┘
-```
+- Left: Vibecode panel (full height)
+- Right top: Code viewer panel
+- Right bottom: Test results panel
 
 ## Core Components with shadcn/ui
 
