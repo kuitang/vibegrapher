@@ -98,28 +98,50 @@ See `plans/backend-phase-*.md` for detailed requirements:
 
 ## Critical Requirements
 
-### OpenAI Agents SDK Usage
+### OpenAI Agents SDK Usage (REAL API ONLY)
 ```python
-# MUST use gpt-5 series models
+# MUST use gpt-5 series models - THESE ARE REAL!
 MODEL_CONFIGS = {
     "THINKING_MODEL": "gpt-5-thinking",
     "SMALL_MODEL": "gpt-5-mini"
 }
 
+# CRITICAL: NEVER MOCK OpenAI APIs
+# ALL tests MUST use real OpenAI API calls with valid API key
+# NO mock responses, NO fake agents, NO stubbed models
+# This ensures real token usage tracking and authentic responses
+
 # CORRECT Session Management
 session = SQLiteSession(session_key)
 result = await Runner.run(agent, prompt, session=session)
+# ALWAYS extract and log usage: result.usage
 
 # WRONG - Don't create new agents each time
 agent = Agent(...)  # This loses history!
 ```
 
-### Store Full Responses
+### Store Full Responses + Token Usage
 ```python
-# ALWAYS store complete OpenAI response
+# ALWAYS store complete OpenAI response AND usage
+usage_data = result.get("usage", {})
+token_usage = {
+    "prompt_tokens": usage_data.get("prompt_tokens", 0),
+    "completion_tokens": usage_data.get("completion_tokens", 0), 
+    "total_tokens": usage_data.get("total_tokens", 0),
+    "model": result.get("model", "unknown")
+}
+
 message = ConversationMessage(
     session_id=session_id,
-    openai_response=result  # Store everything!
+    openai_response=result,  # Store everything!
+    token_usage=token_usage  # Track usage separately
+)
+
+# CRITICAL: Stream usage via Socket.io immediately
+await socketio_manager.emit_to_room(
+    f"project_{project_id}",
+    "token_usage", 
+    token_usage
 )
 ```
 
@@ -127,15 +149,17 @@ message = ConversationMessage(
 
 Before EVERY commit:
 - [ ] Type checking passes (`mypy app/`)
-- [ ] Tests pass (`pytest`)
+- [ ] Tests pass (`pytest`) - ALL USING REAL OpenAI API
 - [ ] No hardcoded URLs/ports
-- [ ] No secrets in code
+- [ ] No secrets in code (except valid OPENAI_API_KEY in .env)
 - [ ] Virtual environment active
 - [ ] All functions have type hints
 - [ ] Pydantic models validate all API data
 - [ ] SQLiteSession used correctly
-- [ ] Full OpenAI responses stored with trace_id
+- [ ] Full OpenAI responses stored with trace_id AND token usage
+- [ ] Token usage streamed via Socket.io
 - [ ] Integration tests cover full flows
+- [ ] NO MOCKED OpenAI calls anywhere
 
 ## Remember
 - VibeCoder has TWO modes: patch submission OR text response

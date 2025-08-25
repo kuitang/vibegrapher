@@ -13,9 +13,11 @@ Implement Socket.io for real-time updates and broadcasts (consistent with fronte
 - ✅ Clients can join project room via Socket.io
 - ✅ Vibecode responses broadcast to room subscribers
 - ✅ Code changes include patch and trace_id
+- ✅ REAL OpenAI token usage streamed in real-time
 - ✅ Test results stream in real-time
 - ✅ Socket.io handles reconnection automatically
 - ✅ Disconnected clients cleaned up from rooms
+- ✅ NO MOCKED token usage - all data from real API calls
 
 ## Integration Test Script (httpx + python-socketio client)
 ```python
@@ -58,11 +60,12 @@ async def test_socketio_broadcast():
         assert msg1["type"] == "vibecode_response"
         assert msg1["patch"] is not None
         assert msg1["trace_id"] == response.json()["trace_id"]
+        assert msg1["token_usage"] is not None  # Verify REAL usage data
         
         assert msg2 == msg1  # Both clients get same message
         
-        await ws1.close()
-        await ws2.close()
+        await sio1.disconnect()
+        await sio2.disconnect()
 
 async def test_test_result_streaming():
     """Test real-time test result updates"""
@@ -99,8 +102,17 @@ PROJECT_ID=$(curl -X POST http://localhost:8000/projects \
   -H "Content-Type: application/json" \
   -d '{"name": "Manual WS Test"}' | jq -r .id)
 
-# Connect to WebSocket in background
-wscat -c ws://localhost:8000/ws/${PROJECT_ID} > ws_output.log &
+# Test Socket.io connection with node.js client
+cat > socketio_test.js << 'EOL'
+const { io } = require('socket.io-client');
+const socket = io('http://localhost:8000', { path: '/socket.io/' });
+socket.on('connect', () => console.log('Connected'));
+socket.on('vibecode_response', (data) => console.log('Received:', data));
+socket.emit('subscribe', { project_id: process.argv[2] });
+setTimeout(() => process.exit(0), 5000);
+EOL
+
+node socketio_test.js ${PROJECT_ID} > ws_output.log &
 WS_PID=$!
 
 # Create session and send message
@@ -113,11 +125,11 @@ curl -X POST http://localhost:8000/sessions/${SESSION_ID}/messages \
 sleep 2
 kill $WS_PID
 
-# Check if WebSocket received message
+# Check if Socket.io received message
 if grep -q "vibecode_response" ws_output.log; then
-    echo "WebSocket broadcast received"
+    echo "Socket.io broadcast received"
 else
-    echo "WebSocket broadcast failed"
+    echo "Socket.io broadcast failed"
 fi
 EOF
 
@@ -128,7 +140,7 @@ echo "Phase 006 validation complete"
 ```
 
 ## Deliverables
-- [ ] ConnectionManager in app/services/websocket.py
-- [ ] WebSocket endpoint in app/api/websocket.py
-- [ ] Integration tests in tests/integration/test_phase_006_websocket.py
+- [ ] SocketIOManager in app/services/socketio_service.py
+- [ ] Socket.io event handlers in app/api/socketio_events.py
+- [ ] Integration tests in tests/integration/test_phase_006_socketio.py
 - [ ] Validation evidence in validated_test_evidence/phase-006/

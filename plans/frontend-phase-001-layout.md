@@ -118,6 +118,25 @@ echo "Phase 001 validation complete"
 npm create vite@latest frontend -- --template react-ts
 cd frontend
 
+# Environment setup for different deployment scenarios
+cat > .env.local << EOF
+# Local development (default)
+VITE_API_URL=http://localhost:8000
+VITE_WS_URL=http://localhost:8000
+EOF
+
+cat > .env.development << EOF
+# Remote development access (replace with your server IP)
+VITE_API_URL=http://192.168.1.100:8000
+VITE_WS_URL=http://192.168.1.100:8000
+EOF
+
+cat > .env.production << EOF
+# Production deployment
+VITE_API_URL=https://your-api.fly.dev
+VITE_WS_URL=https://your-api.fly.dev
+EOF
+
 # Configure TypeScript strict mode
 cat > tsconfig.json << EOF
 {

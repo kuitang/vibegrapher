@@ -78,6 +78,9 @@ evaluator_agent = Agent(
 )
 
 class VibecodeService:
+    def __init__(self, socketio_manager):
+        self.socketio_manager = socketio_manager
+    
     async def vibecode(project_id, prompt, current_code, node_id=None):
         # Create session key with correct format
         session_key = f"project_{project_id}_node_{node_id}" if node_id else f"project_{project_id}"
@@ -90,19 +93,53 @@ class VibecodeService:
             else:
                 input = f"Rejected. Feedback: {evaluator_feedback}. Original: {prompt}"
             
-            # Using OpenAI SDK's Runner
+            # Using OpenAI SDK's Runner - stream token usage in real-time
             vibecoder_result = await Runner.run(
                 vibecoder_agent, input, 
                 session=session, 
                 context={"current_code": current_code}
             )
             
+            # CRITICAL: Log and stream token usage immediately
+            if hasattr(vibecoder_result, 'usage') and vibecoder_result.usage:
+                usage_data = {
+                    "prompt_tokens": vibecoder_result.usage.get("prompt_tokens", 0),
+                    "completion_tokens": vibecoder_result.usage.get("completion_tokens", 0),
+                    "total_tokens": vibecoder_result.usage.get("total_tokens", 0),
+                    "model": vibecoder_result.model or "gpt-5-thinking",
+                    "agent": "vibecoder",
+                    "iteration": iteration + 1
+                }
+                
+                await self.socketio_manager.emit_to_room(
+                    f"project_{project_id}",
+                    "token_usage",
+                    usage_data
+                )
+            
             # Check if patch submitted
             if not vibecoder_result.context.state.get("submitted_patch"):
                 return {"response": vibecoder_result.final_output}  # Text response
             
-            # Run Evaluator (also using OpenAI SDK's Runner)
+            # Run Evaluator (also using OpenAI SDK's Runner) - track usage
             evaluator_result = await Runner.run(evaluator_agent, patch_details, session=session)
+            
+            # CRITICAL: Log evaluator token usage too
+            if hasattr(evaluator_result, 'usage') and evaluator_result.usage:
+                evaluator_usage = {
+                    "prompt_tokens": evaluator_result.usage.get("prompt_tokens", 0),
+                    "completion_tokens": evaluator_result.usage.get("completion_tokens", 0),
+                    "total_tokens": evaluator_result.usage.get("total_tokens", 0),
+                    "model": evaluator_result.model or "gpt-5-thinking",
+                    "agent": "evaluator", 
+                    "iteration": iteration + 1
+                }
+                
+                await self.socketio_manager.emit_to_room(
+                    f"project_{project_id}",
+                    "token_usage",
+                    evaluator_usage
+                )
             
             if evaluator_result.approved:
                 return {"patch": submitted_patch, "accepted": True}
@@ -178,18 +215,44 @@ async def send_message(session_id: str, request: MessageRequest):
         session.node_id
     )
     
-    # CRITICAL: Store FULL OpenAI response
+    # CRITICAL: Store FULL OpenAI response AND extract usage
+    usage_data = result.get("usage", {})
+    token_usage = {
+        "prompt_tokens": usage_data.get("prompt_tokens", 0),
+        "completion_tokens": usage_data.get("completion_tokens", 0), 
+        "total_tokens": usage_data.get("total_tokens", 0),
+        "model": result.get("model", "unknown")
+    }
+    
     message = ConversationMessage(
         session_id=session_id,
-        openai_response=result  # Store everything!
+        openai_response=result,  # Store everything!
+        token_usage=token_usage  # Track usage separately
     )
     
-    # WebSocket broadcast with trace_id
-    await ws_manager.broadcast({
-        "type": "vibecode_response",
-        "patch": result.get("patch"),
-        "trace_id": result.get("trace_id")
-    })
+    # Socket.io broadcast with trace_id AND token usage
+    await socketio_manager.emit_to_room(
+        f"project_{session.project_id}",
+        "vibecode_response",
+        {
+            "patch": result.get("patch"),
+            "trace_id": result.get("trace_id"),
+            "session_id": session_id,
+            "token_usage": token_usage  # Stream usage in real-time
+        }
+    )
+    
+    # Also emit separate usage event for tracking
+    await socketio_manager.emit_to_room(
+        f"project_{session.project_id}",
+        "token_usage",
+        {
+            "session_id": session_id,
+            "message_id": message.id,
+            "usage": token_usage,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    )
 ```
 
 ### Other Endpoints
@@ -199,11 +262,20 @@ async def send_message(session_id: str, request: MessageRequest):
 @app.post("/tests/{id}/run")  # Run test in sandbox
 ```
 
-## WebSocket Manager
+## Socket.io Manager
 ```python
-class ConnectionManager:
-    # Standard WebSocket connection management
-    async def broadcast(project_id: str, message: dict)  # Include trace_id in all messages
+import socketio
+
+class SocketIOManager:
+    def __init__(self):
+        self.sio = socketio.AsyncServer(cors_allowed_origins="*")
+    
+    async def emit_to_room(self, room: str, event: str, data: dict):
+        # Include trace_id in all messages
+        await self.sio.emit(event, data, room=room)
+    
+    async def join_project_room(self, sid: str, project_id: str):
+        await self.sio.enter_room(sid, f"project_{project_id}")
 ```
 
 ## Configuration
@@ -217,11 +289,18 @@ class Settings(BaseSettings):
     openai_api_key: str
     cors_origins: str = "*"
     media_path: str = "media"
-    host: str = "0.0.0.0"
-    port: int = 8000  # Standard uvicorn port
+    host: str = "0.0.0.0"  # Server listens on all interfaces
+    port: int = 8000
     
     class Config:
         env_file = ".env"
+
+# Deployment Notes:
+# - Backend ALWAYS binds to 0.0.0.0 (listens on all interfaces)
+# - Frontend connects to different URLs based on environment:
+#   * Local: http://localhost:8000
+#   * Remote dev: http://SERVER_IP:8000  
+#   * Production: https://your-api.fly.dev
 ```
 
 ## Management Commands

@@ -29,6 +29,18 @@ interface VibecodeSession {
 }
 ```
 
+### TokenUsage
+```typescript
+interface TokenUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  model: string;
+  agent?: string;               // 'vibecoder' | 'evaluator' 
+  iteration?: number;           // Agent iteration number
+}
+```
+
 ### ConversationMessage
 ```typescript
 interface ConversationMessage {
@@ -37,6 +49,7 @@ interface ConversationMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;               // Display text
   openai_response?: any;         // FULL OpenAI response (untyped JSON)
+  token_usage?: TokenUsage;      // Extracted token usage data
   timestamp: timestamp;
   diff?: string;                 // If changes proposed
 }
@@ -142,36 +155,48 @@ Response: any  // Untyped JSON with complete OpenAI data
 }
 ```
 
-### WebSocket Events
+### Socket.io Events
 ```typescript
-// Server → Client
+// Server → Client Events
+// Event: 'vibecode_response'
 {
-  type: 'vibecode_response';
   session_id: string;
   message_id: string;
   diff?: string;
-  trace_id?: string;  // OpenAI trace for debugging
+  trace_id?: string;    // OpenAI trace for debugging
+  token_usage?: TokenUsage;  // Real-time usage data
 }
 
+// Event: 'code_changed'
 {
-  type: 'code_changed';
   project_id: string;
   new_code: string;
 }
 
+// Event: 'test_completed'
 {
-  type: 'test_completed';
   test_id: string;
   status: string;
   output?: string;
   trace_id?: string;  // OpenAI trace for test run
 }
 
-// Client → Server
+// Client → Server Events
+// Event: 'subscribe'
 {
-  type: 'subscribe';
   project_id: string;
 }
+
+// Event: 'token_usage' - Real-time usage tracking
+{
+  session_id: string;
+  message_id?: string;
+  usage: TokenUsage;
+  timestamp: string;    // ISO timestamp
+}
+
+// Event: 'disconnect'
+// (handled automatically by Socket.io)
 ```
 
 ## OpenAI Agents SDK Integration
@@ -226,6 +251,7 @@ class ConversationMessage(Base):
     role = Column(String)
     content = Column(Text)
     openai_response = Column(JSON)  # Stores everything
+    token_usage = Column(JSON, nullable=True)  # TokenUsage as JSON
     diff = Column(Text, nullable=True)
     timestamp = Column(DateTime, server_default=func.now())
 

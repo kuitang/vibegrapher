@@ -23,9 +23,17 @@ npm run build
 
 ### Environment Configuration
 ```bash
-# .env (never commit this)
+# .env.local (never commit this) - for LOCAL development
 VITE_API_URL=http://localhost:8000
-VITE_WS_URL=ws://localhost:8000
+VITE_WS_URL=http://localhost:8000
+
+# .env.development (for REMOTE development server access)
+VITE_API_URL=http://YOUR_DEV_SERVER_IP:8000
+VITE_WS_URL=http://YOUR_DEV_SERVER_IP:8000
+
+# .env.production (for production deployment)
+VITE_API_URL=https://your-api.fly.dev
+VITE_WS_URL=https://your-api.fly.dev
 ```
 
 ## Project Organization
@@ -115,13 +123,22 @@ See `plans/frontend-phase-*.md` for detailed requirements:
 
 ## Critical Requirements
 
-### WebSocket Debug Logging
+### Socket.io Debug Logging (REAL API ONLY)
 ```typescript
-// ALWAYS log WebSocket messages
-socket.on('connect', () => console.log('[WS] Connected'))
+// ALWAYS log Socket.io messages INCLUDING token usage
+socket.on('connect', () => console.log('[Socket.io] Connected'))
 socket.on('vibecode_response', (data) => {
-  console.log('[WS] Vibecode:', data, 'trace:', data.trace_id)
+  console.log('[Socket.io] Vibecode:', data, 'trace:', data.trace_id)
+  if (data.token_usage) {
+    console.log('[Socket.io] Token usage:', data.token_usage)
+  }
 })
+socket.on('token_usage', (data) => {
+  console.log('[Socket.io] Real token usage:', data.usage, 'from:', data.agent)
+})
+
+// CRITICAL: ALL data comes from REAL OpenAI API calls
+// NEVER mock token usage or API responses in development
 ```
 
 ### State Management (Zustand)
@@ -139,34 +156,58 @@ interface AppState {
 }
 ```
 
-### No Hardcoded URLs
+### Environment-Aware URLs
 ```typescript
-// CORRECT
+// CORRECT - Always use environment variables
 const API_URL = import.meta.env.VITE_API_URL || ''
 
-// WRONG
-const API_URL = 'http://localhost:8000'
+// DEPLOYMENT SCENARIOS:
+// 1. Local development: VITE_API_URL=http://localhost:8000
+// 2. Remote development: VITE_API_URL=http://YOUR_SERVER_IP:8000
+// 3. Production: VITE_API_URL=https://your-api.fly.dev
+
+// WRONG - Hardcoded URLs break in different environments
+const API_URL = 'http://localhost:8000'  // Won't work remotely!
 ```
 
 ## Quality Checklist
 
 Before EVERY commit:
 - [ ] TypeScript type checking passes (`npm run typecheck`)
-- [ ] Tests pass (`npm test`)
-- [ ] E2E tests pass (`npx playwright test`)
+- [ ] Tests pass (`npm test`) - using REAL backend with OpenAI API
+- [ ] E2E tests pass (`npx playwright test`) - against REAL APIs
 - [ ] No hardcoded URLs
 - [ ] All components have proper type annotations
 - [ ] Zustand store and actions are fully typed
 - [ ] React Query hooks use typed generics
-- [ ] WebSocket debug logs working
-- [ ] shadcn components used consistently
+- [ ] Socket.io debug logs working with REAL token usage
+- [ ] shadcn components used consistently  
 - [ ] Mobile responsive (375px minimum)
 - [ ] All tests run HEADLESS
+- [ ] NO MOCKED OpenAI responses in development
+
+## Deployment Scenarios
+
+### Local Development
+- Backend: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
+- Frontend: `npm run dev` (runs on :5173)
+- Use `.env.local` with `VITE_API_URL=http://localhost:8000`
+
+### Remote Development Access
+- Backend: Same as local but accessible via server IP
+- Frontend: Use `.env.development` with `VITE_API_URL=http://YOUR_SERVER_IP:8000`
+- Replace `YOUR_SERVER_IP` with actual server IP (e.g., `192.168.1.100`)
+
+### Production (fly.io)
+- Backend: Deployed with volumes and PostgreSQL
+- Frontend: Use `.env.production` with `VITE_API_URL=https://your-api.fly.dev`
+- All connections over HTTPS
 
 ## Remember
 - Use shadcn/ui components everywhere
 - Vitest for integration tests (not Jest)
 - Playwright runs HEADLESS
-- Log ALL WebSocket messages with trace_id
+- Log ALL Socket.io messages with trace_id and token usage
 - Mobile-first responsive design
+- Environment variables for ALL URLs
 - No graph visualization in v0

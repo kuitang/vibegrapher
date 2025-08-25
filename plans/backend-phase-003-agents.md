@@ -19,6 +19,9 @@ Implement VibeCoder and Evaluator agents with patch submission workflow per spec
 - ✅ Evaluator reviews and approves/rejects patches
 - ✅ Loop runs max 3 iterations between agents
 - ✅ SQLiteSession persists conversation history
+- ✅ REAL OpenAI token usage logged for each agent call
+- ✅ Token usage streamed via Socket.io in real-time
+- ✅ NO MOCKED OpenAI responses - ALL calls use real API
 
 ## Integration Tests (pytest + httpx)
 ```python
@@ -29,6 +32,7 @@ from httpx import AsyncClient
 
 @pytest.mark.asyncio
 async def test_vibecode_patch_submission():
+    # CRITICAL: This test uses REAL OpenAI API with valid key
     service = VibecodeService()
     result = await service.vibecode(
         project_id="test",
@@ -38,6 +42,9 @@ async def test_vibecode_patch_submission():
     assert result.get("patch") is not None
     assert "spanish_agent" in result["patch"].lower()
     assert result.get("trace_id") is not None
+    # Verify REAL token usage was tracked
+    assert result.get("token_usage") is not None
+    assert result["token_usage"]["total_tokens"] > 0
 
 def test_vibecode_text_response():
     result = await service.vibecode(
@@ -65,8 +72,10 @@ def test_evaluator_iteration():
 OUTPUT_DIR="validated_test_evidence/phase-003"
 mkdir -p $OUTPUT_DIR
 
-# Test vibecode functionality
+# Test vibecode functionality with REAL OpenAI API
+# CRITICAL: Requires valid OPENAI_API_KEY in environment
 pytest tests/integration/test_phase_003_agents.py -v > $OUTPUT_DIR/test_output.log 2>&1
+echo "Real API token usage logged in test_output.log"
 
 # Test session creation and message sending
 PROJECT_ID="test-project-id"

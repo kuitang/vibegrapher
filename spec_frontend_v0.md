@@ -196,8 +196,11 @@ export const config = {
   wsUrl: import.meta.env.VITE_WS_URL || '',
 };
 
-// Never hardcode localhost
-// Works on any domain
+// Environment-specific examples:
+// Local dev: VITE_API_URL=http://localhost:8000
+// Remote dev: VITE_API_URL=http://192.168.1.100:8000 (your server IP)
+// Production: VITE_API_URL=https://your-api.fly.dev
+// Never hardcode URLs - always use environment variables
 ```
 
 ## Mobile Responsiveness with shadcn
