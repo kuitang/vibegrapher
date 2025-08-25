@@ -1,361 +1,172 @@
 # Frontend Agent Instructions for Vibegrapher v0
 
 ## Your Mission
-Build a React TypeScript interface for vibecoding OpenAI agents through natural language. No graph visualization in v0.
+Build a React TypeScript interface for vibecoding agents via natural language. No graph visualization in v0.
 
-## Setup Phase
+## Environment Setup
 
-### 1. Read Specifications
-- `SPEC_v0_DataModel_API.md` - Understand API contracts
-- `SPEC_v0_Frontend_REVISED.md` - UI requirements
-- Review shadcn/ui docs for components
+### Node Environment (REQUIRED)
+```bash
+# Use Node 18+ and npm
+node --version  # Should be 18.x or higher
+npm --version   # Should be 9.x or higher
 
-### 2. Environment Configuration
+# Install dependencies
+npm install
+
+# Development server
+npm run dev
+
+# Build for production
+npm run build
+```
+
+### Environment Configuration
 ```bash
 # .env (never commit this)
-REACT_APP_API_URL=http://your-backend:8000
-REACT_APP_WS_URL=ws://your-backend:8000
-PORT=3000
+VITE_API_URL=http://localhost:8000
+VITE_WS_URL=ws://localhost:8000
 ```
 
-**CRITICAL**: No hardcoded localhost! Works on any domain.
+## Project Organization
 
-### 3. Check Git Security (CRITICAL)
-```bash
-# Verify gitleaks is installed
-which gitleaks || echo "ERROR: Install gitleaks first!"
-
-# Verify pre-commit hook exists
-test -f .git/hooks/pre-commit || echo "ERROR: Set up pre-commit hook!"
-
-# If missing, set it up:
-echo 'gitleaks detect --source . --verbose' > .git/hooks/pre-commit
-chmod +x .git/hooks/pre-commit
-```
-
-**NEVER use `git add .`** - Add specific files only
-
-### 4. Create React App
-```bash
-npx create-react-app@latest frontend --template typescript
-cd frontend
-
-# Core dependencies
-npm install @tanstack/react-query zustand
-npm install axios socket.io-client
-npm install tailwindcss @monaco-editor/react
-
-# shadcn/ui
-npx shadcn-ui@latest init
-npx shadcn-ui@latest add button card input textarea toast
-
-# Playwright for testing
-npm install -D @playwright/test
-```
-
-### 5. Project Structure
+### Code Structure
 ```
 frontend/
 ├── src/
 │   ├── components/
-│   ├── pages/
-│   ├── hooks/
-│   ├── services/
-│   └── store/
+│   │   ├── layout/      # Layout components
+│   │   ├── vibecode/    # Vibecode panel components
+│   │   ├── code/        # Code viewer components
+│   │   └── test/        # Test runner components
+│   ├── hooks/           # Custom React hooks
+│   ├── services/        # API and WebSocket services
+│   └── store/           # Zustand state management
 ├── tests/
+│   ├── integration/     # Vitest + Testing Library
+│   ├── e2e/            # Playwright (HEADLESS)
+│   └── mocks/          # MSW mock servers
 └── validated_test_evidence/  # Test artifacts
 ```
 
-### 6. Hello World Test
-```typescript
-// App.tsx - Must connect to backend
-// Test with Playwright MCP
-// Must work before continuing
+### Testing Strategy (Vitest + Playwright)
+- **Integration**: Vitest + React Testing Library + MSW
+- **E2E**: Playwright running HEADLESS
+- **Mocks**: MSW for API mocking in development/tests
+- **Focus**: User flows and component interactions
+- **shadcn Testing**: shadcn components are built on Radix UI primitives. Test them by:
+  - Using `data-testid` attributes on shadcn component usage
+  - Testing by ARIA roles (e.g., `role="dialog"` for Dialog)
+  - Using accessible names (e.g., `getByRole('button', { name: /submit/i })`)
+  - shadcn doesn't provide test helpers - use standard React Testing Library
+
+### Running Tests
+```bash
+# IMPORTANT: Always use --watchAll=false for CI/automation
+npm test -- --watchAll=false
+
+# Run Vitest tests (headless by default)
+npm test -- --run  # Runs once and exits
+
+# Run specific test file
+npm test -- --run tests/integration/phase001-layout.test.tsx
+
+# Run E2E tests with Playwright (headless)
+npx playwright test
+
+# Run E2E with UI (for debugging only)
+npx playwright test --ui
+
+# Generate coverage report
+npm run test:coverage
+```
+
+## shadcn/ui Setup
+
+### Initial Setup (One-time)
+```bash
+# Create Vite app
+npm create vite@latest frontend -- --template react-ts
+cd frontend
+
+# Install and configure Tailwind + shadcn
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+npx shadcn-ui@latest init
+
+# Add ALL required components upfront
+npx shadcn-ui@latest add alert alert-dialog avatar badge button
+npx shadcn-ui@latest add card collapsible dialog drawer dropdown-menu
+npx shadcn-ui@latest add input popover progress scroll-area separator
+npx shadcn-ui@latest add sheet sonner table tabs textarea tooltip
 ```
 
 ## Implementation Phases
 
-### Phase 1: Core Layout & Session Management
-1. Basic routing (home, project page)
-2. Zustand store with session tracking
-3. React Query configuration
-4. Two-panel layout: Vibecode | Code
-5. **Tests**: Navigate between pages, verify layout
+See `plans/frontend-phase-*.md` for detailed requirements:
 
-**Validated Test Evidence**:
-```bash
-# After Phase 1 completion
-git add src/ && git commit -m "Phase 1: Core layout complete"
-HASH=$(git rev-parse HEAD)
+1. **Phase 001**: Core Layout → `plans/frontend-phase-001-layout.md`
+2. **Phase 002**: WebSocket Setup → `plans/frontend-phase-002-websocket.md`
+3. **Phase 003**: Session Management → `plans/frontend-phase-003-session.md`
+4. **Phase 004**: Code Viewer → `plans/frontend-phase-004-code-viewer.md`
+5. **Phase 005**: Diff Handling → `plans/frontend-phase-005-diff.md`
+6. **Phase 006**: Test Runner → `plans/frontend-phase-006-test-runner.md`
+7. **Phase 007**: Mobile Responsive → `plans/frontend-phase-007-mobile.md`
 
-# Create test evidence script
-cat > validated_test_evidence/${HASH}-phase1.sh << 'EOF'
-#!/bin/bash
-OUTPUT_DIR="validated_test_evidence/${HASH}-phase1"
-mkdir -p $OUTPUT_DIR
+## Critical Requirements
 
-# Run Playwright tests
-npx playwright test tests/phase1.spec.ts --reporter=html:$OUTPUT_DIR/playwright-report
-
-# Take screenshots of key pages
-npx playwright screenshot http://localhost:3000 $OUTPUT_DIR/home.png --viewport-size=1280,720
-npx playwright screenshot http://localhost:3000/project/test $OUTPUT_DIR/project.png --viewport-size=1280,720
-
-# Mobile views
-npx playwright screenshot http://localhost:3000 $OUTPUT_DIR/home-mobile.png --viewport-size=375,667
-npx playwright screenshot http://localhost:3000/project/test $OUTPUT_DIR/project-mobile.png --viewport-size=375,667
-
-# Resize screenshots if too large
-for img in $OUTPUT_DIR/*.png; do
-  convert "$img" -resize 50% "$img"
-done
-
-echo "Phase 1 validation complete"
-EOF
-
-chmod +x validated_test_evidence/${HASH}-phase1.sh
-./validated_test_evidence/${HASH}-phase1.sh
-
-# Commit evidence
-git add validated_test_evidence/
-git commit -m "Phase 1: Validated test evidence"
-```
-
-### Phase 2: WebSocket Debug Setup
-**CRITICAL - Do this early!**
+### WebSocket Debug Logging
 ```typescript
-// Debug all WebSocket messages
-socket.on('connect', () => console.log('[WS] Connected'));
-socket.on('disconnect', () => console.log('[WS] Disconnected'));
-socket.on('message', (data) => console.log('[WS]', data));
-socket.on('vibecode_response', (data) => console.log('[WS] Vibecode:', data, 'trace:', data.trace_id));
+// ALWAYS log WebSocket messages
+socket.on('connect', () => console.log('[WS] Connected'))
+socket.on('vibecode_response', (data) => {
+  console.log('[WS] Vibecode:', data, 'trace:', data.trace_id)
+})
 ```
 
-### Phase 3: Session & Message Flow
-1. Start session button/logic
-2. Track current session in store
-3. Message history display
-4. Input field for prompts
-5. **Tests**: Start session, send message, see response
-
-**Validated Test Evidence**:
-```bash
-# After Phase 3 completion
-git commit -m "Phase 3: Session management complete"
-HASH=$(git rev-parse HEAD)
-
-cat > validated_test_evidence/${HASH}-phase3.sh << 'EOF'
-#!/bin/bash
-OUTPUT_DIR="validated_test_evidence/${HASH}-phase3"
-mkdir -p $OUTPUT_DIR
-
-# Test session flow
-npx playwright test tests/session.spec.ts --reporter=json:$OUTPUT_DIR/test-results.json
-
-# Capture WebSocket logs (from browser console)
-npx playwright test tests/websocket-debug.spec.ts > $OUTPUT_DIR/websocket.log 2>&1
-
-# Screenshot conversation
-npx playwright screenshot http://localhost:3000/project/test \
-  --selector='.vibecode-panel' \
-  $OUTPUT_DIR/conversation.png \
-  --viewport-size=800,600
-
-# Verify session state in localStorage
-npx playwright evaluate "localStorage.getItem('session')" > $OUTPUT_DIR/session-state.txt
-
-echo "Phase 3 validation complete"
-EOF
-
-chmod +x validated_test_evidence/${HASH}-phase3.sh
-./validated_test_evidence/${HASH}-phase3.sh
-git add validated_test_evidence/
-git commit -m "Phase 3: Validated test evidence"
-```
-
-### Phase 4: Code Viewer
-1. Monaco editor (read-only)
-2. Python syntax highlighting
-3. Refresh on code changes
-4. **Tests**: Code displays, updates on changes
-
-### Phase 5: Diff Handling
-1. DiffViewer with side-by-side
-2. Accept/Reject buttons
-3. On accept, refresh code view
-4. Show trace_id in debug info
-5. **Tests**: Accept diff, verify code updates
-
-### Phase 6: Test Runner
-1. List test cases
-2. Add/edit/delete tests
-3. Run button with loading state
-4. Show results with trace_id
-5. **Tests**: Add test, run it, see result
-
-### Phase 7: Mobile Responsive
-1. Stack panels vertically
-2. Tab navigation between panels
-3. Touch-friendly inputs
-4. **Tests**: Works at 375px width
-
-**Final Validated Test Evidence**:
-```bash
-# After all phases complete
-git commit -m "v0 Complete: All phases implemented"
-HASH=$(git rev-parse HEAD)
-
-cat > validated_test_evidence/${HASH}-final.sh << 'EOF'
-#!/bin/bash
-OUTPUT_DIR="validated_test_evidence/${HASH}-final"
-mkdir -p $OUTPUT_DIR
-
-# Run ALL Playwright tests
-npx playwright test --reporter=html:$OUTPUT_DIR/full-report
-
-# E2E test with screenshots
-npx playwright test tests/e2e.spec.ts --screenshot=on --video=on \
-  --output=$OUTPUT_DIR/e2e-artifacts
-
-# Lighthouse audit
-npx lighthouse http://localhost:3000 \
-  --output=html \
-  --output-path=$OUTPUT_DIR/lighthouse.html \
-  --only-categories=performance,accessibility
-
-# Bundle size analysis
-npm run build
-ls -lh build/static/js/*.js > $OUTPUT_DIR/bundle-sizes.txt
-
-# Final screenshots (desktop and mobile)
-for page in "" "project/test"; do
-  npx playwright screenshot http://localhost:3000/$page \
-    $OUTPUT_DIR/desktop-$(echo $page | tr '/' '-').png \
-    --viewport-size=1280,720
-  
-  npx playwright screenshot http://localhost:3000/$page \
-    $OUTPUT_DIR/mobile-$(echo $page | tr '/' '-').png \
-    --viewport-size=375,667
-done
-
-# Resize large images
-for img in $OUTPUT_DIR/*.png; do
-  [ -f "$img" ] && convert "$img" -resize 800x600\> "$img"
-done
-
-echo "Final validation complete - v0 ready!"
-EOF
-
-chmod +x validated_test_evidence/${HASH}-final.sh
-./validated_test_evidence/${HASH}-final.sh
-git add validated_test_evidence/
-git commit -m "v0: Final validated test evidence"
-```
-
-## API Integration with Sessions
-
+### State Management (Zustand)
 ```typescript
-// Session management in store
 interface AppState {
-  currentSession: { id: string; type: 'global' | 'node' } | null;
+  project: Project | null
+  currentSession: SessionInfo | null
+  messages: Message[]
   
-  startSession: async (projectId: string, nodeId?: string) => {
-    const response = await api.post(`/projects/${projectId}/sessions`, { node_id: nodeId });
-    set({ currentSession: response.data });
-    return response.data;
-  };
-  
-  sendMessage: async (prompt: string) => {
-    const { currentSession } = get();
-    if (!currentSession) throw new Error('No active session');
-    
-    const response = await api.post(`/sessions/${currentSession.id}/messages`, { prompt });
-    console.log('[API] Message sent, trace:', response.data.trace_id);
-    return response.data;
-  };
-  
-  clearSession: async () => {
-    const { currentSession } = get();
-    if (currentSession) {
-      await api.delete(`/sessions/${currentSession.id}`);
-      set({ currentSession: null });
-    }
-  };
+  actions: {
+    startSession: (projectId: string, nodeId?: string) => Promise<void>
+    sendMessage: (prompt: string) => Promise<void>
+    clearSession: () => Promise<void>
+  }
 }
 ```
 
-## WebSocket Handling with Trace
-
+### No Hardcoded URLs
 ```typescript
-useEffect(() => {
-  const socket = io(config.wsUrl);
-  
-  socket.on('vibecode_response', (data) => {
-    console.log('[WS] Vibecode response:', data);
-    console.log('[WS] Trace ID:', data.trace_id);
-    // Update messages
-    // Show diff if present
-  });
-  
-  socket.on('test_completed', (data) => {
-    console.log('[WS] Test completed:', data);
-    console.log('[WS] Test trace:', data.trace_id);
-    // Update test results
-  });
-  
-  return () => socket.disconnect();
-}, []);
-```
+// CORRECT
+const API_URL = import.meta.env.VITE_API_URL || ''
 
-## Testing Strategy
-
-Use Playwright MCP for all tests:
-
-```typescript
-test('session workflow', async ({ page }) => {
-  await page.goto('http://localhost:3000/project/123');
-  
-  // Start global session
-  await page.click('text=Start Session');
-  
-  // Send vibecode message
-  await page.fill('.prompt-input', 'Add a Spanish agent');
-  await page.press('.prompt-input', 'Enter');
-  
-  // Wait for diff
-  await page.waitForSelector('.diff-viewer');
-  
-  // Verify trace ID in console
-  const consoleLogs = [];
-  page.on('console', msg => consoleLogs.push(msg.text()));
-  await expect(consoleLogs.some(log => log.includes('trace:'))).toBeTruthy();
-  
-  // Accept changes
-  await page.click('text=Accept');
-  
-  // Clear session
-  await page.click('text=Clear Session');
-});
+// WRONG
+const API_URL = 'http://localhost:8000'
 ```
 
 ## Quality Checklist
 
 Before EVERY commit:
-- [ ] Tests pass
+- [ ] TypeScript type checking passes (`npm run typecheck`)
+- [ ] Tests pass (`npm test`)
+- [ ] E2E tests pass (`npx playwright test`)
 - [ ] No hardcoded URLs
+- [ ] All components have proper type annotations
+- [ ] Zustand store and actions are fully typed
+- [ ] React Query hooks use typed generics
 - [ ] WebSocket debug logs working
-- [ ] Session management correct
-- [ ] Mobile responsive
-- [ ] Loading states present
-- [ ] Error handling works
-- [ ] Used `git add <specific files>`
-- [ ] Validated test evidence created for milestone
+- [ ] shadcn components used consistently
+- [ ] Mobile responsive (375px minimum)
+- [ ] All tests run HEADLESS
 
 ## Remember
-- No graph visualization in v0
-- Log all WebSocket messages with trace_id
-- Frontend manages session state
+- Use shadcn/ui components everywhere
+- Vitest for integration tests (not Jest)
+- Playwright runs HEADLESS
+- Log ALL WebSocket messages with trace_id
 - Mobile-first responsive design
-- Test with Playwright MCP
-- Validated test evidence after each phase
-- Small, working commits
+- No graph visualization in v0

@@ -4,11 +4,11 @@
 React TypeScript interface for vibecoding agents via natural language. No graph visualization in v0.
 
 ## Technology Stack
-- React 18 + TypeScript
-- Tailwind CSS + shadcn/ui
-- Zustand + React Query
-- Monaco Editor for diffs
-- Socket.io for real-time
+- React 18 + TypeScript + Vite
+- Tailwind CSS + shadcn/ui components
+- Zustand (state) + React Query (data fetching)
+- Monaco Editor (code display)
+- Socket.io-client (real-time updates with Socket.io)
 
 ## Layout (v0 - Simple)
 ```
@@ -31,7 +31,7 @@ React TypeScript interface for vibecoding agents via natural language. No graph 
 └────────────────────────────────────┘
 ```
 
-## Core Components (Signatures Only)
+## Core Components with shadcn/ui
 
 ### VibecodePanel
 ```typescript
@@ -39,13 +39,15 @@ interface VibecodePanelProps {
   projectId: string;
 }
 
-// Manages sessions internally
-// Start Session button (global or node-specific)
-// Shows conversation history
-// Input field for prompts
-// Diff viewer when changes proposed
-// Accept/Reject buttons
-// Clear Session button
+// shadcn components used:
+// - Card: Main panel container
+// - Button: "Start Session", "Clear Session", "Accept", "Reject"
+// - ScrollArea: Conversation history scrollable area
+// - Textarea: Message input with auto-resize
+// - Avatar: User/assistant message icons
+// - Separator: Between messages
+// - Badge: Session status indicator
+// - Tooltip: Hover info for trace IDs
 ```
 
 ### CodeViewer
@@ -55,9 +57,11 @@ interface CodeViewerProps {
   highlightNode?: string;
 }
 
-// Monaco editor in read-only mode
-// Syntax highlighting for Python
-// Refresh on WebSocket updates
+// shadcn components used:
+// - Card: Container for code editor
+// - Tabs/TabsList/TabsTrigger: Switch between files
+// - Badge: File status indicators
+// Monaco editor for actual code display
 ```
 
 ### TestRunner
@@ -66,11 +70,15 @@ interface TestRunnerProps {
   projectId: string;
 }
 
-// List test cases
-// Add/edit/delete tests
-// Run button with progress
-// Results with pass/fail
-// Shows trace_id in debug mode
+// shadcn components used:
+// - Card: Test panel container
+// - Table: Display test cases
+// - Button: "Add Test", "Run", "Delete"
+// - Dialog: Add/edit test modal
+// - Progress: Test run progress
+// - Alert: Test results (success/error)
+// - Collapsible: Expandable test output
+// - Badge: Pass/fail status
 ```
 
 ### DiffViewer
@@ -83,9 +91,13 @@ interface DiffViewerProps {
   traceId?: string;
 }
 
-// Side-by-side diff
-// Accept/Reject controls
-// Debug info with trace_id
+// shadcn components used:
+// - Card: Diff container
+// - Tabs: Switch between unified/split view
+// - Button: "Accept" (green), "Reject" (red)
+// - AlertDialog: Confirm accept/reject
+// - Tooltip: Show trace_id on hover
+// Monaco Diff Editor for actual diff display
 ```
 
 ## State Management
@@ -118,8 +130,8 @@ useTestCases(projectId: string)
 ## API Service
 
 ```typescript
-// No hardcoded URLs
-const API_BASE = process.env.REACT_APP_API_URL || '';
+// No hardcoded URLs - Using Vite environment variables
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 class ApiService {
   async startSession(projectId: string, nodeId?: string)
@@ -130,13 +142,23 @@ class ApiService {
 }
 ```
 
-## WebSocket Integration
+## Socket.io Integration
 
 ```typescript
+import { io, Socket } from 'socket.io-client';
+
 class WebSocketService {
+  private socket: Socket;
+  
   connect(projectId: string) {
+    const WS_URL = import.meta.env.VITE_WS_URL || '';
+    this.socket = io(WS_URL, { 
+      path: '/socket.io/',
+      query: { project_id: projectId }
+    });
+    
     // IMPORTANT: Log all messages for debugging
-    this.socket.on('connect', () => console.log('[WS] Connected'));
+    this.socket.on('connect', () => console.log('[Socket.io] Connected'));
     
     this.socket.on('vibecode_response', (data) => {
       console.log('[WS] Vibecode response:', data);
@@ -151,7 +173,7 @@ class WebSocketService {
       // Update test results
     });
     
-    this.socket.on('error', (e) => console.error('[WS] Error:', e));
+    this.socket.on('error', (e) => console.error('[Socket.io] Error:', e));
   }
 }
 ```
@@ -170,24 +192,27 @@ class WebSocketService {
 ```typescript
 // src/config.ts
 export const config = {
-  apiUrl: process.env.REACT_APP_API_URL || '',
-  wsUrl: process.env.REACT_APP_WS_URL || '',
+  apiUrl: import.meta.env.VITE_API_URL || '',
+  wsUrl: import.meta.env.VITE_WS_URL || '',
 };
 
 // Never hardcode localhost
 // Works on any domain
 ```
 
-## Mobile Responsiveness
-- Stack panels vertically on mobile
-- Tabs to switch between Vibecode/Code/Tests
-- Touch-friendly buttons
+## Mobile Responsiveness with shadcn
+- Sheet component for mobile navigation
+- Tabs component to switch panels on mobile
+- Drawer for bottom-sheet patterns
+- DropdownMenu for mobile-friendly actions
+- All shadcn components are touch-optimized
 - Minimum 375px width support
 
-## Error Handling
+## Error Handling with shadcn
 - Error boundaries on all major components
-- Toast notifications for errors
-- Retry mechanisms for failed requests
+- Sonner (shadcn toast) for notifications
+- Alert component for inline errors
+- AlertDialog for critical errors
 - Show trace_id in error messages for debugging
 
 ## Testing

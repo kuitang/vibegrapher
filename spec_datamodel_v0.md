@@ -64,7 +64,7 @@ interface TestRun {
   error?: string;
   started_at: timestamp;
   completed_at?: timestamp;
-  openai_trace_id?: string;
+  trace_id?: string;  // Consistent naming
 }
 ```
 
@@ -247,5 +247,5 @@ class TestRun(Base):
     error = Column(Text, nullable=True)
     started_at = Column(DateTime, server_default=func.now())
     completed_at = Column(DateTime, nullable=True)
-    openai_trace_id = Column(String, nullable=True)
+    trace_id = Column(String, nullable=True)  # Consistent naming
 ```

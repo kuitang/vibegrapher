@@ -15,169 +15,128 @@ FastAPI backend for vibecoding OpenAI Agents SDK workflows via natural language.
 
 ### 1. AST Parser Service
 ```python
+# Define the AgentNode class
+class AgentNode:
+    name: str
+    line_start: int
+    line_end: int
+    children: List[str]  # Names of child agents if any
+
 class ASTParserService:
-    async def parse_agents(code: str) -> List[AgentNode]
-        # Parse Python AST, extract Agent() calls
-        # Return node info with line numbers
-    
-    async def update_node(code: str, node_id: str, new_def: str) -> str
-        # Replace specific agent in code
+    async def parse_agents(code: str) -> List[AgentNode]  # Extract Agent() calls with line numbers
+    async def update_node(code: str, node_id: str, new_def: str) -> str  # Replace specific agent
 ```
 
 ### 2. All OpenAI Agents (app/agents/all_agents.py)
 ```python
-from agents import Agent, Runner, SQLiteSession, function_tool
-from pydantic import BaseModel
-
-# IMPORTANT: MUST use gpt-5 series models
+# IMPORTANT: MUST use gpt-5 series models - THESE ARE REAL MODELS, NOT PLACEHOLDERS!
+# DO NOT USE gpt-4o or older models!
 MODEL_CONFIGS = {
-    "THINKING_MODEL": "gpt-5-thinking",  # For complex reasoning
-    "SMALL_MODEL": "gpt-5-mini"          # For simple tasks
+    "THINKING_MODEL": "gpt-5-thinking",  # REAL MODEL - USE THIS!
+    "SMALL_MODEL": "gpt-5-mini"  # REAL MODEL - USE THIS!
 }
 
-class CodeOutput(BaseModel):
-    code: str           # Python code ONLY, no markdown
-    explanation: str    # Explanation of changes
+# Validation functions
+def check_syntax(code: str) -> dict  # Returns {valid: bool, error?: str, line?: int}
+def check_patch_applies(original: str, patch: str) -> dict  # Test patch with dry-run
+def apply_patch(original: str, patch: str) -> str  # Actually apply patch
 
+# Import from OpenAI SDK
+from openai_sdk import Agent, Runner, function_tool, SQLiteSession
+from pydantic import BaseModel
+
+# Define EvaluationResult Pydantic model
 class EvaluationResult(BaseModel):
     approved: bool
     reasoning: str
-    suggestions: List[str]
 
-# Deterministic syntax checker (NOT an agent)
-def check_syntax(code: str) -> dict:
-    """Returns Python's syntax error or success"""
-    try:
-        compile(code, '<string>', 'exec')
-        return {"valid": True}
-    except SyntaxError as e:
-        return {
-            "valid": False,
-            "error": str(e),
-            "line": e.lineno
-        }
-
-# Tools for vibecoder
+# Tool for VibeCoder - validates and submits patches
 @function_tool
-async def validate_syntax(code: str) -> dict:
-    return check_syntax(code)
+async def submit_patch(ctx, patch: str, description: str) -> dict:
+    # 1. Check patch applies cleanly to current_code from context
+    # 2. Apply patch to get new_code
+    # 3. Check syntax of new_code
+    # 4. If all valid, store in ctx.state for evaluator
+    # 5. Return {status: "submitted", handoff_to_evaluator: True}
 
-@function_tool  
-async def read_docs(topic: str) -> str:
-    # Search OpenAI SDK documentation
-    pass
-
-# Main vibecoder agent
+# VibeCoder agent - TWO modes:
+# 1. submit_patch() -> triggers evaluator loop
+# 2. return text -> direct response to user
 vibecoder_agent = Agent(
     name="Vibecoder",
     model=MODEL_CONFIGS["THINKING_MODEL"],
-    instructions="""You generate Python code for OpenAI Agents SDK.
-    IMPORTANT: Output ONLY valid Python code in the 'code' field.
-    No markdown, no comments outside code, no explanations in code field.
-    Put explanations in the 'explanation' field.""",
-    tools=[validate_syntax, read_docs],
-    output_type=CodeOutput,
-    handoffs=["syntax_fixer", "evaluator"]
-)
-
-# Syntax fixer for handoff
-syntax_fixer_agent = Agent(
-    name="SyntaxFixer",
-    model=MODEL_CONFIGS["SMALL_MODEL"],
-    instructions="Fix Python syntax errors. Return valid code only.",
-    output_type=CodeOutput
+    instructions="Generate patches OR answer questions...",
+    tools=[submit_patch]
 )
 
 # Evaluator agent
 evaluator_agent = Agent(
     name="Evaluator",
     model=MODEL_CONFIGS["THINKING_MODEL"],
-    instructions="Evaluate if code meets requirements.",
-    output_type=EvaluationResult
+    instructions="Evaluate patches for quality/correctness...",
+    output_type=EvaluationResult  # {approved: bool, reasoning: str}
 )
 
 class VibecodeService:
-    def __init__(self):
-        self.sessions = {}  # session_key -> SQLiteSession
-    
-    async def get_or_create_session(self, project_id: str, node_id: str = None):
-        session_key = f"{project_id}_{node_id}" if node_id else project_id
-        if session_key not in self.sessions:
-            self.sessions[session_key] = SQLiteSession(session_key)
-        return self.sessions[session_key]
-    
-    async def clear_session(self, session_key: str):
-        if session_key in self.sessions:
-            await self.sessions[session_key].clear_session()
-            del self.sessions[session_key]
-    
-    async def vibecode(self, project_id: str, prompt: str, node_id: str = None):
-        session = await self.get_or_create_session(project_id, node_id)
+    async def vibecode(project_id, prompt, current_code, node_id=None):
+        # Create session key with correct format
+        session_key = f"project_{project_id}_node_{node_id}" if node_id else f"project_{project_id}"
+        session = SQLiteSession(session_key)  # From OpenAI SDK
         
-        # Run with session to maintain history
-        result = await Runner.run(
-            vibecoder_agent,
-            prompt,
-            session=session
-        )
+        for iteration in range(MAX_ITERATIONS=3):
+            # Run VibeCoder
+            if iteration == 0:
+                input = prompt
+            else:
+                input = f"Rejected. Feedback: {evaluator_feedback}. Original: {prompt}"
+            
+            # Using OpenAI SDK's Runner
+            vibecoder_result = await Runner.run(
+                vibecoder_agent, input, 
+                session=session, 
+                context={"current_code": current_code}
+            )
+            
+            # Check if patch submitted
+            if not vibecoder_result.context.state.get("submitted_patch"):
+                return {"response": vibecoder_result.final_output}  # Text response
+            
+            # Run Evaluator (also using OpenAI SDK's Runner)
+            evaluator_result = await Runner.run(evaluator_agent, patch_details, session=session)
+            
+            if evaluator_result.approved:
+                return {"patch": submitted_patch, "accepted": True}
+            else:
+                evaluator_feedback = evaluator_result.reasoning
         
-        # Extract trace_id if available
-        trace_id = getattr(result, 'trace_id', None)
-        
-        return result, trace_id
+        return {"error": "Max iterations reached"}
 ```
 
-### 3. Git Service (using pygit2)
+### 3. Git Service
 ```python
-import pygit2
-
 class GitService:
+    # Using pygit2 for repository operations
     async def init_repository(project_id: str) -> str
     async def commit_changes(project_id: str, message: str) -> str
     async def get_current_code(project_id: str) -> str
     async def apply_diff(project_id: str, diff: str) -> str
 ```
-```
 
-### 6. Sandbox Service
+### 4. Sandbox Service
 ```python
 class SandboxService:
     async def run_test(code: str, test_input: str) -> TestResult
-        # Subprocess with resource limits
-        # timeout=30s, memory=512MB
+    # Subprocess with timeout=30s, memory=512MB
 ```
 
-## Database Models (SQLAlchemy)
+## Database Models
 
 ```python
-class Project(Base):
-    id: str (UUID)
-    name: str
-    repository_path: str
-    owner_id: str
-    created_at: datetime
-    
-class VibecodeSession(Base):
-    id: str (UUID) 
-    project_id: str (FK)
-    node_id: str (nullable)
-    type: str  # 'global' or 'node'
-    status: str
-    openai_session_key: str  # Links to SQLiteSession
-    
-class ConversationMessage(Base):
-    id: str (UUID)
-    session_id: str (FK)
-    role: str
-    content: str
-    openai_response: JSON  # Full response data
-    timestamp: datetime
-    
-class TestCase(Base):
-    id: str (UUID)
-    project_id: str (FK)
-    input_prompt: str
-    expected_behavior: str
+# SQLAlchemy models (see spec_datamodel_v0.md for full schemas)
+class Project(Base): ...  # id, name, repository_path, owner_id
+class VibecodeSession(Base): ...  # Links to OpenAI SQLiteSession
+class ConversationMessage(Base): ...  # Stores full openai_response JSON
+class TestCase(Base): ...  # Test definitions
 ```
 
 ## API Endpoints (Simplified)
@@ -194,129 +153,94 @@ POST /tests                     - Create test case
 POST /tests/:id/run            - Run single test
 ```
 
-### Start Session Endpoint
+### Key Endpoint: Start Session
 ```python
 @app.post("/projects/{project_id}/sessions")
-async def start_session(
-    project_id: str,
-    request: StartSessionRequest,  # {node_id?: str}
-    db: AsyncSession = Depends(get_db)
-):
-    # Create or get existing session
-    session_type = "node" if request.node_id else "global"
-    session_key = f"{project_id}_{request.node_id}" if request.node_id else project_id
-    
-    # Check if session exists
-    existing = await db.query(VibecodeSession).filter_by(
-        project_id=project_id,
-        node_id=request.node_id
-    ).first()
-    
-    if existing:
-        return {"session_id": existing.id, "type": session_type}
-    
-    # Create new session
-    session = VibecodeSession(
-        project_id=project_id,
-        node_id=request.node_id,
-        type=session_type,
-        openai_session_key=session_key
-    )
-    db.add(session)
-    await db.commit()
-    
-    return {"session_id": session.id, "type": session_type}
+async def start_session(project_id: str, request: StartSessionRequest):
+    # IMPORTANT: Creates/retrieves OpenAI SQLiteSession with correct format
+    session_key = f"project_{project_id}_node_{request.node_id}" if request.node_id else f"project_{project_id}"
+    # Store session_key in VibecodeSession.openai_session_key
+    # Return session_id for frontend tracking
 ```
 
-### Send Message Endpoint
+### Key Endpoint: Send Message
 ```python
 @app.post("/sessions/{session_id}/messages")
-async def send_message(
-    session_id: str,
-    request: MessageRequest,  # {prompt: str}
-    db: AsyncSession = Depends(get_db)
-):
-    # Get session
-    session = await db.get(VibecodeSession, session_id)
+async def send_message(session_id: str, request: MessageRequest):
+    # Get current code from project
+    current_code = await git_service.get_current_code(session.project_id)
     
-    # Run vibecoder with persistent session
-    result, trace_id = await vibecode_service.vibecode(
+    # Run vibecoder with OpenAI session (may loop with evaluator)
+    result = await vibecode_service.vibecode(
         session.project_id,
         request.prompt,
+        current_code,  # Pass current code for patching
         session.node_id
     )
     
-    # Store message with full OpenAI response
+    # CRITICAL: Store FULL OpenAI response
     message = ConversationMessage(
         session_id=session_id,
-        content=request.prompt,
-        role="user",
-        openai_response=result.to_dict()
+        openai_response=result  # Store everything!
     )
-    db.add(message)
-    await db.commit()
     
-    # Broadcast via WebSocket
-    await ws_manager.broadcast(session.project_id, {
+    # WebSocket broadcast with trace_id
+    await ws_manager.broadcast({
         "type": "vibecode_response",
-        "session_id": session_id,
-        "diff": result.code if hasattr(result, 'code') else None,
-        "trace_id": trace_id
+        "patch": result.get("patch"),
+        "trace_id": result.get("trace_id")
     })
-    
-    return {
-        "message_id": message.id,
-        "diff": result.code if hasattr(result, 'code') else None,
-        "status": "success",
-        "trace_id": trace_id
-    }
 ```
 
-### Clear Session Endpoint
+### Other Endpoints
 ```python
-@app.delete("/sessions/{session_id}")
-async def clear_session(session_id: str, db: AsyncSession = Depends(get_db)):
-    session = await db.get(VibecodeSession, session_id)
-    
-    # Clear OpenAI session
-    await vibecode_service.clear_session(session.openai_session_key)
-    
-    # Delete messages
-    await db.execute(
-        delete(ConversationMessage).where(
-            ConversationMessage.session_id == session_id
-        )
-    )
-    
-    # Reset session status
-    session.status = "cleared"
-    await db.commit()
-    
-    return {"status": "cleared"}
+@app.delete("/sessions/{session_id}")  # Clear OpenAI SQLiteSession
+@app.get("/messages/{id}/full")  # Return full openai_response JSON
+@app.post("/tests/{id}/run")  # Run test in sandbox
 ```
 
 ## WebSocket Manager
 ```python
 class ConnectionManager:
-    async def connect(websocket, project_id: str, user_id: str)
-    async def broadcast(project_id: str, message: dict)
-    async def disconnect(websocket)
+    # Standard WebSocket connection management
+    async def broadcast(project_id: str, message: dict)  # Include trace_id in all messages
 ```
 
 ## Configuration
 ```python
-# app/config.py
+from pydantic import BaseSettings
+
 class Settings(BaseSettings):
+    # Load from .env
     database_url: str = "sqlite:///./vibegrapher.db"
+    test_database_url: str = "sqlite:///./test_vibegrapher.db"
     openai_api_key: str
-    cors_origins: List[str] = ["*"]  # Allow all origins
-    media_path: str = "./media"
+    cors_origins: str = "*"
+    media_path: str = "media"
+    host: str = "0.0.0.0"
+    port: int = 8000  # Standard uvicorn port
     
     class Config:
         env_file = ".env"
+```
+
+## Management Commands
+
+### Database Reset Command
+```python
+# Create management directory: mkdir -p app/management
+# File: app/management/reset_db.py
+async def reset_and_seed_database():
+    # 1. Drop all tables (CASCADE)
+    # 2. Create all tables from Base.metadata
+    # 3. Create sample project with git repo
+    # 4. Add sample agents code
+    # 5. Add test cases
+    # Usage: python -m app.management.reset_db
 ```
 
 ## Testing
 - Unit tests for AST parser
 - Integration tests for vibecode flow
 - E2E test: Create project → Vibecode → Run test
+- Management command test: Reset DB → Verify sample data
