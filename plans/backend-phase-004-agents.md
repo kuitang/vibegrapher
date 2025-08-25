@@ -1,4 +1,4 @@
-# Backend Phase 003: OpenAI Agents Integration
+# Backend Phase 004: OpenAI Agents Integration
 
 ## Objectives
 Implement VibeCoder and Evaluator agents with patch submission workflow per spec_backend_v0.md.
@@ -25,7 +25,7 @@ Implement VibeCoder and Evaluator agents with patch submission workflow per spec
 
 ## Integration Tests (pytest + httpx)
 ```python
-# tests/integration/test_phase_003_agents.py
+# tests/integration/test_phase_004_agents.py
 import pytest
 import httpx
 from httpx import AsyncClient
@@ -72,13 +72,13 @@ def test_evaluator_iteration():
 - Verify SQLiteSession files are created and token usage is logged
 - Test both patch submission and text response modes
 - Confirm evaluator loop works with max 3 iterations
-- Save test evidence in validated_test_evidence/phase-003/
+- Save test evidence in validated_test_evidence/phase-004/
 
 ## Key Code Structure (from spec_backend_v0.md)
 ```python
 # app/agents/all_agents.py - ALL agents in ONE file
 # IMPORTANT: gpt-5-thinking and gpt-5-mini are REAL MODELS - USE THEM!
-from openai_sdk import Agent, Runner, function_tool, SQLiteSession
+from agents import Agent, Runner, function_tool, SQLiteSession
 from pydantic import BaseModel
 
 MODEL_CONFIGS = {
@@ -133,5 +133,5 @@ class VibecodeService:
 ## Deliverables
 - [ ] All agents in app/agents/all_agents.py
 - [ ] VibecodeService in app/services/vibecode_service.py
-- [ ] Tests in tests/integration/test_phase_003_agents.py
-- [ ] Validation evidence in validated_test_evidence/phase-003/
+- [ ] Tests in tests/integration/test_phase_004_agents.py
+- [ ] Validation evidence in validated_test_evidence/phase-004/

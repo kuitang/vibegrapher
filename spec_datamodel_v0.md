@@ -96,6 +96,14 @@ DELETE /tests/:id               - Delete test
   timestamp: string;    // ISO timestamp
 }
 
+// Event: 'heartbeat' - Keepalive for debug logging (every 30s)
+{
+  server_time: string;  // ISO timestamp
+  project_id?: string;
+  status: 'alive';
+  connections: number;  // Number of active connections
+}
+
 // Event: 'disconnect'
 // (handled automatically by Socket.io)
 ```

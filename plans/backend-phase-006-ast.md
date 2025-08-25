@@ -1,4 +1,4 @@
-# Backend Phase 005: AST Parser
+# Backend Phase 006: AST Parser
 
 ## Objectives
 Parse Python code to extract and update Agent() definitions.
@@ -67,11 +67,11 @@ def test_multiline_agent():
 ## Validation Script
 ```bash
 #!/bin/bash
-OUTPUT_DIR="validated_test_evidence/phase-005"
+OUTPUT_DIR="validated_test_evidence/phase-006"
 mkdir -p $OUTPUT_DIR
 
 # Run AST parser tests
-pytest tests/integration/test_phase_005_ast.py -v > $OUTPUT_DIR/test_output.log 2>&1
+pytest tests/integration/test_phase_006_ast.py -v > $OUTPUT_DIR/test_output.log 2>&1
 
 # Test with real agent code
 python -c "
@@ -90,6 +90,6 @@ echo "Phase 005 validation complete"
 
 ## Deliverables
 - [ ] ASTParserService in app/services/ast_parser.py
-- [ ] Tests in tests/integration/test_phase_005_ast.py
+- [ ] Tests in tests/integration/test_phase_006_ast.py
 - [ ] Sample agent files for testing
-- [ ] Validation evidence in validated_test_evidence/phase-005/
+- [ ] Validation evidence in validated_test_evidence/phase-006/

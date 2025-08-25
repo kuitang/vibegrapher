@@ -8,15 +8,18 @@ Set up React app with TypeScript, shadcn components and basic layout with strict
 2. Basic routing (home, project page) with typed routes
 3. Zustand store with typed state and actions
 4. React Query configuration with typed queries
-5. Two-panel layout using shadcn Card components
+5. Layout: Left panel (full height) + Right panel (split top/bottom) using shadcn Card
 6. Set up shadcn theme and dark mode toggle
 
 ## Acceptance Criteria
 - ✅ TypeScript strict mode enabled with no errors
 - ✅ `npm run typecheck` passes with no errors
 - ✅ Home page loads at / with project list
-- ✅ Project page at /project/{id} shows two panels
-- ✅ shadcn Card components used for panels
+- ✅ Project page at /project/{id} shows correct layout:
+  - Left: Vibecode panel (full height)
+  - Right top: Code viewer panel
+  - Right bottom: Test results panel
+- ✅ shadcn Card components used for all three panels
 - ✅ Dark mode toggle functional
 - ✅ Zustand store initialized with typed empty state
 - ✅ React Query provider wraps app with typed hooks
@@ -30,7 +33,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from '../src/App'
 
 describe('Phase 001: Core Layout', () => {
-  test('renders two-panel layout with shadcn Cards', () => {
+  test('renders three-panel layout with shadcn Cards', () => {
     render(
       <BrowserRouter>
         <App />
@@ -42,11 +45,12 @@ describe('Phase 001: Core Layout', () => {
     
     // Verify Card panels
     const cards = screen.getAllByRole('article')  // shadcn Cards have article role
-    expect(cards).toHaveLength(2)
+    expect(cards).toHaveLength(3)  // 3 panels: vibecode, code, test
     
     // Verify panel test IDs
     expect(screen.getByTestId('vibecode-panel')).toBeInTheDocument()
     expect(screen.getByTestId('code-panel')).toBeInTheDocument()
+    expect(screen.getByTestId('test-panel')).toBeInTheDocument()
   })
   
   test('dark mode toggle works', async () => {
@@ -77,13 +81,14 @@ test.describe('Phase 001: Layout E2E', () => {
   test('full layout renders with shadcn components', async ({ page }) => {
     await page.goto('http://localhost:5173/project/test')
     
-    // Verify two Card panels
+    // Verify three Card panels
     await expect(page.locator('[data-testid="vibecode-panel"]')).toBeVisible()
     await expect(page.locator('[data-testid="code-panel"]')).toBeVisible()
+    await expect(page.locator('[data-testid="test-panel"]')).toBeVisible()
     
     // Verify shadcn Card structure
     const cards = await page.locator('.card').count()
-    expect(cards).toBeGreaterThanOrEqual(2)
+    expect(cards).toBe(3)  // Exactly 3 panels
     
     // Test dark mode toggle
     await page.click('[data-testid="theme-toggle"]')
@@ -113,6 +118,9 @@ npx playwright test --headed=false
 # Initial setup with Vite + shadcn
 npm create vite@latest frontend -- --template react-ts
 cd frontend
+
+# Create validation evidence directory
+mkdir -p validated_test_evidence
 
 # Environment setup for different deployment scenarios
 cat > .env.local << EOF

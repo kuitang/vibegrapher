@@ -58,8 +58,15 @@ def test_database_schema():
 
 ## Setup Commands
 ```bash
-# Create management directory
+# From project root, create backend and navigate to it
+mkdir -p backend
+cd backend
+
+# Create directory structure
 mkdir -p app/management
+
+# Create validation evidence directory  
+mkdir -p validated_test_evidence
 
 # Install dependencies with type checking and pygit2
 pip install mypy sqlalchemy[mypy] types-python-dateutil types-requests pygit2

@@ -23,7 +23,7 @@ mypy --install-types --non-interactive
 
 ### Environment Configuration
 ```bash
-# .env (never commit this)
+# .env (NEVER commit this file - add to .gitignore)
 DATABASE_URL=sqlite:///./vibegrapher.db
 OPENAI_API_KEY=sk-...
 CORS_ORIGINS=*
@@ -34,6 +34,7 @@ PORT=8000
 
 ### Code Structure
 ```
+# Start from project root, then cd backend
 backend/
 ├── app/
 │   ├── models/         # SQLAlchemy models
@@ -47,7 +48,7 @@ backend/
 │   └── unit/          # MINIMAL: Only for critical logic
 ├── alembic/           # Database migrations
 ├── media/projects/    # Git repositories
-└── validated_test_evidence/  # Test artifacts
+└── validated_test_evidence/  # Test artifacts (backend/validated_test_evidence/phase-XXX/)
 ```
 
 ### Testing Strategy (pytest + httpx)
@@ -72,7 +73,8 @@ export DATABASE_URL=sqlite:///./test_vibegrapher.db
 # Reset test database before running tests
 python -m app.management.reset_db --test-db
 
-# Run all tests
+# Run all tests (use http://localhost:8000 in test examples)
+# Backend binds to 0.0.0.0:8000 but test clients connect to localhost:8000
 pytest
 
 # Run specific phase tests
@@ -90,11 +92,11 @@ pytest --no-header --tb=short
 See `plans/backend-phase-*.md` for detailed requirements:
 
 1. **Phase 001**: Core Infrastructure → `plans/backend-phase-001-infrastructure.md`
-2. **Phase 002**: OpenAI Agents → `plans/backend-phase-002-agents.md`
-3. **Phase 003**: AST Parser → `plans/backend-phase-003-ast.md`
-4. **Phase 004**: Session Management → `plans/backend-phase-004-sessions.md`
-5. **Phase 005**: Testing Framework → `plans/backend-phase-005-sandbox.md`
-6. **Phase 006**: WebSocket → `plans/backend-phase-006-websocket.md`
+2. **Phase 002**: Socket.io & Real-time → `plans/backend-phase-002-socketio.md`
+3. **Phase 003**: Testing Framework (Sandbox) → `plans/backend-phase-003-sandbox.md`
+4. **Phase 004**: OpenAI Agents → `plans/backend-phase-004-agents.md`
+5. **Phase 005**: Session Management → `plans/backend-phase-005-sessions.md`
+6. **Phase 006**: AST Parser → `plans/backend-phase-006-ast.md`
 
 ## Critical Requirements
 
@@ -138,10 +140,15 @@ message = ConversationMessage(
 )
 
 # CRITICAL: Stream usage via Socket.io immediately
+# MUST include agent name and iteration number
 await socketio_manager.emit_to_room(
     f"project_{project_id}",
     "token_usage", 
-    token_usage
+    {
+        **token_usage,
+        "agent": "vibecoder",  # or "evaluator"
+        "iteration": iteration_num
+    }
 )
 ```
 
@@ -168,4 +175,16 @@ Before EVERY commit:
 - Focus on integration tests, not unit tests
 - Store FULL OpenAI responses
 - MUST use gpt-5 series models
-- No graph visualization in v0
+
+# Final Instructions - Infinite Loop Workflow
+**Work continuously in this loop until you get stuck with errors:**
+
+1. Read the specs files: `spec_datamodel_v0.md` and `spec_backend_v0.md`
+2. Go into the `plans/` directory and find the first backend document that is not done
+3. Check first few lines to see if done - do not read whole file
+4. Complete that phase entirely
+5. Once done, write a header `# DONE as of commit [commit-hash]`
+6. **Re-read specs and this prompt file (to refresh context)**
+7. **LOOP BACK TO STEP 2** - find the next incomplete backend document
+8. **Continue this infinite loop until you get stuck with bugs**
+9. **ONLY COMMIT WORKING CODE!** - Stop if code doesn't work

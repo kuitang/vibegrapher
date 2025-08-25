@@ -23,7 +23,7 @@ npm run build
 
 ### Environment Configuration
 ```bash
-# .env.local (never commit this) - for LOCAL development
+# .env.local (NEVER commit this file - add to .gitignore) - for LOCAL development
 VITE_API_URL=http://localhost:8000
 VITE_WS_URL=http://localhost:8000
 
@@ -40,6 +40,7 @@ VITE_WS_URL=https://your-api.fly.dev
 
 ### Code Structure
 ```
+# Start from project root, then cd frontend
 frontend/
 ├── src/
 │   ├── components/
@@ -54,7 +55,7 @@ frontend/
 │   ├── integration/     # Vitest + Testing Library
 │   ├── e2e/            # Playwright (HEADLESS)
 │   └── mocks/          # MSW mock servers
-└── validated_test_evidence/  # Test artifacts
+└── validated_test_evidence/  # Test artifacts (frontend/validated_test_evidence/phase-XXX/)
 ```
 
 ### Testing Strategy (Vitest + Playwright)
@@ -115,7 +116,7 @@ npx shadcn-ui@latest add sheet sonner table tabs textarea tooltip
 See `plans/frontend-phase-*.md` for detailed requirements:
 
 1. **Phase 001**: Core Layout → `plans/frontend-phase-001-layout.md`
-2. **Phase 002**: WebSocket Setup → `plans/frontend-phase-002-websocket.md`
+2. **Phase 002**: Socket.io Setup → `plans/frontend-phase-002-socketio.md`
 3. **Phase 003**: Session Management → `plans/frontend-phase-003-session.md`
 4. **Phase 004**: Code Viewer → `plans/frontend-phase-004-code-viewer.md`
 5. **Phase 005**: Diff Handling → `plans/frontend-phase-005-diff.md`
@@ -136,6 +137,9 @@ socket.on('vibecode_response', (data) => {
 })
 socket.on('token_usage', (data) => {
   console.log('[Socket.io] Real token usage:', data.usage, 'from:', data.agent)
+})
+socket.on('heartbeat', (data) => {
+  console.log('[Socket.io] Heartbeat:', data.server_time, 'connections:', data.connections)
 })
 
 // CRITICAL: ALL data comes from REAL OpenAI API calls
@@ -211,4 +215,16 @@ Before EVERY commit:
 - Log ALL Socket.io messages with trace_id and token usage
 - Mobile-first responsive design
 - Environment variables for ALL URLs
-- No graph visualization in v0
+
+# Final Instructions - Infinite Loop Workflow
+**Work continuously in this loop until you get stuck with errors:**
+
+1. Read the specs files: `spec_datamodel_v0.md` and `spec_frontend_v0.md`
+2. Go into the `plans/` directory and find the first frontend document that is not done
+3. Check first few lines to see if done - do not read whole file
+4. Complete that phase entirely
+5. Once done, write a header `# DONE as of commit [commit-hash]`
+6. **Re-read specs and this prompt file (to refresh context)**
+7. **LOOP BACK TO STEP 2** - find the next incomplete frontend document
+8. **Continue this infinite loop until you get stuck with bugs**
+9. **ONLY COMMIT WORKING CODE!** - Stop if code doesn't work

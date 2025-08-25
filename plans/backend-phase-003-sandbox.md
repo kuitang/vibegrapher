@@ -1,4 +1,4 @@
-# Backend Phase 002: Testing Framework (Sandbox)
+# Backend Phase 003: Testing Framework (Sandbox)
 
 ## Objectives
 Build sandboxed test execution with resource limits.
@@ -18,7 +18,7 @@ Build sandboxed test execution with resource limits.
 
 ## Integration Test Script (httpx)
 ```python
-# tests/integration/test_phase_002_sandbox.py
+# tests/integration/test_phase_003_sandbox.py
 import httpx
 import asyncio
 
@@ -107,11 +107,11 @@ def test_sandbox_command_construction():
 ## Validation Script
 ```bash
 #!/bin/bash
-OUTPUT_DIR="validated_test_evidence/phase-002"
+OUTPUT_DIR="validated_test_evidence/phase-003"
 mkdir -p $OUTPUT_DIR
 
 # Run integration tests
-pytest tests/integration/test_phase_002_sandbox.py -v > $OUTPUT_DIR/test_output.log 2>&1
+pytest tests/integration/test_phase_003_sandbox.py -v > $OUTPUT_DIR/test_output.log 2>&1
 
 # Manual sandbox test
 cat > $OUTPUT_DIR/test_script.py << 'EOF'
@@ -150,6 +150,6 @@ echo "Phase 002 validation complete"
 ## Deliverables
 - [ ] SandboxService in app/services/sandbox.py
 - [ ] Test endpoints in app/api/tests.py
-- [ ] Integration tests in tests/integration/test_phase_002_sandbox.py
+- [ ] Integration tests in tests/integration/test_phase_003_sandbox.py
 - [ ] Minimal unit tests in tests/unit/test_sandbox.py
-- [ ] Validation evidence in validated_test_evidence/phase-002/
+- [ ] Validation evidence in validated_test_evidence/phase-003/

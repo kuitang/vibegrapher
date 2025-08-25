@@ -12,23 +12,24 @@ React TypeScript interface for vibecoding agents via natural language. No graph 
 
 ## Layout (v0 - Simple)
 ```
-┌────────────────────────────────────┐
-│ Header (Project name, User)        │
-├────────────────────────────────────┤
-│                                    │
-│  ┌─────────────┬─────────────┐    │
-│  │             │              │    │
-│  │  Vibecode   │  Code View   │    │
-│  │  Panel      │  (Read-only) │    │
-│  │             │              │    │
-│  │  [Session]  │  Python code │    │
-│  │  Messages   │  with nodes  │    │
-│  │  Input      │              │    │
-│  │             │              │    │
-│  └─────────────┴─────────────┘    │
-│                                    │
-│  Test Results (Expandable)         │
-└────────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│ Header (Project name, User)              │
+├──────────────────────────────────────────┤
+│                                          │
+│  ┌──────────────┬──────────────────┐    │
+│  │              │  Code View        │    │
+│  │              │  (Read-only)      │    │
+│  │  Vibecode    │  Python code      │    │
+│  │  Panel       │  with nodes       │    │
+│  │              ├──────────────────┤    │
+│  │  [Session]   │                   │    │
+│  │  Messages    │  Test Results     │    │
+│  │  Input       │  (Pass/Fail)      │    │
+│  │              │                   │    │
+│  │ (Full Height)│                   │    │
+│  └──────────────┴──────────────────┘    │
+│                                          │
+└──────────────────────────────────────────┘
 ```
 
 ## Core Components with shadcn/ui
@@ -64,20 +65,20 @@ interface CodeViewerProps {
 // Monaco editor for actual code display
 ```
 
-### TestRunner
+### TestRunner (Bottom Right Panel)
 ```typescript
 interface TestRunnerProps {
   projectId: string;
 }
 
 // shadcn components used:
-// - Card: Test panel container
+// - Card: Test panel container (bottom right)
 // - Table: Display test cases
 // - Button: "Add Test", "Run", "Delete"
 // - Dialog: Add/edit test modal
 // - Progress: Test run progress
 // - Alert: Test results (success/error)
-// - Collapsible: Expandable test output
+// - ScrollArea: Scrollable test output
 // - Badge: Pass/fail status
 ```
 

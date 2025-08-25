@@ -41,8 +41,8 @@ def check_syntax(code: str) -> dict  # Returns {valid: bool, error?: str, line?:
 def check_patch_applies(original: str, patch: str) -> dict  # Test patch with dry-run
 def apply_patch(original: str, patch: str) -> str  # Actually apply patch
 
-# Import from OpenAI SDK
-from openai_sdk import Agent, Runner, function_tool, SQLiteSession
+# Import from agents package
+from agents import Agent, Runner, function_tool, SQLiteSession
 from pydantic import BaseModel
 
 # Define EvaluationResult Pydantic model
@@ -269,6 +269,7 @@ import socketio
 class SocketIOManager:
     def __init__(self):
         self.sio = socketio.AsyncServer(cors_allowed_origins="*")
+        self.active_connections = 0
     
     async def emit_to_room(self, room: str, event: str, data: dict):
         # Include trace_id in all messages
@@ -276,6 +277,16 @@ class SocketIOManager:
     
     async def join_project_room(self, sid: str, project_id: str):
         await self.sio.enter_room(sid, f"project_{project_id}")
+    
+    async def start_heartbeat(self):
+        """Send heartbeat every 30 seconds for debug visibility"""
+        while True:
+            await asyncio.sleep(30)
+            await self.sio.emit('heartbeat', {
+                'server_time': datetime.utcnow().isoformat(),
+                'status': 'alive',
+                'connections': self.active_connections
+            })
 ```
 
 ## Configuration
