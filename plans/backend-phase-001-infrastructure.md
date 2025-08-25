@@ -22,31 +22,12 @@ Build foundational database models, Git integration, and basic CRUD endpoints wi
 
 ## Integration Tests (pytest + httpx)
 ```python
-# tests/conftest.py - Shared test configuration
-import pytest
-import os
-
-@pytest.fixture(scope="session", autouse=True)
-def use_test_database():
-    """Automatically use test database for all tests"""
-    os.environ["DATABASE_URL"] = "sqlite:///./test_vibegrapher.db"
-    # Run reset_db before test suite
-    from app.management.reset_db import reset_and_seed_database
-    reset_and_seed_database()
-
-# tests/integration/test_phase_001_infrastructure.py
-import pytest
-from httpx import AsyncClient
-
-@pytest.mark.asyncio
-async def test_create_project():
-    # POST /projects → verify 201 and git repo created
-    # Project automatically saved to test_vibegrapher.db
-    pass
-
-def test_database_schema():
-    # Verify all tables exist in test_vibegrapher.db
-    pass
+# tests/conftest.py - Use test database for all tests
+# tests/integration/test_phase_001_infrastructure.py:
+# - test_create_project: POST /projects → verify 201 and git repo created
+# - test_git_repository_structure: Assert files exist at correct paths
+#   IMPORTANT: Git integration tests must assert file structure/content
+# - test_database_schema: Verify all tables exist
 ```
 
 ## Validation Requirements
@@ -58,39 +39,9 @@ def test_database_schema():
 
 ## Setup Commands
 ```bash
-# From project root, create backend and navigate to it
-mkdir -p backend
-cd backend
-
-# Create directory structure
-mkdir -p app/management
-
-# Create validation evidence directory  
-mkdir -p validated_test_evidence
-
-# Install dependencies with type checking and pygit2
-pip install mypy sqlalchemy[mypy] types-python-dateutil types-requests pygit2
-
-# Configure mypy
-cat > mypy.ini << EOF
-[mypy]
-python_version = 3.11
-warn_return_any = True
-warn_unused_configs = True
-disallow_untyped_defs = True
-no_implicit_optional = True
-check_untyped_defs = True
-strict_equality = True
-
-[mypy-tests.*]
-ignore_errors = True
-
-[mypy-alembic.*]
-ignore_missing_imports = True
-EOF
-
-# Add to validation script
-mypy app/ --show-error-codes
+# Standard setup: backend/, app/management/, validated_test_evidence/
+# Dependencies: mypy, sqlalchemy[mypy], pygit2
+# mypy.ini: Strict type checking configuration
 ```
 
 ## Deliverables

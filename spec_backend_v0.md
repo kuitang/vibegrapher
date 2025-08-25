@@ -15,7 +15,6 @@ FastAPI backend for vibecoding OpenAI Agents SDK workflows via natural language.
 
 ### 1. AST Parser Service
 ```python
-# Define the AgentNode class
 class AgentNode:
     name: str
     line_start: int
@@ -23,8 +22,8 @@ class AgentNode:
     children: List[str]  # Names of child agents if any
 
 class ASTParserService:
-    async def parse_agents(code: str) -> List[AgentNode]  # Extract Agent() calls with line numbers
-    async def update_node(code: str, node_id: str, new_def: str) -> str  # Replace specific agent
+    # Extract Agent() calls with line numbers and replace specific agents
+    pass
 ```
 
 ### 2. All OpenAI Agents (app/agents/all_agents.py)
@@ -36,10 +35,7 @@ MODEL_CONFIGS = {
     "SMALL_MODEL": "gpt-5-mini"  # REAL MODEL - USE THIS!
 }
 
-# Validation functions
-def check_syntax(code: str) -> dict  # Returns {valid: bool, error?: str, line?: int}
-def check_patch_applies(original: str, patch: str) -> dict  # Test patch with dry-run
-def apply_patch(original: str, patch: str) -> str  # Actually apply patch
+# Validation functions - check syntax, test/apply patches
 
 # Import from agents package
 from agents import Agent, Runner, function_tool, SQLiteSession
@@ -151,29 +147,19 @@ class VibecodeService:
 
 ### 3. Git Service
 ```python
-class GitService:
-    # Using pygit2 for repository operations
-    async def init_repository(project_id: str) -> str
-    async def commit_changes(project_id: str, message: str) -> str
-    async def get_current_code(project_id: str) -> str
-    async def apply_diff(project_id: str, diff: str) -> str
+# GitService: Standard git operations (init, commit, get code, apply diff) using pygit2
 ```
 
 ### 4. Sandbox Service
 ```python
-class SandboxService:
-    async def run_test(code: str, test_input: str) -> TestResult
-    # Subprocess with timeout=30s, memory=512MB
+# SandboxService: Run code in subprocess with timeout=30s, memory=512MB
 ```
 
 ## Database Models
 
 ```python
-# SQLAlchemy models (see spec_datamodel_v0.md for full schemas)
-class Project(Base): ...  # id, name, repository_path, owner_id
-class VibecodeSession(Base): ...  # Links to OpenAI SQLiteSession
-class ConversationMessage(Base): ...  # Stores full openai_response JSON
-class TestCase(Base): ...  # Test definitions
+# SQLAlchemy models - see spec_datamodel_v0.md for full schemas
+# Project, VibecodeSession, ConversationMessage, TestCase
 ```
 
 ## API Endpoints (Simplified)
@@ -257,80 +243,42 @@ async def send_message(session_id: str, request: MessageRequest):
 
 ### Other Endpoints
 ```python
-@app.delete("/sessions/{session_id}")  # Clear OpenAI SQLiteSession
-@app.get("/messages/{id}/full")  # Return full openai_response JSON
-@app.post("/tests/{id}/run")  # Run test in sandbox
+# DELETE /sessions/{session_id} - Clear OpenAI SQLiteSession
+# GET /messages/{id}/full - Return full openai_response JSON  
+# POST /tests/{id}/run - Run test in sandbox
 ```
 
 ## Socket.io Manager
 ```python
-import socketio
-
-class SocketIOManager:
-    def __init__(self):
-        self.sio = socketio.AsyncServer(cors_allowed_origins="*")
-        self.active_connections = 0
-    
-    async def emit_to_room(self, room: str, event: str, data: dict):
-        # Include trace_id in all messages
-        await self.sio.emit(event, data, room=room)
-    
-    async def join_project_room(self, sid: str, project_id: str):
-        await self.sio.enter_room(sid, f"project_{project_id}")
-    
-    async def start_heartbeat(self):
-        """Send heartbeat every 30 seconds for debug visibility"""
-        while True:
-            await asyncio.sleep(30)
-            await self.sio.emit('heartbeat', {
-                'server_time': datetime.utcnow().isoformat(),
-                'status': 'alive',
-                'connections': self.active_connections
-            })
+# SocketIOManager: Handle real-time events
+# - emit_to_room: Send events with trace_id to project rooms
+# - join_project_room: Subscribe clients to project updates
+# - start_heartbeat: Send alive status every 30s for debugging
+# Events: vibecode_response, token_usage, test_completed, heartbeat
 ```
 
 ## Configuration
 ```python
-from pydantic import BaseSettings
-
-class Settings(BaseSettings):
-    # Load from .env
-    database_url: str = "sqlite:///./vibegrapher.db"
-    test_database_url: str = "sqlite:///./test_vibegrapher.db"
-    openai_api_key: str
-    cors_origins: str = "*"
-    media_path: str = "media"
-    host: str = "0.0.0.0"  # Server listens on all interfaces
-    port: int = 8000
-    
-    class Config:
-        env_file = ".env"
+# Settings loaded from .env:
+# - database_url, test_database_url, openai_api_key
+# - cors_origins="*", media_path="media"
+# - host="0.0.0.0" (all interfaces), port=8000
 
 # Deployment Notes:
-# - Backend ALWAYS binds to 0.0.0.0 (listens on all interfaces)
-# - Frontend connects to different URLs based on environment:
-#   * Local: http://localhost:8000
-#   * Remote dev: http://SERVER_IP:8000  
-#   * Production: https://your-api.fly.dev
+# - Backend binds to 0.0.0.0
+# - Frontend URLs: localhost:8000 (local), SERVER_IP:8000 (dev), your-api.fly.dev (prod)
 ```
 
 ## Management Commands
 
-### Database Reset Command
 ```python
-# Create management directory: mkdir -p app/management
-# File: app/management/reset_db.py
-async def reset_and_seed_database():
-    # 1. Drop all tables (CASCADE)
-    # 2. Create all tables from Base.metadata
-    # 3. Create sample project with git repo
-    # 4. Add sample agents code
-    # 5. Add test cases
-    # Usage: python -m app.management.reset_db
+# app/management/reset_db.py
+# reset_and_seed_database(): Drop tables, recreate, add sample data
+# Usage: python -m app.management.reset_db
 ```
 
 ## Testing
-- Unit tests for AST parser
-- Integration tests for vibecode flow
+- Unit tests: AST parser
+- Integration tests: vibecode flow  
 - E2E test: Create project → Vibecode → Run test
 - Management command test: Reset DB → Verify sample data

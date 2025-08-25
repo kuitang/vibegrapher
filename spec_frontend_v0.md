@@ -104,43 +104,15 @@ interface DiffViewerProps {
 ## State Management
 
 ```typescript
-// Zustand store
-interface AppState {
-  project: Project | null;
-  currentSession: {
-    id: string;
-    type: 'global' | 'node';
-    nodeId?: string;
-  } | null;
-  messages: Message[];
-  
-  actions: {
-    startSession: (projectId: string, nodeId?: string) => Promise<void>;
-    sendMessage: (prompt: string) => Promise<void>;
-    clearSession: () => Promise<void>;
-    setProject: (p: Project) => void;
-  }
-}
-
-// React Query hooks
-useProject(id: string)
-useMessages(sessionId: string)
-useTestCases(projectId: string)
+// Zustand store: project, currentSession, messages + actions
+// React Query hooks: useProject, useMessages, useTestCases
 ```
 
 ## API Service
 
 ```typescript
-// No hardcoded URLs - Using Vite environment variables
-const API_BASE = import.meta.env.VITE_API_URL || '';
-
-class ApiService {
-  async startSession(projectId: string, nodeId?: string)
-  async sendMessage(sessionId: string, prompt: string)
-  async clearSession(sessionId: string)
-  async getFullMessage(messageId: string)  // Get OpenAI response details
-  async runTest(testId: string)
-}
+// ApiService: Uses VITE_API_URL from environment
+// Methods: startSession, sendMessage, clearSession, getFullMessage, runTest
 ```
 
 ## Socket.io Integration
@@ -191,16 +163,8 @@ class WebSocketService {
 
 ## Configuration
 ```typescript
-// src/config.ts
-export const config = {
-  apiUrl: import.meta.env.VITE_API_URL || '',
-  wsUrl: import.meta.env.VITE_WS_URL || '',
-};
-
-// Environment-specific examples:
-// Local dev: VITE_API_URL=http://localhost:8000
-// Remote dev: VITE_API_URL=http://192.168.1.100:8000 (your server IP)
-// Production: VITE_API_URL=https://your-api.fly.dev
+// config.ts: Load VITE_API_URL and VITE_WS_URL from environment
+// Local: localhost:8000, Remote dev: SERVER_IP:8000, Prod: your-api.fly.dev
 // Never hardcode URLs - always use environment variables
 ```
 
