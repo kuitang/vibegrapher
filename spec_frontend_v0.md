@@ -17,14 +17,14 @@ React TypeScript interface for vibecoding agents via natural language. No graph 
 ├──────────────────────────────────────────┤
 │                                          │
 │  ┌──────────────┬──────────────────┐    │
+│  │              │                   │    │
 │  │              │  Code View        │    │
-│  │              │  (Read-only)      │    │
-│  │  Vibecode    │  Python code      │    │
-│  │  Panel       │  with nodes       │    │
-│  │              ├──────────────────┤    │
-│  │  [Session]   │                   │    │
-│  │  Messages    │  Test Results     │    │
-│  │  Input       │  (Pass/Fail)      │    │
+│  │  Vibecode    │  (Read-only)      │    │
+│  │  Panel       │  Python code      │    │
+│  │              │                   │    │
+│  │  [Session]   │  Monaco Editor    │    │
+│  │  Messages    │                   │    │
+│  │  Input       │  (Full Height)    │    │
 │  │              │                   │    │
 │  │ (Full Height)│                   │    │
 │  └──────────────┴──────────────────┘    │
@@ -65,54 +65,74 @@ interface CodeViewerProps {
 // Monaco editor for actual code display
 ```
 
-### TestRunner (Bottom Right Panel)
+### Test Execution (Within DiffReviewModal Only)
 ```typescript
-interface TestRunnerProps {
-  projectId: string;
-}
-
-// shadcn components used:
-// - Card: Test panel container (bottom right)
-// - Table: Display test cases
-// - Button: "Add Test", "Run", "Delete"
-// - Dialog: Add/edit test modal
-// - Progress: Test run progress
-// - Alert: Test results (success/error)
-// - ScrollArea: Scrollable test output
-// - Badge: Pass/fail status
+// No standalone test runner panel in v0
+// Tests are only shown/run within DiffReviewModal during human review
+// Features integrated into DiffReviewModal:
+// - Select dropdown for quick/all/specific tests
+// - Progress bar during test execution
+// - Pass/fail badges inline with diff
+// - Test results cached on diff to avoid re-running
+// - Alert components for test results
 ```
 
-### DiffViewer
+### DiffViewer & Human Review Components
 ```typescript
-interface DiffViewerProps {
-  original: string;
-  proposed: string;
-  onAccept: () => void;
-  onReject: () => void;
-  traceId?: string;
-}
-
-// shadcn components used:
-// - Card: Diff container
-// - Tabs: Switch between unified/split view
-// - Button: "Accept" (green), "Reject" (red)
-// - AlertDialog: Confirm accept/reject
-// - Tooltip: Show trace_id on hover
-// Monaco Diff Editor for actual diff display
+// DiffReviewModal: Shows diff with test execution + Accept/Reject
+//   - Run Tests dropdown (Quick/All/Specific tests)
+//   - Test results display with pass/fail badges
+//   - OpenAI trace_id shown as clickable link
+//   - Token usage prominent (prompt/completion/total)
+//   - Requires rejection reason if rejecting
+// CommitMessageModal: Edit/refine commit message, calls evaluator for suggestions
+// Uses: Dialog, Card, Button, Textarea, Badge, Select, Progress, Monaco Diff Editor
 ```
 
 ## State Management
 
 ```typescript
-// Zustand store: project, currentSession, messages + actions
-// React Query hooks: useProject, useMessages, useTestCases
+// Zustand store with localStorage persistence
+interface AppState {
+  // Regular state (not persisted)
+  project: Project | null;
+  currentSession: VibecodeSession | null;
+  messages: ConversationMessage[];
+  testResults: TestResult[] | null;
+  isRunningTests: boolean;
+  
+  // PERSISTED to localStorage (critical UI state only)
+  pendingDiffs: Diff[];
+  currentReviewDiff: Diff | null;
+  approvalMode: 'accept' | 'test-accept' | 'test-first';
+  draftMessage: string;
+  lastActiveTime: number;
+  
+  actions: {
+    // Standard actions...
+  }
+}
+
+// Uses Zustand persist middleware with:
+// - partialize: Only persist UI state, not data
+// - 24-hour stale state cleanup
+// - version: 1 for future migrations
+// - Synchronous localStorage (instant recovery)
+
+// React Query for server data
+useProject(id: string)
+useMessages(sessionId: string)
+useTestCases(projectId: string)
+usePendingDiffs(sessionId: string)
 ```
 
 ## API Service
 
 ```typescript
 // ApiService: Uses VITE_API_URL from environment
-// Methods: startSession, sendMessage, clearSession, getFullMessage, runTest
+// Methods: startSession, sendMessage (with feedbackType for human rejection)
+// Diff methods: getPendingDiffs, reviewDiff, runDiffTests, commitDiff, refineCommitMessage
+// Test methods: getQuickTests, runTestsOnDiff
 ```
 
 ## Socket.io Integration
@@ -133,12 +153,7 @@ class WebSocketService {
     // IMPORTANT: Log all messages for debugging
     this.socket.on('connect', () => console.log('[Socket.io] Connected'));
     
-    this.socket.on('vibecode_response', (data) => {
-      console.log('[WS] Vibecode response:', data);
-      console.log('[WS] Trace ID:', data.trace_id);
-      // Update messages
-      // Show diff if present
-    });
+    // On vibecode_response: If status='pending_human_review', show DiffReviewModal
     
     this.socket.on('test_completed', (data) => {
       console.log('[WS] Test completed:', data);
@@ -151,15 +166,38 @@ class WebSocketService {
 }
 ```
 
-## Session Flow
+## Session Flow with Human Review
 
-1. User opens project → No session yet
+1. User opens project → Check for pending diffs
 2. User clicks "Start Session" (or "Start Node Session")
 3. Frontend calls POST /projects/{id}/sessions
 4. Store session ID in state
 5. User sends messages via POST /sessions/{id}/messages
-6. Messages appear in conversation
-7. User can "Clear Session" to reset
+6. VibeCoder → Evaluator loop runs (backend)
+7. If evaluator approves:
+   - Backend creates Diff record
+   - Frontend receives diff_id via WebSocket
+   - DiffReviewModal opens automatically
+8. Human reviews diff (with optional test execution):
+   - Run Tests → Execute quick/all/specific tests on diff
+   - View results with OpenAI trace links and token usage
+   - Accept → CommitMessageModal opens
+   - Test & Accept → Run tests, auto-accept if all pass
+   - Reject → New vibecode iteration with feedback
+9. In CommitMessageModal:
+   - User can edit or refine message
+   - Commit → Diff applied to git
+10. After commit: Evaluator context cleared
+
+## Page Refresh Recovery
+```typescript
+// Automatic recovery via Zustand persist:
+// 1. localStorage hydrates synchronously
+// 2. Modals re-open if they were open
+// 3. Draft messages restored
+// 4. Session validated with server
+// 5. Stale state (>24h) cleared automatically
+```
 
 ## Configuration
 ```typescript

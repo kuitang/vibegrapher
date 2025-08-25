@@ -1,4 +1,8 @@
-# Frontend Phase 007: Mobile Responsive
+# Frontend Phase 003: Mobile Responsive
+
+## ⚠️ BACKEND DEPENDENCY CHECK
+**REQUIRED**: None - this is a frontend-only UI enhancement.
+**PREREQUISITE**: Frontend Phase 001 (Layout) must be completed.
 
 ## Objectives
 Implement mobile-responsive design with shadcn mobile components.
@@ -20,12 +24,12 @@ Implement mobile-responsive design with shadcn mobile components.
 
 ## Integration Tests (Vitest)
 ```typescript
-// tests/integration/phase007-mobile.test.tsx
+// tests/integration/phase003-mobile.test.tsx
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App } from '../src/App'
 
-describe('Phase 007: Mobile Responsive', () => {
+describe('Phase 003: Mobile Responsive', () => {
   beforeEach(() => {
     // Set mobile viewport
     window.innerWidth = 375
@@ -56,13 +60,13 @@ describe('Phase 007: Mobile Responsive', () => {
 
 ## E2E Test (Playwright - Mobile Viewport)
 ```typescript
-// tests/e2e/phase007-mobile.e2e.ts
+// tests/e2e/phase003-mobile.e2e.ts
 import { test, expect, devices } from '@playwright/test'
 
 // Use iPhone SE viewport
 test.use(devices['iPhone SE'])
 
-test.describe('Phase 007: Mobile E2E', () => {
+test.describe('Phase 003: Mobile E2E', () => {
   test('complete mobile experience', async ({ page }) => {
     await page.goto('http://localhost:5173/project/test')
     
@@ -130,14 +134,14 @@ test.describe('Phase 007: Mobile E2E', () => {
 ## Validation Script
 ```bash
 #!/bin/bash
-OUTPUT_DIR="frontend/validated_test_evidence/phase-007"
+OUTPUT_DIR="frontend/validated_test_evidence/phase-003"
 mkdir -p $OUTPUT_DIR
 
 # Run integration tests with mobile viewport
-npm test -- --run tests/integration/phase007-mobile.test.tsx > $OUTPUT_DIR/vitest.log 2>&1
+npm test -- --run tests/integration/phase003-mobile.test.tsx > $OUTPUT_DIR/vitest.log 2>&1
 
 # Run E2E tests with mobile devices (headless)
-npx playwright test tests/e2e/phase007-mobile.e2e.ts \
+npx playwright test tests/e2e/phase003-mobile.e2e.ts \
   --reporter=json \
   > $OUTPUT_DIR/playwright.json
 
@@ -149,7 +153,7 @@ for device in "iPhone SE" "Pixel 5" "iPad Mini"; do
     "$OUTPUT_DIR/mobile-${device// /-}.png"
 done
 
-echo "Phase 007 validation complete"
+echo "Phase 003 validation complete"
 ```
 
 ## shadcn Components Used
@@ -167,4 +171,4 @@ npx shadcn-ui@latest add sheet drawer dropdown-menu
 - [ ] Touch gesture support
 - [ ] Integration tests
 - [ ] E2E tests with mobile viewports
-- [ ] Validation evidence in validated_test_evidence/phase-007/
+- [ ] Validation evidence in frontend/validated_test_evidence/phase-003/

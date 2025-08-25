@@ -89,10 +89,10 @@ async def test_disconnection_handling():
 - Test with curl: create projects/sessions, send messages, confirm Socket.io broadcasts
 - Verify token usage data is streamed in real-time via 'token_usage' events
 - Test disconnection handling and room cleanup
-- Save test evidence in validated_test_evidence/phase-002/
+- Save test evidence in backend/validated_test_evidence/phase-002/
 
 ## Deliverables
 - [ ] SocketIOManager in app/services/socketio_service.py
 - [ ] Socket.io event handlers in app/api/socketio_events.py
-- [ ] Integration tests in tests/integration/test_phase_006_socketio.py
-- [ ] Validation evidence in validated_test_evidence/phase-002/
+- [ ] Integration tests in tests/integration/test_phase_002_socketio.py
+- [ ] Validation evidence in backend/validated_test_evidence/phase-002/

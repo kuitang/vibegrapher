@@ -1,4 +1,11 @@
-# Frontend Phase 005: Diff Handling
+# Frontend Phase 007: Diff Handling
+
+## ⚠️ BACKEND DEPENDENCY CHECK
+**REQUIRED**: Backend phases must be completed:
+- `plans/backend-phase-004-agents.md` - For vibecode responses with diffs (creates Diff model)
+- `plans/backend-phase-006-human-review.md` - For diff management endpoints
+
+**VERIFICATION**: Check each backend file header for "# DONE as of commit". If ANY are missing, DO NOT START this phase and inform the user which backend dependencies are not ready.
 
 ## Objectives
 Implement diff viewer with shadcn components for patch review.
@@ -21,12 +28,12 @@ Implement diff viewer with shadcn components for patch review.
 
 ## Integration Tests (Vitest + MSW)
 ```typescript
-// tests/integration/phase005-diff.test.tsx
+// tests/integration/phase007-diff.test.tsx
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { DiffViewer } from '../src/components/DiffViewer'
 
-describe('Phase 005: Diff Viewer', () => {
+describe('Phase 007: Diff Viewer', () => {
   test('diff viewer with shadcn components', async () => {
     const user = userEvent.setup()
     const onAccept = vi.fn()
@@ -78,10 +85,10 @@ describe('Phase 005: Diff Viewer', () => {
 
 ## E2E Test (Playwright - Headless)
 ```typescript
-// tests/e2e/phase005-diff.e2e.ts
+// tests/e2e/phase007-diff.e2e.ts
 import { test, expect } from '@playwright/test'
 
-test.describe('Phase 005: Diff Viewer E2E', () => {
+test.describe('Phase 007: Diff Viewer E2E', () => {
   test('complete diff flow', async ({ page }) => {
     await page.goto('http://localhost:5173/project/test')
     
@@ -121,14 +128,14 @@ test.describe('Phase 005: Diff Viewer E2E', () => {
 ## Validation Script
 ```bash
 #!/bin/bash
-OUTPUT_DIR="frontend/validated_test_evidence/phase-005"
+OUTPUT_DIR="frontend/validated_test_evidence/phase-007"
 mkdir -p $OUTPUT_DIR
 
 # Run integration tests
-npm test -- --run tests/integration/phase005-diff.test.tsx > $OUTPUT_DIR/vitest.log 2>&1
+npm test -- --run tests/integration/phase007-diff.test.tsx > $OUTPUT_DIR/vitest.log 2>&1
 
 # Run E2E tests (headless)
-npx playwright test tests/e2e/phase005-diff.e2e.ts \
+npx playwright test tests/e2e/phase007-diff.e2e.ts \
   --reporter=json \
   > $OUTPUT_DIR/playwright.json
 
@@ -138,7 +145,7 @@ npx playwright screenshot \
   http://localhost:5173/project/test \
   $OUTPUT_DIR/diff-viewer.png
 
-echo "Phase 005 validation complete"
+echo "Phase 007 validation complete"
 ```
 
 ## shadcn Components Used
@@ -154,4 +161,4 @@ npx shadcn-ui@latest add tabs alert-dialog tooltip
 - [ ] Trace ID tooltip
 - [ ] Integration tests
 - [ ] E2E tests
-- [ ] Validation evidence in validated_test_evidence/phase-005/
+- [ ] Validation evidence in frontend/validated_test_evidence/phase-007/

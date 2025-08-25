@@ -1,20 +1,25 @@
 # Backend Agent Instructions for Vibegrapher v0
 
 ## Your Mission
-Build a FastAPI backend that enables users to "vibecode" OpenAI Agent workflows through natural language. No graph visualization in v0.
+Build a FastAPI backend that enables users to "vibecode" OpenAI Agent workflows through natural language with human approval for code changes. No graph visualization in v0.
 
 ## Environment Setup
 
+### CRITICAL: Working Directory Convention
+**ALWAYS work from the project root directory. NEVER cd into backend/.**
+**If a command fails, first check your working directory with `pwd`.**
+
 ### Virtual Environment (REQUIRED)
 ```bash
+# STAY IN PROJECT ROOT - do not cd into backend/
 # Create and activate virtual environment
-python3 -m venv venv
-source venv/bin/activate  # Linux/Mac
+python3 -m venv backend/venv
+source backend/venv/bin/activate  # Linux/Mac
 # or
-venv\Scripts\activate  # Windows
+backend\venv\Scripts\activate  # Windows
 
 # Install dependencies including type checking
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 pip install mypy sqlalchemy[mypy] types-python-dateutil types-requests
 
 # Configure mypy for type checking
@@ -34,7 +39,7 @@ PORT=8000
 
 ### Code Structure
 ```
-# Start from project root, then cd backend
+# Work from project root, no cd needed - use explicit paths
 backend/
 ├── app/
 │   ├── models/         # SQLAlchemy models
@@ -47,9 +52,19 @@ backend/
 │   ├── integration/    # PRIMARY: httpx integration tests
 │   └── unit/          # MINIMAL: Only for critical logic
 ├── alembic/           # Database migrations
-├── media/projects/    # Git repositories
-└── validated_test_evidence/  # Test artifacts (backend/validated_test_evidence/phase-XXX/)
+├── media/             # Persistent file storage
+│   └── projects/      
+│       ├── {project_id}/                    # Git repository for project code
+│       └── {project_id}_conversations.db   # SQLiteSession persistence for OpenAI agents
+└── validated_test_evidence/  # Test artifacts
 ```
+
+### Path Convention
+**IMPORTANT**: Always work from project root and use explicit paths:
+- `backend/app/agents/all_agents.py` not `app/agents/all_agents.py`
+- `backend/tests/integration/test_phase_001.py` not `tests/integration/test_phase_001.py`
+- `backend/validated_test_evidence/phase-001/` not `validated_test_evidence/phase-001/`
+- If you are unsure about a model or API definition, read `spec_datamodel_v0.md`
 
 ### Testing Strategy (pytest + httpx)
 - **PRIMARY**: Integration tests using httpx AsyncClient
@@ -57,7 +72,6 @@ backend/
 - **Setup**: Run database reset command before each test suite
 - **MINIMAL**: Unit tests only for:
   - Git operations (pygit2)
-  - AST parsing
   - Sandbox isolation
 - **FOCUS**: Stateful integration tests that:
   - Create projects
@@ -67,24 +81,24 @@ backend/
 
 ### Running Tests
 ```bash
+# STAY IN PROJECT ROOT - all paths are relative to root
 # Set test database environment variable
-export DATABASE_URL=sqlite:///./test_vibegrapher.db
+export DATABASE_URL=sqlite:///./backend/test_vibegrapher.db
 
 # Reset test database before running tests
-python -m app.management.reset_db --test-db
+python -m backend.app.management.reset_db --test-db
 
-# Run all tests (use http://localhost:8000 in test examples)
-# Backend binds to 0.0.0.0:8000 but test clients connect to localhost:8000
-pytest
+# Run all tests from project root
+pytest backend/tests
 
 # Run specific phase tests
-pytest tests/integration/test_phase001_infrastructure.py -v
+pytest backend/tests/integration/test_phase001_infrastructure.py -v
 
 # Run with coverage
-pytest --cov=app --cov-report=html
+pytest backend/tests --cov=backend.app --cov-report=html
 
 # Run tests headless (no UI)
-pytest --no-header --tb=short
+pytest backend/tests --no-header --tb=short
 ```
 
 ## Implementation Phases
@@ -93,10 +107,11 @@ See `plans/backend-phase-*.md` for detailed requirements:
 
 1. **Phase 001**: Core Infrastructure → `plans/backend-phase-001-infrastructure.md`
 2. **Phase 002**: Socket.io & Real-time → `plans/backend-phase-002-socketio.md`
-3. **Phase 003**: Testing Framework (Sandbox) → `plans/backend-phase-003-sandbox.md`
+3. **Phase 003**: Git Service & Database Seeding → `plans/backend-phase-003-git-seeding.md`
 4. **Phase 004**: OpenAI Agents → `plans/backend-phase-004-agents.md`
 5. **Phase 005**: Session Management → `plans/backend-phase-005-sessions.md`
-6. **Phase 006**: AST Parser → `plans/backend-phase-006-ast.md`
+6. **Phase 006**: Human Review & Diff Testing → `plans/backend-phase-006-human-review.md`
+7. **Phase 007**: Production Deployment → `plans/backend-phase-007-deployment.md`
 
 ## Critical Requirements
 
@@ -114,7 +129,8 @@ MODEL_CONFIGS = {
 # This ensures real token usage tracking and authentic responses
 
 # CORRECT Session Management
-session = SQLiteSession(session_key)
+db_path = f"media/projects/{project_id}_conversations.db"
+session = SQLiteSession(session_key, db_path)  # MUST use file persistence
 result = await Runner.run(agent, prompt, session=session)
 # ALWAYS extract and log usage: result.usage
 
@@ -155,14 +171,15 @@ await socketio_manager.emit_to_room(
 ## Quality Checklist
 
 Before EVERY commit:
-- [ ] Type checking passes (`mypy app/`)
-- [ ] Tests pass (`pytest`) - ALL USING REAL OpenAI API
+- [ ] Working from project root directory (check with `pwd`)
+- [ ] Type checking passes (`mypy backend/app/`)
+- [ ] Tests pass (`pytest backend/tests`) - ALL USING REAL OpenAI API
 - [ ] No hardcoded URLs/ports
-- [ ] No secrets in code (except valid OPENAI_API_KEY in .env)
-- [ ] Virtual environment active
+- [ ] No secrets in code (except valid OPENAI_API_KEY in backend/.env)
+- [ ] Virtual environment active (backend/venv)
 - [ ] All functions have type hints
 - [ ] Pydantic models validate all API data
-- [ ] SQLiteSession used correctly
+- [ ] SQLiteSession used correctly with file persistence
 - [ ] Full OpenAI responses stored with trace_id AND token usage
 - [ ] Token usage streamed via Socket.io
 - [ ] Integration tests cover full flows
@@ -171,10 +188,12 @@ Before EVERY commit:
 ## Remember
 - VibeCoder has TWO modes: patch submission OR text response
 - Evaluator loop runs MAX 3 iterations
-- All agents in ONE file: `app/agents/all_agents.py`
+- All agents in ONE file: `backend/app/agents/all_agents.py`
 - Focus on integration tests, not unit tests
 - Store FULL OpenAI responses
 - MUST use gpt-5 series models
+- Always use explicit paths from project root (backend/...)
+- If you are unsure about a model or API definition, read `spec_datamodel_v0.md`
 
 # Final Instructions - Infinite Loop Workflow
 **Work continuously in this loop until you get stuck with errors:**
@@ -188,3 +207,11 @@ Before EVERY commit:
 7. **LOOP BACK TO STEP 2** - find the next incomplete backend document
 8. **Continue this infinite loop until you get stuck with bugs**
 9. **ONLY COMMIT WORKING CODE!** - Stop if code doesn't work
+
+## Deployment Notes (Phase 007)
+- Deploy to Fly.io EWR region with PostgreSQL
+- Use GitHub Actions for CI/CD (see `plans/backend-phase-007-deployment.md`)
+- Production: never scale to 0, autoscale up to 5
+- Preview: scale to 0 for PR deployments, use SQLite
+- Run migrations on every deployment
+- Mount persistent volume for media/projects (production only)

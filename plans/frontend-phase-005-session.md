@@ -1,4 +1,12 @@
-# Frontend Phase 003: Session & Message Flow
+# Frontend Phase 005: Session & Message Flow
+
+## ⚠️ BACKEND DEPENDENCY CHECK
+**REQUIRED**: Backend phases must be completed:
+- `plans/backend-phase-001-infrastructure.md` - For project endpoints
+- `plans/backend-phase-004-agents.md` - For vibecode functionality  
+- `plans/backend-phase-005-sessions.md` - For session management endpoints
+
+**VERIFICATION**: Check each backend file header for "# DONE as of commit". If ANY are missing, DO NOT START this phase and inform the user which backend dependencies are not ready.
 
 ## Objectives
 Implement session management and message flow with shadcn components.
@@ -21,7 +29,7 @@ Implement session management and message flow with shadcn components.
 
 ## Integration Tests (Vitest + MSW v2)
 ```typescript
-// tests/integration/phase_003_session.test.tsx
+// tests/integration/phase005-session.test.tsx
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'  // MSW v2
@@ -45,7 +53,7 @@ beforeAll(() => server.listen())
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
-describe('Phase 003: Session Management', () => {
+describe('Phase 005: Session Management', () => {
   test('complete session flow with shadcn components', async () => {
     const user = userEvent.setup()
     render(<VibecodePanel projectId="test-project" />)
@@ -96,10 +104,10 @@ describe('Phase 003: Session Management', () => {
 
 ## E2E Test (Playwright - Headless)
 ```typescript
-// tests/e2e/phase003-session.e2e.ts
+// tests/e2e/phase005-session.e2e.ts
 import { test, expect } from '@playwright/test'
 
-test.describe('Phase 003: Session E2E', () => {
+test.describe('Phase 005: Session E2E', () => {
   test('full session flow', async ({ page }) => {
     await page.goto('http://localhost:5173/project/test')
     
@@ -126,14 +134,14 @@ test.describe('Phase 003: Session E2E', () => {
 ## Validation Script
 ```bash
 #!/bin/bash
-OUTPUT_DIR="frontend/validated_test_evidence/phase-003"
+OUTPUT_DIR="frontend/validated_test_evidence/phase-005"
 mkdir -p $OUTPUT_DIR
 
 # Run integration tests with MSW mocks
-npm test -- --run tests/integration/phase003-session.test.tsx > $OUTPUT_DIR/vitest.log 2>&1
+npm test -- --run tests/integration/phase005-session.test.tsx > $OUTPUT_DIR/vitest.log 2>&1
 
 # Run E2E tests (headless)
-npx playwright test tests/e2e/phase003-session.e2e.ts \
+npx playwright test tests/e2e/phase005-session.e2e.ts \
   --reporter=json \
   --output=$OUTPUT_DIR \
   > $OUTPUT_DIR/playwright.json
@@ -144,7 +152,7 @@ npx playwright screenshot \
   http://localhost:5173/project/test \
   $OUTPUT_DIR/session-panel.png
 
-echo "Phase 003 validation complete"
+echo "Phase 005 validation complete"
 ```
 
 ## shadcn Components Used
@@ -160,4 +168,4 @@ npx shadcn-ui@latest add button badge avatar scroll-area textarea card
 - [ ] Session state in Zustand store
 - [ ] Integration tests with MSW
 - [ ] E2E tests with Playwright
-- [ ] Validation evidence in validated_test_evidence/phase-003/
+- [ ] Validation evidence in frontend/validated_test_evidence/phase-005/

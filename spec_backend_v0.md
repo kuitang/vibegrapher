@@ -13,20 +13,7 @@ FastAPI backend for vibecoding OpenAI Agents SDK workflows via natural language.
 
 ## Core Services (Pseudocode)
 
-### 1. AST Parser Service
-```python
-class AgentNode:
-    name: str
-    line_start: int
-    line_end: int
-    children: List[str]  # Names of child agents if any
-
-class ASTParserService:
-    # Extract Agent() calls with line numbers and replace specific agents
-    pass
-```
-
-### 2. All OpenAI Agents (app/agents/all_agents.py)
+### 1. All OpenAI Agents (app/agents/all_agents.py)
 ```python
 # IMPORTANT: MUST use gpt-5 series models - THESE ARE REAL MODELS, NOT PLACEHOLDERS!
 # DO NOT USE gpt-4o or older models!
@@ -35,24 +22,28 @@ MODEL_CONFIGS = {
     "SMALL_MODEL": "gpt-5-mini"  # REAL MODEL - USE THIS!
 }
 
-# Validation functions - check syntax, test/apply patches
+# Validation function - apply patch then check syntax in one step
+def validate_patch(original: str, patch: str) -> dict:
+    """Apply patch to temp copy, then check Python syntax
+    Returns: {valid: bool, error?: str} with verbatim error if invalid"""
 
 # Import from agents package
 from agents import Agent, Runner, function_tool, SQLiteSession
 from pydantic import BaseModel
 
-# Define EvaluationResult Pydantic model
+# Define EvaluationResult Pydantic model - NOW INCLUDES COMMIT MESSAGE
 class EvaluationResult(BaseModel):
     approved: bool
     reasoning: str
+    commit_message: str  # Suggested commit message if approved
 
 # Tool for VibeCoder - validates and submits patches
 @function_tool
 async def submit_patch(ctx, patch: str, description: str) -> dict:
-    # 1. Check patch applies cleanly to current_code from context
-    # 2. Apply patch to get new_code
-    # 3. Check syntax of new_code
-    # 4. If all valid, store in ctx.state for evaluator
+    # 1. Get current_code from context
+    # 2. Validate patch (applies + syntax check in one step)
+    # 3. If invalid, return verbatim error to user
+    # 4. If valid, store in ctx.state for evaluator
     # 5. Return {status: "submitted", handoff_to_evaluator: True}
 
 # VibeCoder agent - TWO modes:
@@ -69,8 +60,8 @@ vibecoder_agent = Agent(
 evaluator_agent = Agent(
     name="Evaluator",
     model=MODEL_CONFIGS["THINKING_MODEL"],
-    instructions="Evaluate patches for quality/correctness...",
-    output_type=EvaluationResult  # {approved: bool, reasoning: str}
+    instructions="Evaluate patches and suggest commit messages...",
+    output_type=EvaluationResult  # {approved: bool, reasoning: str, commit_message: str}
 )
 
 class VibecodeService:
@@ -80,7 +71,8 @@ class VibecodeService:
     async def vibecode(project_id, prompt, current_code, node_id=None):
         # Create session key with correct format
         session_key = f"project_{project_id}_node_{node_id}" if node_id else f"project_{project_id}"
-        session = SQLiteSession(session_key)  # From OpenAI SDK
+        db_path = f"media/projects/{project_id}_conversations.db"
+        session = SQLiteSession(session_key, db_path)  # MUST use file persistence, not in-memory
         
         for iteration in range(MAX_ITERATIONS=3):
             # Run VibeCoder
@@ -138,28 +130,52 @@ class VibecodeService:
                 )
             
             if evaluator_result.approved:
-                return {"patch": submitted_patch, "accepted": True}
+                # Create Diff record for human review
+                diff = await self.create_diff(
+                    session_id=session.id,
+                    project_id=project_id,
+                    diff_content=submitted_patch,
+                    commit_message=evaluator_result.commit_message,
+                    evaluator_reasoning=evaluator_result.reasoning
+                )
+                return {
+                    "diff_id": diff.id,
+                    "diff": submitted_patch,
+                    "status": "pending_human_review",
+                    "commit_message": evaluator_result.commit_message
+                }
             else:
                 evaluator_feedback = evaluator_result.reasoning
         
         return {"error": "Max iterations reached"}
 ```
 
-### 3. Git Service
+### 2. Git Service
 ```python
-# GitService: Standard git operations (init, commit, get code, apply diff) using pygit2
+# GitService: Git operations with diff tracking
+class GitService:
+    async def get_head_commit() -> str  # Current HEAD SHA
+    async def get_current_branch() -> str  # Active branch name
+    async def get_code_at_commit(sha: str) -> str  # Code at specific commit
+    async def create_temp_branch_with_diff(diff: Diff) -> str  # Preview branch
+    async def commit_diff(diff: Diff, message: str) -> str  # Commit approved diff
 ```
 
-### 4. Sandbox Service
+### 3. Socket.io Manager
 ```python
-# SandboxService: Run code in subprocess with timeout=30s, memory=512MB
+# SocketIOManager: Handle real-time events
+# - emit_to_room: Send events with trace_id to project rooms
+# - join_project_room: Subscribe clients to project updates
+# - start_heartbeat: Send alive status every 30s for debugging
+# Events: vibecode_response, token_usage, heartbeat
 ```
 
 ## Database Models
 
 ```python
 # SQLAlchemy models - see spec_datamodel_v0.md for full schemas
-# Project, VibecodeSession, ConversationMessage, TestCase
+# Project, VibecodeSession, ConversationMessage, TestCase, Diff
+# All models follow the TypeScript interfaces defined in spec_datamodel_v0.md
 ```
 
 ## API Endpoints (Simplified)
@@ -172,18 +188,30 @@ POST /sessions/:id/messages     - Send message to session
 GET  /sessions/:id/messages     - Get conversation history
 DELETE /sessions/:id            - Clear session
 GET  /messages/:id/full         - Get full OpenAI response
-POST /tests                     - Create test case  
-POST /tests/:id/run            - Run single test
+
+# Diff Management (NEW)
+GET  /projects/:id/diffs        - All diffs for project
+GET  /sessions/:id/diffs        - All diffs for session
+GET  /sessions/:id/diffs/pending - Pending review diffs
+GET  /diffs/:id                 - Single diff details
+GET  /diffs/:id/preview         - Preview applied diff
+POST /diffs/:id/review          - Human approve/reject with feedback
+POST /diffs/:id/test            - Run tests on uncommitted diff
+POST /diffs/:id/commit          - Commit approved diff
+POST /diffs/:id/refine-message  - Get new commit message suggestion
+
+# Test Management (Minimal - Only for Diff Testing)
+POST /projects/:id/tests        - Create test case for diff validation
+GET  /projects/:id/tests        - List available tests
+GET  /projects/:id/tests/quick  - Get quick tests (5s timeout) for human review
+# Note: No standalone test runner UI - tests only shown in DiffReviewModal
+
 ```
 
 ### Key Endpoint: Start Session
 ```python
-@app.post("/projects/{project_id}/sessions")
-async def start_session(project_id: str, request: StartSessionRequest):
-    # IMPORTANT: Creates/retrieves OpenAI SQLiteSession with correct format
-    session_key = f"project_{project_id}_node_{request.node_id}" if request.node_id else f"project_{project_id}"
-    # Store session_key in VibecodeSession.openai_session_key
-    # Return session_id for frontend tracking
+# POST /projects/{project_id}/sessions
+# Creates SQLiteSession with key: project_{id}_node_{node_id}
 ```
 
 ### Key Endpoint: Send Message
@@ -193,10 +221,18 @@ async def send_message(session_id: str, request: MessageRequest):
     # Get current code from project
     current_code = await git_service.get_current_code(session.project_id)
     
+    # Handle human rejection feedback (NEW)
+    if request.feedback_type == 'human_rejection':
+        # Get rejected diff and create new prompt
+        rejected_diff = get_diff(request.diff_id)
+        prompt = f"Human rejected: {request.feedback}. Original: {rejected_diff.vibecoder_prompt}"
+    else:
+        prompt = request.prompt
+    
     # Run vibecoder with OpenAI session (may loop with evaluator)
     result = await vibecode_service.vibecode(
         session.project_id,
-        request.prompt,
+        prompt,
         current_code,  # Pass current code for patching
         session.node_id
     )
@@ -216,29 +252,15 @@ async def send_message(session_id: str, request: MessageRequest):
         token_usage=token_usage  # Track usage separately
     )
     
-    # Socket.io broadcast with trace_id AND token usage
-    await socketio_manager.emit_to_room(
-        f"project_{session.project_id}",
-        "vibecode_response",
-        {
-            "patch": result.get("patch"),
-            "trace_id": result.get("trace_id"),
-            "session_id": session_id,
-            "token_usage": token_usage  # Stream usage in real-time
-        }
-    )
-    
-    # Also emit separate usage event for tracking
-    await socketio_manager.emit_to_room(
-        f"project_{session.project_id}",
-        "token_usage",
-        {
-            "session_id": session_id,
-            "message_id": message.id,
-            "usage": token_usage,
-            "timestamp": datetime.utcnow().isoformat()
-        }
-    )
+    # Emit vibecode_response with diff_id for human review
+    # Emit token_usage for tracking
+```
+
+### Human Review Endpoints (NEW)
+```python
+# POST /diffs/{diff_id}/review - Approve/reject with feedback
+# POST /diffs/{diff_id}/commit - Commit approved diff, clear evaluator context
+# POST /diffs/{diff_id}/refine-message - Get new commit message from evaluator
 ```
 
 ### Other Endpoints
@@ -248,14 +270,6 @@ async def send_message(session_id: str, request: MessageRequest):
 # POST /tests/{id}/run - Run test in sandbox
 ```
 
-## Socket.io Manager
-```python
-# SocketIOManager: Handle real-time events
-# - emit_to_room: Send events with trace_id to project rooms
-# - join_project_room: Subscribe clients to project updates
-# - start_heartbeat: Send alive status every 30s for debugging
-# Events: vibecode_response, token_usage, test_completed, heartbeat
-```
 
 ## Configuration
 ```python
@@ -278,7 +292,6 @@ async def send_message(session_id: str, request: MessageRequest):
 ```
 
 ## Testing
-- Unit tests: AST parser
 - Integration tests: vibecode flow  
-- E2E test: Create project → Vibecode → Run test
+- E2E test: Create project → Vibecode → Review diff
 - Management command test: Reset DB → Verify sample data

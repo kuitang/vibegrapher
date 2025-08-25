@@ -80,11 +80,11 @@ def test_full_response_storage():
 - Run pytest + python-socketio integration tests for session management with streaming
 - Test with curl: create sessions, send messages, verify Socket.io broadcasts
 - Test with Socket.io client: connect, subscribe, verify real-time token usage
-- Save test evidence in validated_test_evidence/phase-005/
+- Save test evidence in backend/validated_test_evidence/phase-005/
 
 ## Deliverables
 - [ ] Session endpoints in app/api/sessions.py with Socket.io integration
 - [ ] Message storage with full OpenAI response and token usage
 - [ ] Real-time Socket.io broadcasting in send_message endpoint
 - [ ] Tests in tests/integration/test_phase_005_sessions.py
-- [ ] Validation evidence in validated_test_evidence/phase-005/
+- [ ] Validation evidence in backend/validated_test_evidence/phase-005/

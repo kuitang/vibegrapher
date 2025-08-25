@@ -1,5 +1,8 @@
 # Frontend Phase 001: Core Layout with shadcn
 
+## ⚠️ BACKEND DEPENDENCY CHECK
+**REQUIRED**: None - this phase can start immediately without backend dependencies.
+
 ## Objectives
 Set up React app with TypeScript, shadcn components and basic layout with strict type safety.
 
@@ -55,7 +58,7 @@ npx playwright test --headed=false
 - Test TypeScript compilation with `npm run typecheck`  
 - Verify shadcn Card components render with proper test IDs
 - Test dark mode toggle functionality
-- Save test evidence in validated_test_evidence/phase-001/
+- Save test evidence in frontend/validated_test_evidence/phase-001/
 
 ## Setup Commands
 ```bash
@@ -75,4 +78,4 @@ npx playwright test --headed=false
 - [ ] Integration tests in tests/integration/
 - [ ] E2E tests in tests/e2e/
 - [ ] Type checking passes (`npm run typecheck`)
-- [ ] Validation evidence in validated_test_evidence/phase-001/
+- [ ] Validation evidence in frontend/validated_test_evidence/phase-001/

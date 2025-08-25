@@ -1,4 +1,8 @@
-# Frontend Phase 002: Socket.io Debug Setup
+# Frontend Phase 004: Socket.io Debug Setup
+
+## ⚠️ BACKEND DEPENDENCY CHECK
+**REQUIRED**: Backend `plans/backend-phase-002-socketio.md` must be completed.
+**VERIFICATION**: Check the backend phase file header for "# DONE as of commit". If not present, DO NOT START this phase and inform the user that the backend dependency is not ready.
 
 ## Objectives
 Set up Socket.io connection with comprehensive debugging.
@@ -122,11 +126,11 @@ export function createMockWSServer(port = 8080) {
 ## Validation Script
 ```bash
 #!/bin/bash
-OUTPUT_DIR="frontend/validated_test_evidence/phase-002"
+OUTPUT_DIR="frontend/validated_test_evidence/phase-004"
 mkdir -p $OUTPUT_DIR
 
 # Run integration tests
-npm test -- --run tests/integration/phase002-websocket.test.tsx > $OUTPUT_DIR/vitest.log 2>&1
+npm test -- --run tests/integration/phase004-socketio.test.tsx > $OUTPUT_DIR/vitest.log 2>&1
 
 # Start mock server and test connection
 node -e "
@@ -139,11 +143,11 @@ setTimeout(() => process.exit(0), 10000)
 MOCK_PID=$!
 
 # Test with real browser (headless)
-npx playwright test tests/e2e/phase002-websocket.e2e.ts --reporter=json > $OUTPUT_DIR/playwright.json
+npx playwright test tests/e2e/phase004-socketio.e2e.ts --reporter=json > $OUTPUT_DIR/playwright.json
 
 kill $MOCK_PID
 
-echo "Phase 002 validation complete"
+echo "Phase 004 validation complete"
 ```
 
 ## Deliverables
@@ -151,4 +155,4 @@ echo "Phase 002 validation complete"
 - [ ] useWebSocket hook in src/hooks/
 - [ ] Connection status component
 - [ ] Integration tests with mock WS
-- [ ] Validation evidence in validated_test_evidence/phase-002/
+- [ ] Validation evidence in frontend/validated_test_evidence/phase-004/

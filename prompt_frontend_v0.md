@@ -1,7 +1,7 @@
 # Frontend Agent Instructions for Vibegrapher v0
 
 ## Your Mission
-Build a React TypeScript interface for vibecoding agents via natural language. No graph visualization in v0.
+Build a React TypeScript interface for vibecoding agents via natural language with human review UI for approving/rejecting code changes. No graph visualization in v0.
 
 ## Environment Setup
 
@@ -95,11 +95,12 @@ npm run test:coverage
 
 ### Initial Setup (One-time)
 ```bash
-# Create Vite app
+# STAY IN PROJECT ROOT
+# Create Vite app from root
 npm create vite@latest frontend -- --template react-ts
-cd frontend
 
 # Install and configure Tailwind + shadcn
+cd frontend
 npm install -D tailwindcss postcss autoprefixer
 npx tailwindcss init -p
 npx shadcn-ui@latest init
@@ -109,6 +110,7 @@ npx shadcn-ui@latest add alert alert-dialog avatar badge button
 npx shadcn-ui@latest add card collapsible dialog drawer dropdown-menu
 npx shadcn-ui@latest add input popover progress scroll-area separator
 npx shadcn-ui@latest add sheet sonner table tabs textarea tooltip
+cd ..  # Return to project root
 ```
 
 ## Implementation Phases
@@ -116,12 +118,14 @@ npx shadcn-ui@latest add sheet sonner table tabs textarea tooltip
 See `plans/frontend-phase-*.md` for detailed requirements:
 
 1. **Phase 001**: Core Layout → `plans/frontend-phase-001-layout.md`
-2. **Phase 002**: Socket.io Setup → `plans/frontend-phase-002-socketio.md`
-3. **Phase 003**: Session Management → `plans/frontend-phase-003-session.md`
-4. **Phase 004**: Code Viewer → `plans/frontend-phase-004-code-viewer.md`
-5. **Phase 005**: Diff Handling → `plans/frontend-phase-005-diff.md`
-6. **Phase 006**: Test Runner → `plans/frontend-phase-006-test-runner.md`
-7. **Phase 007**: Mobile Responsive → `plans/frontend-phase-007-mobile.md`
+2. **Phase 002**: Local Persistence → `plans/frontend-phase-002-local-persistence.md`
+3. **Phase 003**: Mobile Responsive → `plans/frontend-phase-003-mobile.md`
+4. **Phase 004**: Socket.io Setup → `plans/frontend-phase-004-socketio.md`
+5. **Phase 005**: Session Management → `plans/frontend-phase-005-session.md`
+6. **Phase 006**: Code Viewer → `plans/frontend-phase-006-code-viewer.md`
+7. **Phase 007**: Diff Handling → `plans/frontend-phase-007-diff.md`
+8. **Phase 008**: Human Review UI → `plans/frontend-phase-008-human-review.md`
+9. **Phase 009**: Production Deployment → `plans/frontend-phase-009-deployment.md`
 
 ## Critical Requirements
 
@@ -146,19 +150,26 @@ socket.on('heartbeat', (data) => {
 // NEVER mock token usage or API responses in development
 ```
 
-### State Management (Zustand)
+### State Management (Zustand with Persistence)
 ```typescript
+// Store with localStorage persistence for critical UI state
 interface AppState {
   project: Project | null
   currentSession: SessionInfo | null
   messages: Message[]
+  draftMessage: string  // Persisted to prevent data loss
   
   actions: {
     startSession: (projectId: string, nodeId?: string) => Promise<void>
     sendMessage: (prompt: string) => Promise<void>
     clearSession: () => Promise<void>
+    setDraftMessage: (draft: string) => void  // Auto-saves to localStorage
   }
 }
+
+// Uses Zustand persist middleware
+// Automatically saves/restores: drafts, session ID, modal states
+// Clears stale state after 24 hours
 ```
 
 ### Environment-Aware URLs
@@ -193,10 +204,10 @@ Before EVERY commit:
 
 ## Deployment Scenarios
 
-### Local Development
-- Backend: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
-- Frontend: `npm run dev` (runs on :5173)
-- Use `.env.local` with `VITE_API_URL=http://localhost:8000`
+### Local Development (from project root)
+- Backend: `uvicorn backend.app.main:app --host 0.0.0.0 --port 8000`
+- Frontend: `npm --prefix frontend run dev` (runs on :5173)
+- Use `frontend/.env.local` with `VITE_API_URL=http://localhost:8000`
 
 ### Remote Development Access
 - Backend: Same as local but accessible via server IP
@@ -228,3 +239,11 @@ Before EVERY commit:
 7. **LOOP BACK TO STEP 2** - find the next incomplete frontend document
 8. **Continue this infinite loop until you get stuck with bugs**
 9. **ONLY COMMIT WORKING CODE!** - Stop if code doesn't work
+
+## Deployment Notes (Phase 009)
+- Deploy to Fly.io EWR region as static site with NGINX
+- Use GitHub Actions for CI/CD (see `plans/frontend-phase-009-deployment.md`)
+- Production: never scale to 0, autoscale up to 3
+- Preview: scale to 0 for PR deployments
+- Multi-stage Docker build for optimization
+- Bundle splitting and PWA support

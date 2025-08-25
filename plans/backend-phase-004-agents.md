@@ -11,13 +11,19 @@ Implement VibeCoder and Evaluator agents with patch submission workflow per spec
    - return text → direct response to user
 4. Evaluator agent that reviews patches
 5. VibecodeService with MAX 3 iteration loop
+6. **CREATE Diff model** (see spec_datamodel_v0.md lines 229-258 for full schema)
+7. Implement diff creation when evaluator approves patches
 
 ## Acceptance Criteria
 - ✅ VibeCoder can submit patches via submit_patch tool
-- ✅ submit_patch validates syntax and patch application
+- ✅ submit_patch validates syntax and patch application IN ONE STEP
+- ✅ Validation returns VERBATIM errors if patch/syntax invalid
 - ✅ VibeCoder can return text without patching
-- ✅ Evaluator reviews and approves/rejects patches
+- ✅ Evaluator reviews patches AND suggests commit messages
 - ✅ Loop runs max 3 iterations between agents
+- ✅ **Diff model created and stored in database** (status='evaluator_approved')
+- ✅ Approved diffs accessible via GET /sessions/:id/diffs/pending endpoint
+- ✅ Human rejection triggers new vibecode iteration
 - ✅ SQLiteSession persists conversation history
 - ✅ REAL OpenAI token usage logged for each agent call
 - ✅ Token usage streamed via Socket.io in real-time
@@ -25,7 +31,7 @@ Implement VibeCoder and Evaluator agents with patch submission workflow per spec
 
 ## Integration Tests (pytest + httpx)
 ```python
-# tests/integration/test_phase_004_agents.py
+# tests/integration/test_phase_003_agents.py
 import pytest
 import httpx
 from httpx import AsyncClient
@@ -69,10 +75,16 @@ def test_evaluator_iteration():
 ## Validation Requirements
 - Write pytest + httpx integration tests with REAL OpenAI API calls (requires OPENAI_API_KEY)
 - Test manually with curl: create sessions, send messages, verify vibecode responses
+- **Test Diff creation flow**:
+  1. Send a trivial prompt like "Add a comment saying hello"
+  2. Verify evaluator approves (make evaluator lenient for testing)
+  3. Check diff is created with GET /sessions/:id/diffs/pending
+  4. Verify diff has: status='evaluator_approved', commit_message, evaluator_reasoning
+  5. Test GET /diffs/:id endpoint returns full diff details
 - Verify SQLiteSession files are created and token usage is logged
 - Test both patch submission and text response modes
 - Confirm evaluator loop works with max 3 iterations
-- Save test evidence in validated_test_evidence/phase-004/
+- Save test evidence including diff JSON in backend/validated_test_evidence/phase-004/
 
 ## Key Code Structure (from spec_backend_v0.md)
 ```python
@@ -86,24 +98,25 @@ MODEL_CONFIGS = {
     "SMALL_MODEL": "gpt-5-mini"  # REAL MODEL - DO NOT USE gpt-4o!
 }
 
-# Define EvaluationResult Pydantic model
+# Define EvaluationResult Pydantic model - INCLUDES COMMIT MESSAGE
 class EvaluationResult(BaseModel):
     approved: bool
     reasoning: str
+    commit_message: str  # Suggested commit message if approved
 
-# Validation functions (deterministic, not agents)
-def check_syntax(code: str) -> dict
-def check_patch_applies(original: str, patch: str) -> dict
-def apply_patch(original: str, patch: str) -> str
+# Validation function - apply patch then check syntax in ONE STEP
+def validate_patch(original: str, patch: str) -> dict:
+    # 1. Apply patch to temp copy
+    # 2. Run Python syntax check on result
+    # 3. Return {valid: bool, error?: str} with VERBATIM error if invalid
 
 @function_tool
 async def submit_patch(ctx, patch: str, description: str) -> dict:
     # 1. Get current_code from ctx.state
-    # 2. Check patch applies cleanly
-    # 3. Apply patch to get new_code
-    # 4. Check syntax of new_code
-    # 5. Store in ctx.state["submitted_patch"]
-    # 6. Return {status: "submitted", handoff_to_evaluator: True}
+    # 2. Run validate_patch() - single step validation
+    # 3. If invalid, return verbatim error to user
+    # 4. If valid, store in ctx.state["submitted_patch"]
+    # 5. Return {status: "submitted", handoff_to_evaluator: True}
 
 vibecoder_agent = Agent(
     name="Vibecoder",
@@ -115,8 +128,8 @@ vibecoder_agent = Agent(
 evaluator_agent = Agent(
     name="Evaluator",
     model=MODEL_CONFIGS["THINKING_MODEL"],
-    instructions="Evaluate patches for quality/correctness...",
-    output_type=EvaluationResult
+    instructions="Evaluate patches AND suggest commit messages...",
+    output_type=EvaluationResult  # Now includes commit_message field
 )
 
 class VibecodeService:
@@ -126,12 +139,23 @@ class VibecodeService:
             # Check if patch submitted
             # If not, return text response
             # If yes, run Evaluator
-            # If approved, return patch
+            # If approved:
+            #   - Create Diff record with status='evaluator_approved'
+            #   - Return diff_id for human review
             # If rejected, loop with feedback
+    
+    async def handle_human_rejection(diff_id, feedback):
+        # Get rejected diff
+        # Create new prompt with human feedback
+        # Call vibecode() again with new prompt
 ```
 
 ## Deliverables
-- [ ] All agents in app/agents/all_agents.py
-- [ ] VibecodeService in app/services/vibecode_service.py
-- [ ] Tests in tests/integration/test_phase_004_agents.py
-- [ ] Validation evidence in validated_test_evidence/phase-004/
+- [ ] All agents in app/agents/all_agents.py with commit message generation
+- [ ] VibecodeService in app/services/vibecode_service.py with diff creation
+- [ ] **Diff model in app/models/diff.py** (following spec_datamodel_v0.md)
+- [ ] Basic diff endpoints in app/api/diffs.py:
+  - GET /sessions/:id/diffs/pending
+  - GET /diffs/:id
+- [ ] Tests in tests/integration/test_phase_004_agents.py including diff tests
+- [ ] Validation evidence with diff samples in backend/validated_test_evidence/phase-004/

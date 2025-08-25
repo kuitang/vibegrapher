@@ -1,5 +1,54 @@
 # Vibegrapher FUTURE Features Specification
 
+## AST Parser & Node-Based Editing (v1)
+
+### Backend AST Parser Service
+```python
+class AgentNode:
+    name: str
+    line_start: int
+    line_end: int
+    children: List[str]  # Names of child agents if any
+
+class ASTParserService:
+    # Extract Agent() calls with line numbers
+    # Update specific nodes without affecting others
+    # Handle nested and complex agent definitions
+```
+
+### Frontend Node Selection
+```typescript
+// Click on graph node → highlight code in editor
+// Node-specific sessions for targeted editing
+// Visual indicators for node status
+```
+
+## Test Sandbox & Runner (v1)
+
+### Backend Sandbox Service
+```python
+class SandboxService:
+    # Run code in isolated subprocess
+    # Resource limits: 30s timeout, 512MB memory
+    # Security: No network, file system restrictions
+    # Stream output via WebSocket
+```
+
+### Frontend Test Runner UI
+```typescript
+// Test management with shadcn Table
+// Add/edit tests via Dialog
+// Real-time test execution with Progress bar
+// Pass/fail indicators with Alert components
+// Collapsible output viewer
+```
+
+### Test Features
+- Quick tests (5s timeout) for rapid validation
+- Full test suite execution
+- Test result caching on diffs
+- Integration with human review flow
+
 ## Graph Visualization (v1)
 
 ### Backend Additions
@@ -139,6 +188,36 @@ docs_agent = Agent(
 - Project permissions
 - Agent editing restrictions
 - Test execution limits
+
+## Offline-First Architecture (v2)
+
+### Technology Choice
+- **persist-and-sync** middleware for Zustand
+- **IndexedDB** for large data (code, diffs, messages)
+- **Service Worker** for PWA and background sync
+- **Optimistic updates** with rollback on conflict
+
+### Offline Features
+- Browse all code without connection
+- Review past diffs and test results
+- Queue messages for sending when online
+- Run cached tests locally
+- Complete history available offline
+
+### Storage Strategy
+```typescript
+// IndexedDB: projects, messages, diffs, test results (large data)
+// localStorage: UI state, drafts, preferences (small data)
+// Conflict resolution: last-write-wins for simplicity
+// Sync: bidirectional with queue for offline actions
+```
+
+### Mobile Benefits
+- PWA installable
+- Works in subway/airplane
+- Instant access (no loading)
+- Reduced data usage
+- Battery efficient background sync
 
 ## AI-Powered Enhancements (Future)
 

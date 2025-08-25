@@ -1,4 +1,11 @@
-# Frontend Phase 004: Code Viewer
+# Frontend Phase 006: Code Viewer
+
+## ⚠️ BACKEND DEPENDENCY CHECK
+**REQUIRED**: Backend phases must be completed:
+- `plans/backend-phase-001-infrastructure.md` - For GET /projects/:id endpoint
+- `plans/backend-phase-002-socketio.md` - For real-time code updates
+
+**VERIFICATION**: Check each backend file header for "# DONE as of commit". If ANY are missing, DO NOT START this phase and inform the user which backend dependencies are not ready.
 
 ## Objectives
 Implement Monaco editor for code display with WebSocket updates.
@@ -19,12 +26,12 @@ Implement Monaco editor for code display with WebSocket updates.
 
 ## Integration Tests (Vitest)
 ```typescript
-// tests/integration/phase004-code-viewer.test.tsx
+// tests/integration/phase006-code-viewer.test.tsx
 import { render, screen, waitFor } from '@testing-library/react'
 import { CodeViewer } from '../src/components/CodeViewer'
 import { useAppStore } from '../src/store'
 
-describe('Phase 004: Code Viewer', () => {
+describe('Phase 006: Code Viewer', () => {
   test('monaco editor renders with Python highlighting', async () => {
     render(<CodeViewer projectId="test" />)
     
@@ -61,10 +68,10 @@ describe('Phase 004: Code Viewer', () => {
 
 ## E2E Test (Playwright - Headless)
 ```typescript
-// tests/e2e/phase004-code-viewer.e2e.ts
+// tests/e2e/phase006-code-viewer.e2e.ts
 import { test, expect } from '@playwright/test'
 
-test.describe('Phase 004: Code Viewer E2E', () => {
+test.describe('Phase 006: Code Viewer E2E', () => {
   test('monaco displays and updates', async ({ page }) => {
     await page.goto('http://localhost:5173/project/test')
     
@@ -91,14 +98,14 @@ test.describe('Phase 004: Code Viewer E2E', () => {
 ## Validation Script
 ```bash
 #!/bin/bash
-OUTPUT_DIR="frontend/validated_test_evidence/phase-004"
+OUTPUT_DIR="frontend/validated_test_evidence/phase-006"
 mkdir -p $OUTPUT_DIR
 
 # Run integration tests
-npm test -- --run tests/integration/phase004-code-viewer.test.tsx > $OUTPUT_DIR/vitest.log 2>&1
+npm test -- --run tests/integration/phase006-code-viewer.test.tsx > $OUTPUT_DIR/vitest.log 2>&1
 
 # Run E2E tests (headless)
-npx playwright test tests/e2e/phase004-code-viewer.e2e.ts \
+npx playwright test tests/e2e/phase006-code-viewer.e2e.ts \
   --reporter=json \
   > $OUTPUT_DIR/playwright.json
 
@@ -108,7 +115,7 @@ npx playwright screenshot \
   http://localhost:5173/project/test \
   $OUTPUT_DIR/code-editor.png
 
-echo "Phase 004 validation complete"
+echo "Phase 006 validation complete"
 ```
 
 ## Deliverables
@@ -117,4 +124,4 @@ echo "Phase 004 validation complete"
 - [ ] Theme synchronization
 - [ ] Integration tests
 - [ ] E2E tests
-- [ ] Validation evidence in validated_test_evidence/phase-004/
+- [ ] Validation evidence in frontend/validated_test_evidence/phase-006/
