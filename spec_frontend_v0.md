@@ -80,17 +80,12 @@ interface CodeViewerProps {
 ```typescript
 // Zustand store with localStorage persistence
 interface AppState {
-  // Regular state (not persisted)
+  // ALL STATE PERSISTED to localStorage for complete recovery
   project: Project | null;
   currentSession: VibecodeSession | null;
   messages: ConversationMessage[];
-  testResults: TestResult[] | null;
-  isRunningTests: boolean;
-  
-  // PERSISTED to localStorage (critical UI state only)
   pendingDiffs: Diff[];
   currentReviewDiff: Diff | null;
-  approvalMode: 'accept' | 'test-accept' | 'test-first';
   draftMessage: string;
   lastActiveTime: number;
   
@@ -100,7 +95,7 @@ interface AppState {
 }
 
 // Uses Zustand persist middleware with:
-// - partialize: Only persist UI state, not data
+// - ALL state persisted for complete page refresh recovery
 // - 24-hour stale state cleanup
 // - version: 1 for future migrations
 // - Synchronous localStorage (instant recovery)
@@ -216,11 +211,12 @@ class WebSocketService {
 ## Page Refresh Recovery
 ```typescript
 // Automatic recovery via Zustand persist:
-// 1. localStorage hydrates synchronously
+// 1. localStorage hydrates ALL state synchronously
 // 2. Modals re-open if they were open
 // 3. Draft messages restored
-// 4. Session validated with server
-// 5. Stale state (>24h) cleared automatically
+// 4. Conversation history restored
+// 5. Session validated with server
+// 6. Stale state (>24h) cleared automatically
 ```
 
 ## Configuration
