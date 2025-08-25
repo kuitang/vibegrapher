@@ -13,7 +13,7 @@ FastAPI backend for vibecoding OpenAI Agents SDK workflows via natural language.
 
 ## Core Services (Pseudocode)
 
-### 1. All OpenAI Agents (app/agents/all_agents.py)
+### 1. OpenAI Agents (app/vibecoder_agents/)
 ```python
 # IMPORTANT: MUST use gpt-5 series models - THESE ARE REAL MODELS, NOT PLACEHOLDERS!
 # DO NOT USE gpt-4o or older models!
@@ -22,14 +22,19 @@ MODEL_CONFIGS = {
     "SMALL_MODEL": "gpt-5-mini"  # REAL MODEL - USE THIS!
 }
 
-# Validation function - apply patch then check syntax in one step
+# Organize agents in app/vibecoder_agents/ directory (not all in one file)
+# Apply tenacity for exponential backoff on OpenAI API calls
+
+# Validation function - apply unified diff patch using pygit2
 def validate_patch(original: str, patch: str) -> dict:
-    """Apply patch to temp copy, then check Python syntax
+    """Apply unified diff patch using pygit2, then check Python syntax
+    Patch format: Unified diff (like git diff output)
     Returns: {valid: bool, error?: str} with verbatim error if invalid"""
 
 # Import from agents package
 from agents import Agent, Runner, function_tool, SQLiteSession
 from pydantic import BaseModel
+from tenacity import retry, wait_exponential, stop_after_attempt
 
 # Define EvaluationResult Pydantic model - NOW INCLUDES COMMIT MESSAGE
 class EvaluationResult(BaseModel):
@@ -41,7 +46,7 @@ class EvaluationResult(BaseModel):
 @function_tool
 async def submit_patch(ctx, patch: str, description: str) -> dict:
     # 1. Get current_code from context
-    # 2. Validate patch (applies + syntax check in one step)
+    # 2. Validate unified diff patch using pygit2
     # 3. If invalid, return verbatim error to user
     # 4. If valid, store in ctx.state for evaluator
     # 5. Return {status: "submitted", handoff_to_evaluator: True}
@@ -68,10 +73,12 @@ class VibecodeService:
     def __init__(self, socketio_manager):
         self.socketio_manager = socketio_manager
     
+    @retry(wait=wait_exponential(multiplier=1, min=4, max=60), stop=stop_after_attempt(6))
     async def vibecode(project_id, prompt, current_code, node_id=None):
-        # Create session key with correct format
+        # Create session key with correct format (uses project_id for key, slug for path)
         session_key = f"project_{project_id}_node_{node_id}" if node_id else f"project_{project_id}"
-        db_path = f"media/projects/{project_id}_conversations.db"
+        # Use project.slug for filesystem paths to ensure valid filenames
+        db_path = f"media/projects/{project.slug}_conversations.db"
         session = SQLiteSession(session_key, db_path)  # MUST use file persistence, not in-memory
         
         for iteration in range(MAX_ITERATIONS=3):
@@ -81,7 +88,7 @@ class VibecodeService:
             else:
                 input = f"Rejected. Feedback: {evaluator_feedback}. Original: {prompt}"
             
-            # Using OpenAI SDK's Runner - stream token usage in real-time
+            # Using OpenAI SDK's Runner with tenacity retry decorator
             vibecoder_result = await Runner.run(
                 vibecoder_agent, input, 
                 session=session, 
@@ -89,14 +96,16 @@ class VibecodeService:
             )
             
             # CRITICAL: Log and stream token usage immediately
-            if hasattr(vibecoder_result, 'usage') and vibecoder_result.usage:
+            if vibecoder_result.context_wrapper.usage:
                 usage_data = {
-                    "prompt_tokens": vibecoder_result.usage.get("prompt_tokens", 0),
-                    "completion_tokens": vibecoder_result.usage.get("completion_tokens", 0),
-                    "total_tokens": vibecoder_result.usage.get("total_tokens", 0),
-                    "model": vibecoder_result.model or "gpt-5-thinking",
+                    "prompt_tokens": vibecoder_result.context_wrapper.usage.input_tokens,
+                    "completion_tokens": vibecoder_result.context_wrapper.usage.output_tokens,
+                    "total_tokens": vibecoder_result.context_wrapper.usage.total_tokens,
+                    "model": "gpt-5-thinking",
                     "agent": "vibecoder",
-                    "iteration": iteration + 1
+                    "iteration": iteration + 1,
+                    "response_id": vibecoder_result.last_response_id,
+                    "session_id": session.id
                 }
                 
                 await self.socketio_manager.emit_to_room(
@@ -113,14 +122,16 @@ class VibecodeService:
             evaluator_result = await Runner.run(evaluator_agent, patch_details, session=session)
             
             # CRITICAL: Log evaluator token usage too
-            if hasattr(evaluator_result, 'usage') and evaluator_result.usage:
+            if evaluator_result.context_wrapper.usage:
                 evaluator_usage = {
-                    "prompt_tokens": evaluator_result.usage.get("prompt_tokens", 0),
-                    "completion_tokens": evaluator_result.usage.get("completion_tokens", 0),
-                    "total_tokens": evaluator_result.usage.get("total_tokens", 0),
-                    "model": evaluator_result.model or "gpt-5-thinking",
+                    "prompt_tokens": evaluator_result.context_wrapper.usage.input_tokens,
+                    "completion_tokens": evaluator_result.context_wrapper.usage.output_tokens,
+                    "total_tokens": evaluator_result.context_wrapper.usage.total_tokens,
+                    "model": "gpt-5-thinking",
                     "agent": "evaluator", 
-                    "iteration": iteration + 1
+                    "iteration": iteration + 1,
+                    "response_id": evaluator_result.last_response_id,
+                    "session_id": session.id
                 }
                 
                 await self.socketio_manager.emit_to_room(
@@ -146,17 +157,48 @@ class VibecodeService:
                 }
             else:
                 evaluator_feedback = evaluator_result.reasoning
+                # ALWAYS emit evaluator feedback to frontend for display
+                await self.socketio_manager.emit_to_room(
+                    f"project_{project_id}",
+                    "evaluator_feedback",
+                    {"reasoning": evaluator_feedback, "iteration": iteration + 1}
+                )
         
-        return {"error": "Max iterations reached"}
+        # After max iterations, return error with all feedback to user
+        # User can continue conversation - VibeCoder maintains context via SQLiteSession
+        return {
+            "error": "Max iterations reached", 
+            "final_feedback": evaluator_feedback,
+            "message": "Please provide additional guidance or adjust your request"
+        }
 ```
 
 ### 2. Git Service
 ```python
-# GitService: Git operations with diff tracking
+# GitService: Git operations with pygit2 - NO shelling out to git
+
+# ################################################################################
+# Git Operations with pygit2 - RESOLVED
+# ################################################################################
+# How to find docs: Use mcp__deepwiki__ask_question with repoName="libgit2/pygit2"
+# 
+# Key pygit2 APIs for implementation:
+# 1. Applying unified diff: 
+#    - pygit2.Diff.parse_diff(patch_text) - requires FULL git diff format with headers
+#    - repo.apply(diff, ApplyLocation.WORKDIR/INDEX/BOTH)
+#    - repo.applies(diff, location) - check if patch applies without modifying
+# 2. Branches: repo.branches.create(name, commit), repo.checkout(ref)
+# 3. Commits: repo.create_commit("HEAD", sig, sig, message, tree, [parent.id])
+# 4. Read at commit: repo[commit_id].tree["filename"], then repo[blob.id].data
+#
+# IMPORTANT: Unified diff must include git headers (diff --git a/file b/file)
+# ################################################################################
+
 class GitService:
-    async def get_head_commit() -> str  # Current HEAD SHA
+    async def get_head_commit() -> str  # Current HEAD SHA using pygit2
     async def get_current_branch() -> str  # Active branch name
     async def get_code_at_commit(sha: str) -> str  # Code at specific commit
+    async def apply_unified_diff(diff: str) -> bool  # Apply unified diff using pygit2
     async def create_temp_branch_with_diff(diff: Diff) -> str  # Preview branch
     async def commit_diff(diff: Diff, message: str) -> str  # Commit approved diff
 ```
@@ -174,14 +216,16 @@ class GitService:
 
 ```python
 # SQLAlchemy models - see spec_datamodel_v0.md for full schemas
-# Project, VibecodeSession, ConversationMessage, TestCase, Diff
+# Project (with UNIQUE slug constraint), VibecodeSession, ConversationMessage, TestCase, Diff
+# Project.slug: UniqueConstraint, generated from name using slugify
 # All models follow the TypeScript interfaces defined in spec_datamodel_v0.md
 ```
 
 ## API Endpoints (Simplified)
 
 ```
-POST /projects                  - Create project
+GET  /projects                  - List projects (also serves as health check)
+POST /projects                  - Create project (generates unique slug from name)
 GET  /projects/:id              - Get project with code
 POST /projects/:id/sessions     - Start vibecode session (global or node)
 POST /sessions/:id/messages     - Send message to session
@@ -238,18 +282,18 @@ async def send_message(session_id: str, request: MessageRequest):
     )
     
     # CRITICAL: Store FULL OpenAI response AND extract usage
-    usage_data = result.get("usage", {})
     token_usage = {
-        "prompt_tokens": usage_data.get("prompt_tokens", 0),
-        "completion_tokens": usage_data.get("completion_tokens", 0), 
-        "total_tokens": usage_data.get("total_tokens", 0),
-        "model": result.get("model", "unknown")
+        "prompt_tokens": result.context_wrapper.usage.input_tokens,
+        "completion_tokens": result.context_wrapper.usage.output_tokens,
+        "total_tokens": result.context_wrapper.usage.total_tokens,
+        "model": "gpt-5-thinking"  # Or from config
     }
     
     message = ConversationMessage(
         session_id=session_id,
         openai_response=result,  # Store everything!
-        token_usage=token_usage  # Track usage separately
+        token_usage=token_usage,  # Track usage separately
+        response_id=result.last_response_id  # Track response_id for audit trail
     )
     
     # Emit vibecode_response with diff_id for human review
@@ -259,7 +303,9 @@ async def send_message(session_id: str, request: MessageRequest):
 ### Human Review Endpoints (NEW)
 ```python
 # POST /diffs/{diff_id}/review - Approve/reject with feedback
-# POST /diffs/{diff_id}/commit - Commit approved diff, clear evaluator context
+# POST /diffs/{diff_id}/commit - Commit approved diff
+#   IMPORTANT: After commit, evaluator context is cleared for next vibecode
+#   This ensures fresh evaluation for new changes
 # POST /diffs/{diff_id}/refine-message - Get new commit message from evaluator
 ```
 
@@ -278,6 +324,32 @@ async def send_message(session_id: str, request: MessageRequest):
 # - cors_origins="*", media_path="media"
 # - host="0.0.0.0" (all interfaces), port=8000
 
+# Logging Configuration (Python logging library):
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Log ALL OpenAI calls (not in exception handler, always log):
+logger.info(f"OPENAI REQUEST: {prompt[:200]}...")
+result = await Runner.run(agent, prompt, session)
+logger.info(f"OPENAI RESPONSE: {result.content[:200]}...")  
+logger.info(f"💵 OPENAI TOKENS: prompt={result.usage.prompt_tokens}, completion={result.usage.completion_tokens}, total={result.usage.total_tokens}")
+
+# Only use logger.exception() when you DO catch for a reason:
+try:
+    # Only catch when you need to add context or retry
+    result = await some_operation()
+except SpecificError as e:
+    logger.exception("Operation failed with context")
+    # Then either handle it or re-raise
+    raise
+
+# Error Handling: FAIL LOUDLY
+# - Let FastAPI handle uncaught exceptions (returns JSON with status 500)
+# - FastAPI sends: {"detail": "error message"} on exceptions
+# - Frontend must display these errors to user
+# - Never catch exceptions just to log - let them bubble up
+
 # Deployment Notes:
 # - Backend binds to 0.0.0.0
 # - Frontend URLs: localhost:8000 (local), SERVER_IP:8000 (dev), your-api.fly.dev (prod)
@@ -292,6 +364,10 @@ async def send_message(session_id: str, request: MessageRequest):
 ```
 
 ## Testing
-- Integration tests: vibecode flow  
+- Integration tests: vibecode flow with real OpenAI calls
+- Test output style: minimal, factual (no emojis/checkmarks)
+- Print: command run, actual result, expected result
+- Must show OpenAI token usage in test logs
 - E2E test: Create project → Vibecode → Review diff
 - Management command test: Reset DB → Verify sample data
+- Acceptance criteria: Integration tests using OpenAI must print log output

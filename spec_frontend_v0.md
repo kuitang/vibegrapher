@@ -1,5 +1,7 @@
 # Vibegrapher v0 Frontend Specification (Simplified)
 
+**Note: This is the technical specification. For implementation workflow and setup instructions, see `prompt_frontend_v0.md`**
+
 ## Overview
 React TypeScript interface for vibecoding agents via natural language. No graph visualization in v0.
 
@@ -9,6 +11,7 @@ React TypeScript interface for vibecoding agents via natural language. No graph 
 - Zustand (state) + React Query (data fetching)
 - Monaco Editor (code display)
 - Socket.io-client (real-time updates with Socket.io)
+- IMPORTANT: Tests must hit real backend (no mocking)
 
 ## Layout (v0 - Simple)
 ```
@@ -150,8 +153,12 @@ class WebSocketService {
       query: { project_id: projectId }
     });
     
-    // IMPORTANT: Log all messages for debugging
+    // FAIL LOUDLY: Log all events, errors with stack traces
     this.socket.on('connect', () => console.log('[Socket.io] Connected'));
+    this.socket.on('connect_error', (e) => {
+      console.error('[Socket.io] Connect Error:', e);
+      throw new Error(`WebSocket connection failed: ${e.message}`);
+    });
     
     // On vibecode_response: If status='pending_human_review', show DiffReviewModal
     
@@ -161,33 +168,48 @@ class WebSocketService {
       // Update test results
     });
     
-    this.socket.on('error', (e) => console.error('[Socket.io] Error:', e));
+    this.socket.on('error', (e) => {
+      console.error('[Socket.io] Error:', e);
+      // Display error banner to user
+    });
+    
+    // Log ALL events for debugging
+    this.socket.onAny((event, ...args) => {
+      console.log(`[Socket.io] ${event}:`, args);
+    });
   }
 }
 ```
 
 ## Session Flow with Human Review
 
+**CRITICAL: Understand the Vibecoder Workflow (see spec_datamodel_v0.md section "Vibecoder Interactive Workflow")**
+
 1. User opens project → Check for pending diffs
 2. User clicks "Start Session" (or "Start Node Session")
 3. Frontend calls POST /projects/{id}/sessions
 4. Store session ID in state
 5. User sends messages via POST /sessions/{id}/messages
-6. VibeCoder → Evaluator loop runs (backend)
-7. If evaluator approves:
+6. VibeCoder → Evaluator loop runs (backend, max 3 iterations)
+   - Listen for "evaluator_feedback" Socket.io events during iterations
+   - Display feedback to user in real-time
+7. If max iterations reached:
+   - Display error with evaluator's final feedback
+   - User can send new message to continue (VibeCoder maintains context)
+8. If evaluator approves:
    - Backend creates Diff record
    - Frontend receives diff_id via WebSocket
    - DiffReviewModal opens automatically
-8. Human reviews diff (with optional test execution):
+9. Human reviews diff (with optional test execution):
    - Run Tests → Execute quick/all/specific tests on diff
    - View results with OpenAI trace links and token usage
    - Accept → CommitMessageModal opens
    - Test & Accept → Run tests, auto-accept if all pass
    - Reject → New vibecode iteration with feedback
-9. In CommitMessageModal:
-   - User can edit or refine message
-   - Commit → Diff applied to git
-10. After commit: Evaluator context cleared
+10. In CommitMessageModal:
+    - User can edit or refine message
+    - Commit → Diff applied to git
+11. After commit: Evaluator context cleared, VibeCoder keeps conversation history
 
 ## Page Refresh Recovery
 ```typescript
@@ -220,9 +242,14 @@ class WebSocketService {
 - Alert component for inline errors
 - AlertDialog for critical errors
 - Show trace_id in error messages for debugging
+- FAIL LOUDLY: Log all errors with stack traces to console
+- Display all network errors to user immediately
+- Never swallow exceptions silently
 
 ## Testing
-- Playwright for E2E
-- Component tests with React Testing Library
-- Mock WebSocket for unit tests
+
+- **MCP Manual Testing First**: See `prompt_frontend_v0.md` for required Playwright MCP exploration workflow
+- Playwright for E2E (must hit real backend)
+- Component tests with React Testing Library (real backend)
+- Backend must be running or tests fail immediately
 - Validated test evidence after each phase

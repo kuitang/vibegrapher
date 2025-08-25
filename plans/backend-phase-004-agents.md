@@ -35,16 +35,28 @@ Implement VibeCoder and Evaluator agents with patch submission workflow per spec
 import pytest
 import httpx
 from httpx import AsyncClient
+import logging
 
 @pytest.mark.asyncio
-async def test_vibecode_patch_submission():
+async def test_vibecode_patch_submission(caplog):
     # CRITICAL: This test uses REAL OpenAI API with valid key
+    # Must show OpenAI token usage in logs
+    caplog.set_level(logging.INFO)
+    
     service = VibecodeService()
     result = await service.vibecode(
         project_id="test",
         prompt="Add a Spanish translation agent",
         current_code=sample_code
     )
+    
+    # Test output (minimal):
+    print(f"Running: vibecode with prompt")
+    print(f"Result: patch={bool(result.get('patch'))}, tokens={result.get('usage', {}).get('total_tokens', 0)}")
+    print(f"Expected: patch=True")
+    
+    # Verify token logging appears
+    assert "💵 OPENAI TOKENS" in caplog.text
     assert result.get("patch") is not None
     assert "spanish_agent" in result["patch"].lower()
     assert result.get("trace_id") is not None

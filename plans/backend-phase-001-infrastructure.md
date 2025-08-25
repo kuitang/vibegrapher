@@ -27,6 +27,11 @@ Build foundational database models and basic CRUD endpoints with type safety.
 # - test_get_project: GET /projects/{id} → verify project returned
 # - test_delete_project: DELETE /projects/{id} → verify 204
 # - test_database_schema: Verify all tables exist
+
+# Test output style (minimal, factual):
+# Running: POST /projects
+# Result: 201, id=abc123
+# Expected: 201
 ```
 
 ## Validation Requirements

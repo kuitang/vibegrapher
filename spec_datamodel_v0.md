@@ -7,7 +7,8 @@
 interface Project {
   id: string;
   name: string;
-  repository_path: string;    // Local git repository path (media/projects/{id}/)
+  slug: string;                // UNIQUE slug generated from name (e.g., "My Project" -> "my-project")
+  repository_path: string;    // Local git repository path (media/projects/{slug}/)
   current_code: string;        // Latest code from git HEAD
   current_commit: string;      // SHA of current HEAD commit
   current_branch: string;      // Active git branch
@@ -22,13 +23,36 @@ interface VibecodeSession {
   id: string;
   project_id: string;
   openai_session_key: string;  // Format: `project_{id}` or `project_{id}_node_{node_id}`
-  conversations_db_path: string; // Path to SQLiteSession file: media/projects/{project_id}_conversations.db
+  conversations_db_path: string; // Path to SQLiteSession file: media/projects/{project.slug}_conversations.db
   session_type: 'global' | 'node';
   node_id?: string;            // If node-specific session
   created_at: string;
   updated_at: string;
 }
 ```
+
+## Vibecoder Interactive Workflow (CRITICAL for Frontend E2E Testing)
+
+The vibecoder maintains conversation context via SQLiteSession persistence. This workflow MUST be understood by frontend for UI and E2E test implementation.
+
+### Iteration Loop (Max 3 attempts per message)
+1. User sends prompt → VibeCoder attempts patch
+2. Evaluator reviews → may approve or reject with feedback
+3. If rejected, VibeCoder retries with evaluator feedback (up to 3x)
+4. Frontend receives "evaluator_feedback" events via Socket.io during iterations
+
+### After Max Iterations
+- Backend returns: `{error: "Max iterations reached", final_feedback: "...", message: "..."}`
+- User sees error and evaluator's final feedback
+- User can send new message → VibeCoder continues with FULL context
+- SQLiteSession preserves entire conversation history
+
+### On Successful Patch
+- Backend returns: `{diff_id: "...", status: "pending_human_review", commit_message: "..."}`
+- DiffReviewModal opens automatically
+- After commit: Evaluator context clears, VibeCoder keeps history
+
+This enables iterative refinement without losing context across messages.
 
 ### ConversationMessage
 ```typescript
@@ -52,7 +76,7 @@ interface TestCase {
   project_id: string;
   name: string;
   test_code: string;           // Python code that tests the agent functionality
-  quick_test: boolean;         // If true, runs with 5s timeout during review
+  quick_test: boolean;         // If true, runs with 30s timeout during review
   created_at: string;
   updated_at: string;
 }
@@ -141,7 +165,7 @@ POST   /diffs/:id/refine-message  - Get new commit message suggestion
 ```
 POST   /projects/:id/tests        - Create test case for diff validation
 GET    /projects/:id/tests        - List available tests
-GET    /projects/:id/tests/quick  - Get quick tests (5s timeout) for review
+GET    /projects/:id/tests/quick  - Get quick tests (30s timeout) for review
 ```
 
 
@@ -160,6 +184,12 @@ GET    /projects/:id/tests/quick  - Get quick tests (5s timeout) for review
   diff?: string;
   trace_id?: string;    // OpenAI trace for debugging
   token_usage?: TokenUsage;  // Real-time usage data
+}
+
+// Event: 'evaluator_feedback' (during iteration loop)
+{
+  reasoning: string;    // Why evaluator rejected
+  iteration: number;    // Which iteration (1-3)
 }
 
 // Event: 'code_changed'
@@ -236,7 +266,7 @@ interface Diff {
   // Git tracking
   base_commit: string;      // SHA this diff applies to
   target_branch: string;    // Branch to apply to
-  diff_content: string;     // The actual diff
+  diff_content: string;     // Unified diff format (like git diff output)
   
   // Status tracking
   status: 'evaluator_approved' | 'human_reviewing' | 'human_rejected' | 'committed';
