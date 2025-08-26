@@ -7,3 +7,9 @@ backend/__pycache__/
 backend/**/__pycache__/
 backend/*.db
 *.pyc
+openapi_key.sh
+backend.log frontend.log
+.playwright-mcp/*
+*.log
+*openai_key*
+*.db

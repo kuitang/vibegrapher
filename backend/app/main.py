@@ -1,7 +1,10 @@
 import logging
+import traceback
+from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from .api import diffs, health, projects, sessions, tests
 from .config import settings
@@ -9,8 +12,10 @@ from .database import init_db
 from .services.socketio_service import socketio_manager
 from .version import __version__
 
+# Configure detailed logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.DEBUG if settings.DEBUG else logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
 )
 logger = logging.getLogger(__name__)
 

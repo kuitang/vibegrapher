@@ -26,12 +26,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <MainLayout>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/project/:id" element={<ProjectPage />} />
-          </Routes>
-        </MainLayout>
+        <Routes>
+          <Route path="/" element={<MainLayout><HomePage /></MainLayout>} />
+          <Route path="/project/:id" element={<ProjectPage />} />
+        </Routes>
       </Router>
     </QueryClientProvider>
   )
