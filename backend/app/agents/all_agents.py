@@ -121,6 +121,9 @@ class VibecodeService:
         
         # MUST use file persistence, not in-memory
         session = SQLiteSession(session_key, db_path)
+        # <todo>
+        # TODO: IMPORTANT: Must start a NEW session each iteration!
+        # </todo>
         evaluator_session_key = session_key + "_evaluator"
         evaluator_session = SQLiteSession(evaluator_session_key, db_path)
         
@@ -338,5 +341,6 @@ IMPORTANT:
         )
 
 
+# KUI TODO: we may not need this in the future.
 # Global instance
 vibecode_service = VibecodeService()
