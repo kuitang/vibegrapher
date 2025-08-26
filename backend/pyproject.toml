@@ -10,3 +10,23 @@ target-version = ['py38']
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+exclude = [
+    "venv/",
+    "__pycache__",
+    "alembic/versions/",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF"]
+ignore = ["E203", "E501"]  # E501: line too long - handled by formatter
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B008"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

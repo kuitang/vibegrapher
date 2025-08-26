@@ -13,7 +13,9 @@ class Settings(BaseSettings):
     cors_origins: str = os.getenv("CORS_ORIGINS", "*")
     port: int = int(os.getenv("PORT", "8000"))
     host: str = os.getenv("HOST", "0.0.0.0")
-    media_path: str = os.getenv("MEDIA_PATH", "/app/media" if os.path.exists("/app/media") else "media")
+    media_path: str = os.getenv(
+        "MEDIA_PATH", "/app/media" if os.path.exists("/app/media") else "media"
+    )
     environment: str = os.getenv("ENVIRONMENT", "development")
 
     class Config:

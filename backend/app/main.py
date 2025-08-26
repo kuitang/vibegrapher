@@ -2,7 +2,7 @@ import logging
 import traceback
 from typing import Any
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -15,7 +15,7 @@ from .version import __version__
 # Configure detailed logging
 logging.basicConfig(
     level=logging.DEBUG if settings.environment == "development" else logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
+    format="%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -50,11 +50,9 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
         f"Client: {request.client}\n"
         f"Stack trace:\n{''.join(traceback.format_stack())}"
     )
-    
+
     return JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.detail},
-        headers=exc.headers
+        status_code=exc.status_code, content={"detail": exc.detail}, headers=exc.headers
     )
 
 
@@ -70,11 +68,8 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
         f"Client: {request.client}\n"
         f"Full stack trace:\n{traceback.format_exc()}"
     )
-    
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error"}
-    )
+
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
 @fastapi_app.on_event("startup")
