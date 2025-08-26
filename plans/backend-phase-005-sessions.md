@@ -8,7 +8,7 @@ Implement session endpoints with OpenAI SQLiteSession integration and real-time 
 2. POST /sessions/{id}/messages - Send to VibeCoder with real-time updates
 3. DELETE /sessions/{id} - Clear OpenAI session
 4. GET /messages/{id}/full - Return complete OpenAI response
-5. Store FULL responses with trace_id
+5. Store FULL responses with session context
 6. Stream token usage via Socket.io in real-time
 7. Broadcast vibecode responses immediately
 
@@ -17,7 +17,7 @@ Implement session endpoints with OpenAI SQLiteSession integration and real-time 
 - ✅ Multiple messages maintain conversation context
 - ✅ Node-specific sessions isolated from global
 - ✅ Full OpenAI response stored as JSON
-- ✅ trace_id included in all responses
+- ✅ Session ID included in all responses
 - ✅ Token usage streamed via Socket.io 'token_usage' events
 - ✅ Vibecode responses broadcast via 'vibecode_response' events
 - ✅ Real-time updates for each agent iteration
@@ -49,7 +49,6 @@ async def send_message(session_id: str, request: MessageRequest):
         "vibecode_response",
         {
             "patch": result.get("patch"),
-            "trace_id": result.get("trace_id"),
             "session_id": session_id,
             "token_usage": token_usage
         }
@@ -64,11 +63,11 @@ def test_session_with_socket_streaming():
     # Send message via HTTP
     # Verify Socket.io receives 'token_usage' event
     # Verify Socket.io receives 'vibecode_response' event
-    # Check trace_id matches
+    # Check session_id matches
 
 def test_session_persistence():
     # Start session → get session_id
-    # Send first message "Create a triage agent" → verify trace_id
+    # Send first message "Create a triage agent" → verify session_id
     # Send second message "Make it Spanish" 
     # GET messages → verify count=2 and context maintained
 

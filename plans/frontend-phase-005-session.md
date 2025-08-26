@@ -46,7 +46,7 @@ const server = setupServer(
   http.post('http://localhost:8000/sessions/:id/messages', () => {
     return HttpResponse.json({
       message_id: 'msg-123',
-      trace_id: 'trace-123',
+      session_id: 'test-session',
       status: 'success'
     })
   })

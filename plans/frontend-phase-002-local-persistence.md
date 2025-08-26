@@ -16,20 +16,22 @@ Implement client-side state persistence using Zustand's built-in persist middlew
 
 ## Key Decisions
 
-### Persisted State (CRITICAL DECISION)
+### Persisted State (UPDATED per spec_frontend_v0.md)
 ```typescript
-// ONLY persist these fields to localStorage:
-// - currentSession (ID only, refetch data)
+// Selective persistence to avoid stale data issues
+// Persisted fields (survive page refresh):
+// - currentSession (session metadata only)
 // - currentReviewDiff (for modal recovery)
-// - pendingDiffs (IDs only)
-// - approvalMode (user preference)
+// - pendingDiffIds (IDs only, refetch full objects)
 // - draftMessage (prevent data loss)
 // - lastActiveTime (for stale detection)
+// - approvalMode (user preference)
 ```
 
 ### What NOT to Persist
-- Messages (refetch from SQLiteSession on backend)
-- Project code (refetch from server)
+- project (always fresh from server)
+- messages (refetch from SQLiteSession on backend)
+- pendingDiffs (full objects - use IDs to refetch)
 - Test results (ephemeral, re-run if needed)
 - Token usage (already in backend)
 

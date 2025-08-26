@@ -36,7 +36,7 @@ Implement VibeCoder and Evaluator agents with patch submission workflow per spec
 
 ## Integration Tests (pytest + httpx)
 ```python
-# tests/integration/test_phase_003_agents.py
+# backend/tests/integration/test_phase_004_agents.py
 import pytest
 import httpx
 from httpx import AsyncClient
@@ -64,7 +64,6 @@ async def test_vibecode_patch_submission(caplog):
     assert "💵 OPENAI TOKENS" in caplog.text
     assert result.get("patch") is not None
     assert "spanish_agent" in result["patch"].lower()
-    assert result.get("trace_id") is not None
     # Verify REAL token usage was tracked
     assert result.get("token_usage") is not None
     assert result["token_usage"]["total_tokens"] > 0
@@ -218,5 +217,5 @@ class VibecodeService:
 - [ ] Basic diff endpoints in app/api/diffs.py:
   - GET /sessions/:id/diffs/pending
   - GET /diffs/:id
-- [ ] Tests in tests/integration/test_phase_004_agents.py including diff tests
+- [ ] Tests in backend/tests/integration/test_phase_004_agents.py including diff tests
 - [ ] Validation evidence with diff samples in backend/validated_test_evidence/phase-004/

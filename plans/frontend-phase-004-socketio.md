@@ -5,17 +5,21 @@
 **VERIFICATION**: Check the backend phase file header for "# DONE as of commit". If not present, DO NOT START this phase and inform the user that the backend dependency is not ready.
 
 ## Objectives
-Set up Socket.io connection with comprehensive debugging.
+Set up Socket.io connection with real-time message streaming support.
 
 ## Implementation Tasks
 1. Socket.io service with debug logging
 2. Connection state management
 3. Auto-reconnection logic (Socket.io built-in)
-4. Message type handlers
+4. **CRITICAL: Handle `conversation_message` events for ALL agent interactions**
+5. Display messages immediately as received (no batching)
 
 ## Acceptance Criteria
 - ✅ Socket.io connects on project page load
-- ✅ All messages logged to console with trace_id
+- ✅ **`conversation_message` events display immediately in chat**
+- ✅ **Shows agent type (VibeCoder/Evaluator) and iteration number**
+- ✅ **Token usage displayed for each AI response**
+- ✅ All messages logged to console with session_id
 - ✅ Auto-reconnects on disconnect (Socket.io handles this)
 - ✅ Connection state shown in UI
 - ✅ TypeScript types for all Socket.io messages
@@ -66,7 +70,7 @@ describe('Phase 002: Socket.io', () => {
     // Send test message
     server.send(JSON.stringify({
       type: 'vibecode_response',
-      trace_id: 'test-123'
+      session_id: 'test-session-123'
     }))
     
     await waitFor(() => {
@@ -110,7 +114,7 @@ export function createMockWSServer(port = 8080) {
       ws.send(JSON.stringify({
         type: 'vibecode_response',
         patch: '--- old\n+++ new',
-        trace_id: `trace-${Date.now()}`
+        session_id: session.id
       }))
     }, 5000)
     

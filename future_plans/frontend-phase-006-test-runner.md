@@ -37,7 +37,7 @@ const server = setupServer(
   rest.post('http://localhost:8000/tests/:id/run', (req, res, ctx) => {
     return res(
       ctx.delay(1000),  // Simulate test execution
-      ctx.json({ status: 'passed', output: 'Test output', trace_id: 'trace-456' })
+      ctx.json({ status: 'passed', output: 'Test output', test_id: 'test-456' })
     )
   })
 )
