@@ -23,6 +23,7 @@ router = APIRouter(tags=["sessions"])
 
 class MessageRequest(BaseModel):
     prompt: str
+    message_id: Optional[str] = None  # Client can provide ID to prevent duplicates
 
 
 class MessageResponse(BaseModel):
@@ -95,19 +96,30 @@ async def send_message(
     # Get current code
     current_code = session.current_code or project.current_code or ""
 
-    # Save user message to database
-    user_message = ConversationMessage(
-        id=str(uuid.uuid4()),
-        session_id=session_id,
-        role="user",
-        content=request.prompt,
-        iteration=None,  # User messages don't have iterations
-        openai_response=None,
-        token_usage=None,
-    )
-    db.add(user_message)
-    db.commit()
-    logger.info(f"Saved user message for session {session_id}")
+    # Check if message already exists (deduplication)
+    message_id = request.message_id or str(uuid.uuid4())
+    existing_message = None
+    if request.message_id:
+        existing_message = db.query(ConversationMessage).filter(
+            ConversationMessage.id == request.message_id
+        ).first()
+    
+    # Only save if message doesn't exist (prevent duplicates)
+    if not existing_message:
+        user_message = ConversationMessage(
+            id=message_id,
+            session_id=session_id,
+            role="user",
+            content=request.prompt,
+            iteration=None,  # User messages don't have iterations
+            openai_response=None,
+            token_usage=None,
+        )
+        db.add(user_message)
+        db.commit()
+        logger.info(f"Saved user message {message_id} for session {session_id}")
+    else:
+        logger.info(f"Message {message_id} already exists, skipping save")
 
     # Run vibecode
     logger.info(

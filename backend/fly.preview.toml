@@ -1,0 +1,73 @@
+# fly.preview.toml - Template for PR Preview Deployments
+# App name will be dynamically set to vibegrapher-api-pr-{number}
+app = "vibegrapher-api-pr-PRNUMBER"
+primary_region = "ewr"
+kill_signal = "SIGINT"
+kill_timeout = 5
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8000"
+  ENVIRONMENT = "preview"
+  PYTHONUNBUFFERED = "1"
+  # Use SQLite for preview environments
+  DATABASE_URL = "sqlite:///./vibegrapher_preview.db"
+
+[experimental]
+  auto_rollback = true
+
+[[services]]
+  http_checks = []
+  internal_port = 8000
+  protocol = "tcp"
+  script_checks = []
+  
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+  [[services.ports]]
+    force_https = true
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [[services.tcp_checks]]
+    grace_period = "1s"
+    interval = "15s"
+    restart_limit = 0
+    timeout = "2s"
+
+  [[services.http_checks]]
+    interval = "30s"
+    grace_period = "5s"
+    method = "GET"
+    path = "/health"
+    protocol = "http"
+    timeout = "2s"
+    tls_skip_verify = false
+
+# Minimal resources for preview
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256
+
+[processes]
+  app = "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+# No persistent volume for previews
+
+# Auto-scaling for preview - scale to 0 when inactive
+[services.auto_stop_machines]
+  enable = true
+
+[services.auto_start_machines]
+  enable = true
+  min_machines_running = 0

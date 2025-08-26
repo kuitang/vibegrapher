@@ -204,6 +204,10 @@ You have TWO response modes:
 
 Current code is provided in the user message.
 
+CRITICAL REQUIREMENT:
+You must EITHER use the submit_patch tool OR return text to the user. 
+DO NOT return code in your text response. If you need to provide code changes, you MUST use the submit_patch tool.
+
 IMPORTANT: 
 - When generating patches, use proper unified diff format
 - Include context lines for clarity
@@ -340,12 +344,15 @@ IMPORTANT:
                     f"💵 OPENAI TOKENS: prompt={token_usage.get('prompt_tokens', 0)}, completion={token_usage.get('completion_tokens', 0)}, total={token_usage.get('total_tokens', 0)}"
                 )
 
+            # Generate deterministic message ID
+            message_id = f"{session_id}_{agent_type}_{iteration}"
+            
             # Emit first (priority #1 - user sees response immediately)
             if socketio_manager and session_id and project_id:
                 await socketio_manager.emit_conversation_message(
                     session_id=session_id,
                     project_id=project_id,
-                    message_id=f"{session_id}_{iteration}",
+                    message_id=message_id,
                     role="assistant",
                     agent=agent_type,
                     content=content,
@@ -418,24 +425,38 @@ IMPORTANT:
                 except:
                     openai_response = str(response)
 
-            # Create and save the message
-            message = ConversationMessage(
-                id=str(uuid.uuid4()),
-                session_id=session_id,
-                role="assistant",
-                content=content,
-                iteration=iteration,
-                openai_response=openai_response,
-                token_usage=token_usage,
-            )
+            # Generate a deterministic message ID based on session and iteration
+            # This prevents duplicates if the same message is saved twice
+            message_id = f"{session_id}_{agent_type}_{iteration}"
+            
+            # Check if message already exists
+            existing = db.query(ConversationMessage).filter(
+                ConversationMessage.id == message_id
+            ).first()
+            
+            if not existing:
+                # Create and save the message
+                message = ConversationMessage(
+                    id=message_id,
+                    session_id=session_id,
+                    role="assistant",
+                    content=content,
+                    iteration=iteration,
+                    openai_response=openai_response,
+                    token_usage=token_usage,
+                )
 
-            db.add(message)
-            db.commit()
+                db.add(message)
+                db.commit()
+                logger.info(
+                    f"Saved conversation message {message_id} for session {session_id}, iteration {iteration}"
+                )
+            else:
+                logger.info(
+                    f"Message {message_id} already exists, skipping save"
+                )
+            
             db.close()
-
-            logger.info(
-                f"Saved conversation message for session {session_id}, iteration {iteration}"
-            )
 
         except Exception as e:
             logger.error(f"Error saving conversation message: {e}", exc_info=True)
