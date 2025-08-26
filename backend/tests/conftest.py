@@ -25,10 +25,20 @@ def find_free_port() -> int:
 
 
 def run_test_server(db_path: str, port: int, media_path: str) -> None:
-    # Set isolated environment variables
+    # Set isolated environment variables BEFORE any imports
     os.environ["DATABASE_URL"] = f"sqlite:///{db_path}"
     os.environ["MEDIA_PATH"] = media_path
     os.environ["PORT"] = str(port)
+    
+    # Force reimport of modules to ensure they pick up the new env vars
+    if 'app.config' in sys.modules:
+        del sys.modules['app.config']
+    if 'app.database' in sys.modules:
+        del sys.modules['app.database']
+    if 'app.services.git_service' in sys.modules:
+        del sys.modules['app.services.git_service']
+    if 'app.main' in sys.modules:
+        del sys.modules['app.main']
     
     # Import app AFTER setting env vars to ensure isolation
     from app.main import app
@@ -37,7 +47,7 @@ def run_test_server(db_path: str, port: int, media_path: str) -> None:
 
 
 @pytest.fixture
-def test_server() -> Generator[str, None, None]:
+def test_server() -> Generator[dict, None, None]:
     # Create temp database in /tmp with unique name
     import uuid
     test_id = str(uuid.uuid4())[:8]
@@ -55,6 +65,9 @@ def test_server() -> Generator[str, None, None]:
     print(f"  Port: {port}")
     print(f"  Media: {media_path}")
 
+    # Set env vars for the reset_and_seed function
+    os.environ["MEDIA_PATH"] = media_path
+    
     # Reset and seed the test database
     reset_and_seed_database(f"sqlite:///{db_path}")
 
@@ -78,7 +91,7 @@ def test_server() -> Generator[str, None, None]:
                 raise RuntimeError(f"Test server failed to start on port {port}")
         time.sleep(0.5)
 
-    yield server_url
+    yield {"url": server_url, "media_path": media_path, "test_id": test_id}
 
     # Cleanup
     print("Cleaning up test server...")

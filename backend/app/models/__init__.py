@@ -3,6 +3,7 @@ from .diff import Diff
 from .message import ConversationMessage
 from .project import Project
 from .session import VibecodeSession
+from .test_case import TestCase, TestResult
 
 __all__ = [
     "Base",
@@ -11,4 +12,6 @@ __all__ = [
     "VibecodeSession",
     "ConversationMessage",
     "Diff",
+    "TestCase",
+    "TestResult",
 ]

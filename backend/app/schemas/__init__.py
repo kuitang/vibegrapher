@@ -2,6 +2,7 @@ from .diff import DiffResponse
 from .message import MessageCreate, MessageResponse
 from .project import ProjectCreate, ProjectResponse, ProjectUpdate
 from .session import SessionCreate, SessionResponse
+from .test import TestCaseCreate, TestCaseResponse, TestResultCreate, TestResultResponse
 
 __all__ = [
     "ProjectCreate",
@@ -12,4 +13,8 @@ __all__ = [
     "MessageCreate",
     "MessageResponse",
     "DiffResponse",
+    "TestCaseCreate",
+    "TestCaseResponse",
+    "TestResultCreate",
+    "TestResultResponse",
 ]
