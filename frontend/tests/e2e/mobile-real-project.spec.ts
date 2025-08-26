@@ -7,15 +7,22 @@ test.describe('Mobile Layout with Real Project', () => {
     
     // Go to homepage
     await page.goto('http://localhost:5174/')
+    
+    // Wait for projects to load
+    await page.waitForSelector('h1:has-text("Projects")', { timeout: 10000 })
     await page.waitForTimeout(1000)
     
-    // Click on the first project's Open button
-    const firstProjectOpenButton = page.locator('a:has-text("Open")').first()
-    const projectHref = await firstProjectOpenButton.getAttribute('href')
-    console.log('Project href:', projectHref)
+    // First create a new project to ensure we have something to test with
+    const projectNameInput = page.locator('input[placeholder="Project name"]')
+    await projectNameInput.fill('Mobile Test Project')
     
-    await firstProjectOpenButton.click()
-    await page.waitForTimeout(2000)
+    // For mobile, the create button shows just an icon (Plus)
+    const createButton = page.locator('button').filter({ has: page.locator('svg') }).first()
+    await createButton.click()
+    
+    // Wait for navigation to the project page
+    await page.waitForURL(/\/project\//, { timeout: 10000 })
+    await page.waitForTimeout(1000)
     
     // Now check for mobile layout elements
     const header = page.locator('header')
@@ -24,6 +31,10 @@ test.describe('Mobile Layout with Real Project', () => {
     // Check for back button
     const backButton = header.locator('a:has-text("<")')
     await expect(backButton).toBeVisible()
+    await expect(backButton).toHaveAttribute('href', '/')
+    
+    // Check project name is displayed
+    await expect(header).toContainText('Mobile Test Project')
     
     // Check for dark mode toggle
     const darkModeToggle = header.locator('[role="switch"]')
@@ -34,15 +45,19 @@ test.describe('Mobile Layout with Real Project', () => {
     await expect(tabs).toBeVisible()
     
     // Check tab buttons exist
-    await expect(page.locator('button[role="tab"]:has-text("Vibecode")')).toBeVisible()
-    await expect(page.locator('button[role="tab"]:has-text("Code")')).toBeVisible()
-    await expect(page.locator('button[role="tab"]:has-text("Tests")')).toBeVisible()
+    await expect(page.getByRole('tab', { name: 'Vibecode' })).toBeVisible()
+    await expect(page.getByRole('tab', { name: 'Code', exact: true })).toBeVisible()
+    await expect(page.getByRole('tab', { name: 'Tests' })).toBeVisible()
     
-    // Click Code tab
-    await page.click('button[role="tab"]:has-text("Code")')
+    // Check that unimplemented buttons are gone
+    await expect(page.locator('[data-testid="mobile-menu"]')).not.toBeVisible()
+    await expect(page.locator('[data-testid="more-actions"]')).not.toBeVisible()
+    await expect(page.locator('[data-testid="mobile-actions"]')).not.toBeVisible()
+    
+    // Test Code tab
+    await page.getByRole('tab', { name: 'Code', exact: true }).click()
     await page.waitForTimeout(500)
     
-    // Check that Code panel is visible
     const codeViewer = page.locator('[data-testid="code-viewer"]')
     await expect(codeViewer).toBeVisible()
     
@@ -54,9 +69,26 @@ test.describe('Mobile Layout with Real Project', () => {
     })
     
     console.log('Monaco height:', monacoHeight)
-    expect(monacoHeight).toBeGreaterThan(500) // Should have substantial height
+    expect(monacoHeight).toBeGreaterThan(600) // Should have more space without Actions button
+    
+    // Test Vibecode tab
+    await page.getByRole('tab', { name: 'Vibecode' }).click()
+    await page.waitForTimeout(500)
+    const vibecodePanel = page.locator('h3:has-text("Vibecode Panel")')
+    await expect(vibecodePanel).toBeVisible()
+    
+    // Test Tests tab
+    await page.getByRole('tab', { name: 'Tests' }).click()
+    await page.waitForTimeout(500)
+    const testPanel = page.locator('h3:has-text("Test Results")')
+    await expect(testPanel).toBeVisible()
+    
+    // Test navigation back to homepage
+    await backButton.click()
+    await page.waitForURL('http://localhost:5174/')
+    await expect(page.locator('h1:has-text("Projects")')).toBeVisible()
     
     // Take screenshot for verification
-    await page.screenshot({ path: 'mobile-project-layout.png' })
+    await page.screenshot({ path: 'mobile-homepage-return.png' })
   })
 })

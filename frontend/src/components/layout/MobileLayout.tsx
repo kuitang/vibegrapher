@@ -30,7 +30,7 @@ export function MobileLayout({ vibecodePanel, codePanel, testPanel, projectName 
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
-        className="flex-1 flex flex-col overflow-hidden"
+        className="flex-1 flex flex-col overflow-hidden min-h-0"
       >
         <TabsList className="grid w-full grid-cols-3 rounded-none flex-shrink-0">
           <TabsTrigger value="vibecode">Vibecode</TabsTrigger>
@@ -38,20 +38,20 @@ export function MobileLayout({ vibecodePanel, codePanel, testPanel, projectName 
           <TabsTrigger value="tests">Tests</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="vibecode" className="flex-1 mt-0 overflow-hidden data-[state=inactive]:hidden">
-          <div className="h-full p-4 flex flex-col">
+        <TabsContent value="vibecode" className="flex-1 mt-0 p-2 overflow-hidden data-[state=active]:flex data-[state=inactive]:hidden">
+          <div className="w-full h-full">
             {vibecodePanel}
           </div>
         </TabsContent>
 
-        <TabsContent value="code" className="flex-1 mt-0 overflow-hidden data-[state=inactive]:hidden">
-          <div className="h-full p-4 flex flex-col">
+        <TabsContent value="code" className="flex-1 mt-0 p-2 overflow-hidden data-[state=active]:flex data-[state=inactive]:hidden">
+          <div className="w-full h-full">
             {codePanel}
           </div>
         </TabsContent>
 
-        <TabsContent value="tests" className="flex-1 mt-0 overflow-hidden data-[state=inactive]:hidden">
-          <div className="h-full p-4 flex flex-col">
+        <TabsContent value="tests" className="flex-1 mt-0 p-2 overflow-hidden data-[state=active]:flex data-[state=inactive]:hidden">
+          <div className="w-full h-full">
             {testPanel}
           </div>
         </TabsContent>

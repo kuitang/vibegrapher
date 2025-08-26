@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Editor from '@monaco-editor/react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { FileCode, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -23,10 +23,8 @@ export function CodeViewer({ projectId }: CodeViewerProps) {
   const [fileName, setFileName] = useState<string>('main.py')
   const [isLoading, setIsLoading] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
-  const [containerHeight, setContainerHeight] = useState<number | string>('100%')
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
-  const monacoRef = useRef<any>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const monacoRef = useRef<typeof import('monaco-editor')>(null)
   
   // Check if mobile on mount
   useEffect(() => {
@@ -44,59 +42,29 @@ export function CodeViewer({ projectId }: CodeViewerProps) {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
   
-  // Force Monaco to layout when component becomes visible
+  // Force Monaco to layout when component becomes visible or viewport changes
   useEffect(() => {
-    const calculateHeight = () => {
-      if (containerRef.current && isMobile) {
-        // Calculate available height for mobile
-        const header = document.querySelector('header')
-        const tabs = document.querySelector('[role="tablist"]')
-        const cardHeader = containerRef.current.closest('[data-testid="code-viewer"]')?.querySelector('.border-b')
-        
-        let usedHeight = 0
-        if (header) usedHeight += header.getBoundingClientRect().height
-        if (tabs) usedHeight += tabs.getBoundingClientRect().height
-        if (cardHeader) usedHeight += cardHeader.getBoundingClientRect().height
-        
-        // Add padding
-        usedHeight += 32 // 16px top + 16px bottom padding
-        
-        const availableHeight = window.innerHeight - usedHeight
-        console.log('[CodeViewer] Calculated height for mobile:', availableHeight)
-        setContainerHeight(Math.max(300, availableHeight))
-        
-        // Force Monaco layout after setting height
-        setTimeout(() => {
-          if (editorRef.current) {
-            editorRef.current.layout()
-          }
-        }, 100)
-      } else {
-        setContainerHeight('100%')
-      }
-    }
-    
-    // Calculate on mount and when visibility changes
-    calculateHeight()
-    
-    // Listen for tab changes
-    const checkVisibility = () => {
-      calculateHeight()
+    const handleResize = () => {
       if (editorRef.current) {
+        // Force Monaco to recalculate its layout
         setTimeout(() => {
           editorRef.current?.layout()
         }, 100)
       }
     }
     
-    document.addEventListener('click', checkVisibility)
-    window.addEventListener('resize', calculateHeight)
+    // Listen for tab changes and resizes
+    document.addEventListener('click', handleResize)
+    window.addEventListener('resize', handleResize)
+    
+    // Initial layout
+    handleResize()
     
     return () => {
-      document.removeEventListener('click', checkVisibility)
-      window.removeEventListener('resize', calculateHeight)
+      document.removeEventListener('click', handleResize)
+      window.removeEventListener('resize', handleResize)
     }
-  }, [isMobile])
+  }, [])
 
   // Socket.io connection for real-time updates
   const { isConnected } = useSocketIO(projectId, {
@@ -151,7 +119,7 @@ export function CodeViewer({ projectId }: CodeViewerProps) {
   }, [project, projectId])
 
   // Handle editor mount
-  const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor, monaco: any) => {
+  const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor, monaco: typeof import('monaco-editor')) => {
     editorRef.current = editor
     monacoRef.current = monaco
     
@@ -194,8 +162,8 @@ export function CodeViewer({ projectId }: CodeViewerProps) {
   }
 
   return (
-    <div className="h-full flex flex-col border rounded-lg bg-card" data-testid="code-viewer">
-      <CardHeader className="flex-shrink-0">
+    <div className="h-full flex flex-col bg-card" data-testid="code-viewer">
+      <CardHeader className="flex-shrink-0 border-b">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileCode className="h-5 w-5" />
@@ -223,17 +191,9 @@ export function CodeViewer({ projectId }: CodeViewerProps) {
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 p-0 overflow-hidden flex flex-col">
-        <div 
-          ref={containerRef}
-          className="flex-1 w-full min-h-[300px] md:min-h-[400px]" 
-          data-testid="monaco-container"
-          data-language="python"
-          data-readonly="true"
-          style={{ height: typeof containerHeight === 'number' ? `${containerHeight}px` : containerHeight }}
-        >
+      <div className="flex-1 p-0 overflow-hidden min-h-0" data-testid="monaco-container">
           <Editor
-            height={typeof containerHeight === 'number' ? containerHeight : "100%"}
+            height="100%"
             defaultLanguage="python"
             language="python"
             value={code}
@@ -246,18 +206,18 @@ export function CodeViewer({ projectId }: CodeViewerProps) {
             }
             options={{
               readOnly: true,
-              minimap: { enabled: true },
+              minimap: { enabled: !isMobile },
               lineNumbers: 'on',
               renderWhitespace: 'selection',
               scrollBeyondLastLine: false,
               automaticLayout: true,
-              fontSize: 14,
+              fontSize: isMobile ? 12 : 14,
               fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
-              fontLigatures: true
+              fontLigatures: true,
+              wordWrap: isMobile ? 'on' : 'off'
             }}
           />
-        </div>
-      </CardContent>
+      </div>
     </div>
   )
 }
