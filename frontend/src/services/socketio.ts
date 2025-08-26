@@ -7,11 +7,18 @@ import { io, Socket } from 'socket.io-client'
 
 // Socket.io event types
 export interface ConversationMessageEvent {
-  agent_type: 'vibecoder' | 'evaluator'
-  iteration: number
+  message_id: string
   session_id: string
-  timestamp: string
-  content: unknown
+  role: string
+  agent: 'vibecoder' | 'evaluator' | null
+  content: string | unknown
+  patch_preview: string | null
+  iteration: number
+  token_usage: unknown | null
+  created_at: string
+  // Legacy fields for compatibility
+  agent_type?: 'vibecoder' | 'evaluator'
+  timestamp?: string
 }
 
 export interface DiffCreatedEvent {

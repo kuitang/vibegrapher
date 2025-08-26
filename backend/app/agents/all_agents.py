@@ -168,7 +168,8 @@ Patched code:
 ```
 """
 
-            # Run evaluator agent
+            # For evaluator, we need to get the structured response so don't stream
+            # (submit_patch needs to return EvaluationResult)
             result = await Runner.run(
                 evaluator_agent, eval_prompt, session=evaluator_session
             )
@@ -221,20 +222,51 @@ IMPORTANT:
                 # Build user prompt with current code
                 user_prompt = f"Current code:\n```python\n{current_code}\n```\n\nUser request: {prompt}"
 
-                # Run VibeCoder with context
-                vibecoder_response = await Runner.run(
-                    vibecoder_agent, user_prompt, session=session
-                )
+                # Try streaming first
+                try:
+                    vibecoder_result = Runner.run_streamed(
+                        vibecoder_agent, user_prompt, session=session
+                    )
+                    
+                    # Stream messages and collect response
+                    vibecoder_response = await self._stream_and_save_response(
+                        vibecoder_result,
+                        "vibecoder",
+                        iteration,
+                        session_id,
+                        project_id,
+                        socketio_manager,
+                    )
+                    
+                    if not vibecoder_response:
+                        # Fall back to non-streaming if streaming failed
+                        vibecoder_response = await Runner.run(
+                            vibecoder_agent, user_prompt, session=session
+                        )
+                        # Stream the response after receiving it
+                        await self._stream_agent_response(
+                            vibecoder_response,
+                            "vibecoder",
+                            iteration,
+                            session_id,
+                            project_id,
+                            socketio_manager,
+                        )
+                except Exception as e:
+                    logger.warning(f"Streaming failed, falling back to regular run: {e}")
+                    vibecoder_response = await Runner.run(
+                        vibecoder_agent, user_prompt, session=session
+                    )
+                    await self._stream_agent_response(
+                        vibecoder_response,
+                        "vibecoder",
+                        iteration,
+                        session_id,
+                        project_id,
+                        socketio_manager,
+                    )
 
-                # CRITICAL: Immediately stream VibeCoder response to frontend
-                await self._stream_agent_response(
-                    vibecoder_response,
-                    "vibecoder",
-                    iteration,
-                    session_id,
-                    project_id,
-                    socketio_manager,
-                )
+                # Response already streamed via _stream_and_save_response
 
                 # Check if patch was submitted by looking at the tool call outputs
                 evaluation = None
@@ -248,16 +280,7 @@ IMPORTANT:
                             break
 
                 if evaluation:
-                    # Evaluator was called via submit_patch
-                    # CRITICAL: Immediately stream Evaluator response to frontend
-                    await self._stream_agent_response(
-                        evaluation,
-                        "evaluator",
-                        iteration,
-                        session_id,
-                        project_id,
-                        socketio_manager,
-                    )
+                    # Evaluator response already streamed
 
                     if evaluation.approved:
                         # Create Diff record with status='evaluator_approved'
@@ -291,6 +314,186 @@ IMPORTANT:
             logger.error(f"Error in vibecode: {e}", exc_info=True)
             raise
 
+    async def _stream_and_save_response(
+        self,
+        streamed_result,
+        agent_type: str,
+        iteration: int,
+        session_id: str,
+        project_id: str,
+        socketio_manager,
+    ):
+        """Stream agent response in real-time and save to database"""
+        message_id = f"{session_id}_{agent_type}_{iteration}"
+        final_result = None
+        final_content = ""
+        
+        try:
+            # Stream item events as they arrive
+            async for event in streamed_result.stream_events():
+                # Handle high-level item events (complete messages, tool calls, etc)
+                if event.type == "run_item_stream_event":
+                    if hasattr(event, "item"):
+                        item = event.item
+                        
+                        # Handle message output items
+                        if item.type == "message_output_item":
+                            # Extract the message content
+                            content = ""
+                            if hasattr(item, "content"):
+                                if isinstance(item.content, str):
+                                    content = item.content
+                                elif isinstance(item.content, list):
+                                    # Handle structured content
+                                    for part in item.content:
+                                        if hasattr(part, "text"):
+                                            content += part.text
+                                        elif isinstance(part, str):
+                                            content += part
+                            
+                            final_content = content  # Store for final result
+                            
+                            if content and socketio_manager:
+                                # Emit complete message to frontend immediately
+                                await socketio_manager.emit_conversation_message(
+                                    session_id=session_id,
+                                    project_id=project_id,
+                                    message_id=message_id,
+                                    role="assistant",
+                                    agent=agent_type,
+                                    content=content,
+                                    patch_preview=None,
+                                    iteration=iteration,
+                                    token_usage=None,
+                                )
+                                
+                                # Save to database immediately
+                                await self._save_message_immediately(
+                                    message_id, session_id, content, iteration, agent_type, "message"
+                                )
+                                
+                                logger.info(f"✨ Streamed {agent_type} message event")
+                        
+                        # Handle tool call items
+                        elif item.type == "tool_call_item":
+                            tool_name = getattr(item, "name", "unknown")
+                            tool_args = getattr(item, "arguments", {})
+                            
+                            logger.info(f"🔧 Tool called: {tool_name}")
+                            
+                            # Save tool call to database
+                            tool_message_id = f"{message_id}_tool_{tool_name}"
+                            tool_content = f"Calling tool: {tool_name}"
+                            if tool_args:
+                                tool_content += f" with args: {tool_args}"
+                            
+                            await self._save_message_immediately(
+                                tool_message_id, session_id, tool_content, iteration, agent_type, "tool_call",
+                                tool_calls=[{"name": tool_name, "arguments": tool_args}]
+                            )
+                            
+                            # Emit tool call event to frontend
+                            if socketio_manager:
+                                await socketio_manager.emit_conversation_message(
+                                    session_id=session_id,
+                                    project_id=project_id,
+                                    message_id=tool_message_id,
+                                    role="system",
+                                    agent=agent_type,
+                                    content=tool_content,
+                                    patch_preview=None,
+                                    iteration=iteration,
+                                    token_usage=None,
+                                )
+                            
+                            # Store item as final result for processing
+                            final_result = item
+            
+            # Construct a result object to return
+            # Since we can't call get_result(), we'll return what we collected
+            class StreamedResult:
+                def __init__(self, content, item=None):
+                    self.final_output = content
+                    self.new_items = [item] if item else []
+                    self.usage = None  # We don't have usage from streaming
+            
+            return StreamedResult(final_content, final_result)
+            
+        except Exception as e:
+            logger.error(f"Error streaming response: {e}", exc_info=True)
+            # Fall back to non-streaming if streaming fails
+            return None
+    
+    async def _save_message_immediately(
+        self, message_id: str, session_id: str, content: str, iteration: int, agent_type: str,
+        message_type: str = "message", tool_calls: list = None
+    ):
+        """Save message to database immediately"""
+        try:
+            from ..database import get_db
+            from ..models import ConversationMessage
+            
+            db = next(get_db())
+            
+            # Check if message already exists
+            existing = (
+                db.query(ConversationMessage)
+                .filter(ConversationMessage.id == message_id)
+                .first()
+            )
+            
+            if not existing:
+                message = ConversationMessage(
+                    id=message_id,
+                    session_id=session_id,
+                    role="assistant" if agent_type == "vibecoder" else "system",
+                    content=content,
+                    iteration=iteration,
+                    # Skip new fields until migration is run
+                    # message_type=message_type,
+                    # agent_type=agent_type,
+                    # tool_calls=tool_calls,
+                    openai_response=None,
+                    token_usage=None,
+                )
+                db.add(message)
+                db.commit()
+                logger.info(f"💾 Saved message {message_id} to database immediately")
+            else:
+                # Update existing message content
+                existing.content = content
+                db.commit()
+                logger.info(f"📝 Updated message {message_id} in database")
+            
+            db.close()
+            
+        except Exception as e:
+            logger.error(f"Error saving message immediately: {e}")
+    
+    async def _update_message_token_usage(self, message_id: str, token_usage: dict):
+        """Update token usage for an existing message"""
+        try:
+            from ..database import get_db
+            from ..models import ConversationMessage
+            
+            db = next(get_db())
+            
+            message = (
+                db.query(ConversationMessage)
+                .filter(ConversationMessage.id == message_id)
+                .first()
+            )
+            
+            if message:
+                message.token_usage = token_usage
+                db.commit()
+                logger.info(f"📊 Updated token usage for message {message_id}")
+            
+            db.close()
+            
+        except Exception as e:
+            logger.error(f"Error updating token usage: {e}")
+    
     async def _stream_agent_response(
         self,
         response,
@@ -300,7 +503,7 @@ IMPORTANT:
         project_id: str,
         socketio_manager,
     ):
-        """Stream agent response to frontend via Socket.io"""
+        """Legacy method for non-streaming responses"""
         # 1. IMMEDIATELY emit Socket.io 'conversation_message' event (no delay)
         # 2. Fire-and-forget background task to save ConversationMessage to database
         # 3. Include agent type, iteration, and token usage in Socket.io event

@@ -47,6 +47,26 @@ export function useSocketIO(projectId: string | undefined, options: UseSocketIOO
       })
     )
 
+    // Update initial state
+    setConnectionState(socketIOService.getConnectionState())
+    setIsConnected(socketIOService.isConnected())
+
+    // Cleanup function
+    return () => {
+      console.log('[useSocketIO] Cleaning up Socket.io connection')
+      
+      // Unsubscribe all listeners
+      unsubscribers.forEach(unsubscribe => unsubscribe())
+      
+      // Disconnect socket
+      socketIOService.disconnect()
+    }
+  }, [projectId]) // Only reconnect if projectId changes
+  
+  // Setup business event listeners in a separate effect that doesn't cause reconnections
+  useEffect(() => {
+    const unsubscribers: ((...args: unknown[]) => void)[] = []
+
     // Business event listeners
     if (options.onConversationMessage) {
       unsubscribers.push(
@@ -78,21 +98,11 @@ export function useSocketIO(projectId: string | undefined, options: UseSocketIOO
       )
     }
 
-    // Update initial state
-    setConnectionState(socketIOService.getConnectionState())
-    setIsConnected(socketIOService.isConnected())
-
-    // Cleanup function
     return () => {
-      console.log('[useSocketIO] Cleaning up Socket.io connection')
-      
       // Unsubscribe all listeners
       unsubscribers.forEach(unsubscribe => unsubscribe())
-      
-      // Disconnect socket
-      socketIOService.disconnect()
     }
-  }, [projectId, options.onConversationMessage, options.onDiffCreated, options.onDebugIteration, options.onCodeUpdate, options.onError]) // Only reconnect if projectId changes
+  }, [options.onConversationMessage, options.onDiffCreated, options.onDebugIteration, options.onCodeUpdate, options.onError])
 
   // Send message function
   const sendMessage = useCallback((event: string, data: unknown) => {

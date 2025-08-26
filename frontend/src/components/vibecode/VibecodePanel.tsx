@@ -3,7 +3,7 @@
  * Main chat interface for vibecode sessions with full message flow
  */
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -40,29 +40,34 @@ export function VibecodePanel({ projectId }: VibecodePanelProps) {
     restoreSession 
   } = useSessionStore()
 
-  // Socket.io connection
-  const { connectionState, isConnected } = useSocketIO(projectId, {
-    onConversationMessage: (message: ConversationMessageEvent) => {
-      console.log('[VibecodePanel] Received message:', message)
-      addMessage({
-        id: `msg-${Date.now()}-${Math.random()}`,
-        role: message.agent_type === 'vibecoder' ? 'assistant' : 'system',
-        content: message.content,
-        agent_type: message.agent_type,
-        iteration: message.iteration,
-        session_id: message.session_id,
-        timestamp: message.timestamp,
-        token_usage: message.content?.token_usage
-      })
-      
-      // Auto-scroll to bottom
-      if (scrollAreaRef.current) {
-        const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
-        if (scrollElement) {
-          scrollElement.scrollTop = scrollElement.scrollHeight
-        }
+  // Memoize the message handler to prevent reconnections
+  const handleConversationMessage = useCallback((message: ConversationMessageEvent) => {
+    console.log('[VibecodePanel] Received message:', message)
+    // Handle both new (agent) and legacy (agent_type) field names
+    const agentType = message.agent || message.agent_type
+    addMessage({
+      id: message.message_id || `msg-${Date.now()}-${Math.random()}`,
+      role: agentType === 'vibecoder' ? 'assistant' : 'system',
+      content: typeof message.content === 'string' ? message.content : JSON.stringify(message.content),
+      agent_type: agentType,
+      iteration: message.iteration,
+      session_id: message.session_id,
+      timestamp: message.created_at || message.timestamp || new Date().toISOString(),
+      token_usage: message.token_usage
+    })
+    
+    // Auto-scroll to bottom
+    if (scrollAreaRef.current) {
+      const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
+      if (scrollElement) {
+        scrollElement.scrollTop = scrollElement.scrollHeight
       }
     }
+  }, [addMessage, scrollAreaRef])
+
+  // Socket.io connection
+  const { connectionState, isConnected } = useSocketIO(projectId, {
+    onConversationMessage: handleConversationMessage
   })
 
   // Restore session on mount and auto-create if needed
@@ -231,7 +236,11 @@ export function VibecodePanel({ projectId }: VibecodePanelProps) {
                         </div>
                         {msg.token_usage && (
                           <div className="text-xs text-blue-500">
-                            💵 Tokens: {msg.token_usage.total_tokens || msg.token_usage}
+                            💵 Tokens: {typeof msg.token_usage === 'object' && msg.token_usage.total_tokens 
+                              ? msg.token_usage.total_tokens 
+                              : typeof msg.token_usage === 'number' 
+                              ? msg.token_usage 
+                              : JSON.stringify(msg.token_usage)}
                           </div>
                         )}
                       </div>

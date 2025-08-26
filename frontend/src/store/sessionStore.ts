@@ -149,9 +149,35 @@ export const useSessionStore = create<SessionStore>()(
       restoreSession: async (projectId: string) => {
         const state = get()
         
-        // If we already have a session for this project, keep it
+        // If we already have a session for this project, load its messages
         if (state.session && state.session.project_id === projectId) {
-          console.log('[SessionStore] Session already loaded for project:', projectId)
+          console.log('[SessionStore] Loading messages for existing session:', state.session.id)
+          
+          try {
+            // Load messages from API
+            const response = await fetch(`${API_URL}/sessions/${state.session.id}/messages`)
+            if (response.ok) {
+              const messages = await response.json()
+              
+              // Format messages to match our Message type
+              const formattedMessages: Message[] = messages.map((msg: any) => ({
+                id: msg.id,
+                role: msg.role as 'user' | 'assistant' | 'system',
+                content: msg.content,
+                agent_type: msg.agent_type || (msg.role === 'assistant' ? 'vibecoder' : msg.role === 'system' ? 'evaluator' : undefined),
+                iteration: msg.iteration,
+                session_id: msg.session_id,
+                timestamp: msg.created_at || new Date().toISOString(),
+                token_usage: msg.token_usage
+              }))
+              
+              set({ messages: formattedMessages })
+              console.log('[SessionStore] Loaded', formattedMessages.length, 'messages')
+            }
+          } catch (error) {
+            console.error('[SessionStore] Error loading messages:', error)
+          }
+          
           return
         }
 
@@ -161,9 +187,6 @@ export const useSessionStore = create<SessionStore>()(
           messages: [],
           error: null
         })
-        
-        // TODO: In the future, could fetch existing sessions from API
-        // For now, just clear state when switching projects
       },
 
       setSession: (session) => set({ session }),

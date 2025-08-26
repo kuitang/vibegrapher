@@ -115,6 +115,9 @@ async def send_message(
             iteration=None,  # User messages don't have iterations
             openai_response=None,
             token_usage=None,
+            # Don't set new fields until migration is run
+            # message_type="message",
+            # agent_type=None,
         )
         db.add(user_message)
         db.commit()
@@ -199,6 +202,38 @@ async def delete_session(session_id: str, db: Session = Depends(get_db)) -> None
     db.commit()
 
     logger.info(f"Deleted session {session_id} and all associated messages")
+
+
+@router.get("/sessions/{session_id}/messages")
+def get_session_messages(session_id: str, db: Session = Depends(get_db)) -> list:
+    """Get all messages for a session"""
+    
+    # Verify session exists
+    session = db.query(VibecodeSession).filter(VibecodeSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Get all messages for the session
+    messages = (
+        db.query(ConversationMessage)
+        .filter(ConversationMessage.session_id == session_id)
+        .order_by(ConversationMessage.created_at)
+        .all()
+    )
+    
+    # Return formatted messages
+    return [
+        {
+            "id": msg.id,
+            "session_id": msg.session_id,
+            "role": msg.role,
+            "content": msg.content,
+            "iteration": msg.iteration,
+            "token_usage": msg.token_usage,
+            "created_at": msg.created_at.isoformat() if msg.created_at else None,
+        }
+        for msg in messages
+    ]
 
 
 @router.get("/messages/{message_id}/full")
