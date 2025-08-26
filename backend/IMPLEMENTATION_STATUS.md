@@ -44,9 +44,13 @@
 - POST /diffs/{id}/refine-message for message improvement
 - Page refresh recovery support
 
-### Phase 007: Deployment 🚧
-- Requires external services (Fly.io, GitHub Actions)
-- Configuration files can be created but not deployed from this environment
+### Phase 007: Deployment ✅
+- Docker configuration with non-root user
+- Fly.io production and preview configurations
+- GitHub Actions CI/CD workflows
+- Health check endpoints with detailed monitoring
+- Deployment documentation
+- Note: Actual deployment requires manual Fly.io and GitHub setup
 
 ## Test Coverage
 

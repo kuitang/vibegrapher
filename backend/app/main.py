@@ -3,10 +3,11 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api import diffs, projects, sessions, tests
+from .api import diffs, health, projects, sessions, tests
 from .config import settings
 from .database import init_db
 from .services.socketio_service import socketio_manager
+from .version import __version__
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -14,7 +15,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Create FastAPI app
-fastapi_app = FastAPI(title="Vibegrapher Backend", version="0.1.0")
+fastapi_app = FastAPI(title="Vibegrapher Backend", version=__version__)
 
 fastapi_app.add_middleware(
     CORSMiddleware,
@@ -24,6 +25,7 @@ fastapi_app.add_middleware(
     allow_headers=["*"],
 )
 
+fastapi_app.include_router(health.router)
 fastapi_app.include_router(projects.router)
 fastapi_app.include_router(tests.router)
 fastapi_app.include_router(sessions.router)
@@ -45,9 +47,7 @@ async def shutdown_event() -> None:
     logger.info("Socket.io heartbeat stopped")
 
 
-@fastapi_app.get("/health")
-async def health_check() -> dict:
-    return {"status": "healthy"}
+# Remove duplicate health endpoint - using the one from health.py router
 
 
 # Wrap with Socket.io
