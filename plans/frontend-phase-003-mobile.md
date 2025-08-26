@@ -1,4 +1,4 @@
-# DONE as of commit (pending)
+# DONE as of commit 7287e68
 
 # Frontend Phase 003: Mobile Responsive
 
@@ -165,12 +165,12 @@ npx shadcn-ui@latest add sheet drawer dropdown-menu
 ```
 
 ## Deliverables
-- [ ] Mobile-responsive layout
-- [ ] Sheet for navigation
-- [ ] Tabs for panel switching
-- [ ] Drawer for bottom actions
-- [ ] DropdownMenu for compact UI
-- [ ] Touch gesture support
-- [ ] Integration tests
-- [ ] E2E tests with mobile viewports
-- [ ] Validation evidence in frontend/validated_test_evidence/phase-003/
+- [x] Mobile-responsive layout
+- [x] Sheet for navigation
+- [x] Tabs for panel switching
+- [x] Drawer for bottom actions
+- [x] DropdownMenu for compact UI
+- [x] Touch gesture support
+- [x] Integration tests
+- [x] E2E tests with mobile viewports
+- [x] Validation evidence in frontend/validated_test_evidence/phase-003/

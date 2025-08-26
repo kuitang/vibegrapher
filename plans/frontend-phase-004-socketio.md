@@ -1,3 +1,5 @@
+# DONE as of commit 7287e68
+
 # Frontend Phase 004: Socket.io Debug Setup
 
 ## ⚠️ BACKEND DEPENDENCY CHECK
@@ -61,7 +63,7 @@ describe('Phase 002: Socket.io', () => {
     const consoleSpy = vi.spyOn(console, 'log')
     
     const { result } = renderHook(() => 
-      useWebSocket('test-project')
+      useSocketIO('test-project')
     )
     
     await server.connected
@@ -84,7 +86,7 @@ describe('Phase 002: Socket.io', () => {
   })
   
   test('auto-reconnects on disconnect', async () => {
-    const { result } = renderHook(() => useWebSocket('test-project'))
+    const { result } = renderHook(() => useSocketIO('test-project'))
     
     await server.connected
     expect(result.current.connectionState).toBe('connected')
@@ -155,8 +157,8 @@ echo "Phase 004 validation complete"
 ```
 
 ## Deliverables
-- [ ] WebSocket service in src/services/websocket.ts
-- [ ] useWebSocket hook in src/hooks/
-- [ ] Connection status component
-- [ ] Integration tests with mock WS
-- [ ] Validation evidence in frontend/validated_test_evidence/phase-004/
+- [x] Socket.io service in src/services/socketio.ts
+- [x] useSocketIO hook in src/hooks/useSocketIO.ts
+- [x] Connection status component in src/components/ConnectionStatus.tsx
+- [x] Integration tests with mock WS in tests/integration/phase004-socketio.test.tsx
+- [x] Validation evidence in frontend/validated_test_evidence/phase-004/

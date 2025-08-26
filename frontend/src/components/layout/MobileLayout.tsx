@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react'
+import { ReactNode } from 'react'
 import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
@@ -20,8 +20,6 @@ interface MobileLayoutProps {
 }
 
 export function MobileLayout({ vibecodePanel, codePanel, testPanel, projectName }: MobileLayoutProps) {
-  const [activeTab, setActiveTab] = useState('vibecode')
-
   return (
     <div className="h-full flex flex-col">
       {/* Mobile Header with Navigation */}
@@ -61,11 +59,7 @@ export function MobileLayout({ vibecodePanel, codePanel, testPanel, projectName 
       </header>
 
       {/* Tabbed Content */}
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="flex-1 flex flex-col overflow-hidden"
-      >
+      <Tabs defaultValue="vibecode" className="flex-1 flex flex-col overflow-hidden">
         <TabsList className="grid w-full grid-cols-3 rounded-none">
           <TabsTrigger value="vibecode">Vibecode</TabsTrigger>
           <TabsTrigger value="code">Code</TabsTrigger>

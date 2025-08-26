@@ -1,3 +1,5 @@
+# DONE as of commit 3c59ae5
+
 # Frontend Phase 005: Session & Message Flow
 
 ## ⚠️ BACKEND DEPENDENCY CHECK
@@ -98,7 +100,9 @@ describe('Phase 005: Session Management', () => {
     const initialHeight = textarea.clientHeight
     
     // Type multiline text
-    await user.type(textarea, 'Line 1\nLine 2\nLine 3')
+    await user.type(textarea, 'Line 1
+Line 2
+Line 3')
     
     expect(textarea.clientHeight).toBeGreaterThan(initialHeight)
   })
@@ -199,10 +203,10 @@ npx shadcn-ui@latest add button badge avatar scroll-area textarea card
 ```
 
 ## Deliverables
-- [ ] VibecodePanel component with session logic
-- [ ] Message components with Avatar + Card
-- [ ] Auto-resize Textarea component
-- [ ] Session state in Zustand store
-- [ ] Integration tests with MSW
-- [ ] E2E tests with Playwright
-- [ ] Validation evidence in frontend/validated_test_evidence/phase-005/
+- [x] VibecodePanel component with session logic
+- [x] Message components with Avatar + Card
+- [x] Auto-resize Textarea component
+- [x] Session state in Zustand store
+- [x] Integration tests with MSW
+- [x] E2E tests with Playwright
+- [x] Validation evidence in frontend/validated_test_evidence/phase-005/
