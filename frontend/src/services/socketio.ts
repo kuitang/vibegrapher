@@ -57,7 +57,7 @@ class SocketIOService {
     }
 
     this.projectId = projectId
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
     
     console.log('[Socket.io] Connecting to:', apiUrl, 'for project:', projectId)
     
@@ -127,6 +127,12 @@ class SocketIOService {
     this.socket.on('debug_iteration', (data: DebugIterationEvent) => {
       console.log('[Socket.io] Debug iteration:', data)
       this.emit('debug_iteration', data)
+    })
+    
+    // Code update event for Monaco editor
+    this.socket.on('code_update', (data: { content: string; filename?: string }) => {
+      console.log('[Socket.io] Code update:', data)
+      this.emit('code_update', data)
     })
 
     // Error handling

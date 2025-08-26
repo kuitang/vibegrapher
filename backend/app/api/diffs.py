@@ -25,6 +25,10 @@ class ReviewRequest(BaseModel):
     feedback: Optional[str] = None
 
 
+class CommitRequest(BaseModel):
+    commit_message: Optional[str] = None
+
+
 class CommitResponse(BaseModel):
     diff_id: str
     committed_sha: str
