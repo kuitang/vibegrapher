@@ -1,0 +1,88 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - link "<" [ref=e6] [cursor=pointer]:
+          - /url: /
+        - heading "Dark Mode Test 1756227463052" [level=1] [ref=e7]
+      - generic [ref=e8]:
+        - img [ref=e9]
+        - switch "Toggle dark mode" [checked] [ref=e15] [cursor=pointer]
+        - img [ref=e16]
+    - main [ref=e18]:
+      - generic [ref=e19]:
+        - generic [ref=e22]:
+          - generic [ref=e23]:
+            - generic [ref=e24]:
+              - heading "Vibecode Panel" [level=3] [ref=e25]
+              - generic [ref=e26]:
+                - generic [ref=e27]:
+                  - img [ref=e28]
+                  - generic [ref=e30]: Connected
+                - generic [ref=e31]: Session Active
+            - generic [ref=e32]: "Project: Dark Mode Test 1756227463052"
+          - generic [ref=e33]:
+            - generic [ref=e38]: No messages yet. Start a conversation!
+            - generic [ref=e40]:
+              - textbox "Type your message... (Enter to send, Shift+Enter for new line)" [ref=e41]
+              - generic [ref=e42]:
+                - button [disabled]:
+                  - img
+                - button "Clear session" [ref=e43] [cursor=pointer]:
+                  - img
+        - generic [ref=e44]:
+          - generic [ref=e46]:
+            - generic [ref=e48]:
+              - generic [ref=e49]:
+                - img [ref=e50]
+                - heading "Code Viewer" [level=3] [ref=e55]
+              - generic [ref=e56]:
+                - generic [ref=e57]: Live Updates
+                - generic [ref=e58]: main.py
+                - button "Refresh code" [ref=e59] [cursor=pointer]:
+                  - img
+            - code [ref=e63]:
+              - generic [ref=e64]:
+                - generic [ref=e66]:
+                  - generic [ref=e69]: "1"
+                  - generic [ref=e71]: "2"
+                  - generic [ref=e73]: "3"
+                  - generic [ref=e75]: "4"
+                  - generic [ref=e77]: "5"
+                  - generic [ref=e79]: "6"
+                  - generic [ref=e81]: "7"
+                  - generic [ref=e83]: "8"
+                  - generic [ref=e85]: "9"
+                  - generic [ref=e87]: "10"
+                - generic [ref=e103]:
+                  - generic [ref=e106]: "# Welcome to Vibegrapher"
+                  - generic [ref=e109]: "# Project: Dark Mode Test 1756227463052"
+                  - generic [ref=e112]:
+                    - generic [ref=e113]: def main
+                    - generic [ref=e114]: (
+                    - generic [ref=e115]: )
+                    - generic [ref=e116]: ":"
+                  - generic [ref=e119]: "\"\"\"Main entry point for the application.\"\"\""
+                  - generic [ref=e121]:
+                    - generic [ref=e122]: print
+                    - generic [ref=e123]: (
+                    - generic [ref=e124]: "\"Ready for vibecoding!\""
+                    - generic [ref=e125]: )
+                  - generic [ref=e129]: "if __name__ == \"__main__\":"
+                  - generic [ref=e131]:
+                    - generic [ref=e132]: main
+                    - generic [ref=e133]: (
+                    - generic [ref=e134]: )
+                - textbox "Editor content" [ref=e137]
+          - generic [ref=e142]:
+            - heading "Test Results" [level=3] [ref=e144]
+            - paragraph [ref=e146]: Test runner will be integrated with diff review in Phase 008
+    - region "Notifications (F8)":
+      - list
+  - generic [ref=e147]:
+    - alert
+    - alert
+```

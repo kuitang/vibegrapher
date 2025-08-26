@@ -80,7 +80,13 @@ if __name__ == "__main__":
     project_slug = "agent-triage-system"
 
     # Create GitService instance with the proper media path
-    git_service = GitService()
+    # If MEDIA_PATH is set, use it directly (for tests)
+    media_path = os.getenv("MEDIA_PATH")
+    if media_path:
+        git_service = GitService(base_path=os.path.join(media_path, "projects"))
+    else:
+        git_service = GitService()
+    print(f"GitService base_path: {git_service.base_path}")
 
     # Initialize git repository
     repo_path = git_service.create_repository(project_slug)
@@ -144,6 +150,7 @@ assert "technical" in response.lower()
     print("Created project 'Agent Triage System' with git repository")
     print(f"Repository path: {repo_path}")
     print(f"Initial commit: {commit_sha}")
+    print(f"MEDIA_PATH env: {os.getenv('MEDIA_PATH')}")
     print("Created 2 test cases (1 regular, 1 quick test)")
 
 

@@ -1,0 +1,47 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - link "<" [ref=e6] [cursor=pointer]:
+          - /url: /
+        - heading "Test Project 1756227397125" [level=1] [ref=e7]
+      - generic [ref=e8]:
+        - img [ref=e9]
+        - switch "Toggle dark mode" [ref=e15] [cursor=pointer]
+        - img [ref=e16]
+    - main [ref=e18]:
+      - generic [ref=e19]:
+        - generic [ref=e22]:
+          - generic [ref=e23]:
+            - generic [ref=e24]:
+              - heading "Vibecode Panel" [level=3] [ref=e25]
+              - generic [ref=e27]:
+                - img [ref=e28]
+                - generic [ref=e30]: Disconnected
+            - generic [ref=e31]: "Project: Test Project 1756227397125"
+          - generic [ref=e34]:
+            - img [ref=e35]
+            - paragraph [ref=e37]: Connecting...
+        - generic [ref=e38]:
+          - generic [ref=e40]:
+            - generic [ref=e42]:
+              - generic [ref=e43]:
+                - img [ref=e44]
+                - heading "Code Viewer" [level=3] [ref=e49]
+              - generic [ref=e50]:
+                - generic [ref=e51]: main.py
+                - button "Refresh code" [ref=e52] [cursor=pointer]:
+                  - img
+            - generic [ref=e57]: Loading editor...
+          - generic [ref=e59]:
+            - heading "Test Results" [level=3] [ref=e61]
+            - paragraph [ref=e63]: Test runner will be integrated with diff review in Phase 008
+    - region "Notifications (F8)":
+      - list
+  - generic [ref=e64]:
+    - alert
+    - alert
+```

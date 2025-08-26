@@ -1,0 +1,98 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - link "<" [ref=e6] [cursor=pointer]:
+          - /url: /
+        - heading "Workflow Test 1756227417140" [level=1] [ref=e7]
+      - generic [ref=e8]:
+        - img [ref=e9]
+        - switch "Toggle dark mode" [ref=e15] [cursor=pointer]
+        - img [ref=e16]
+    - main [ref=e18]:
+      - generic [ref=e19]:
+        - generic [ref=e22]:
+          - generic [ref=e23]:
+            - generic [ref=e24]:
+              - heading "Vibecode Panel" [level=3] [ref=e25]
+              - generic [ref=e26]:
+                - generic [ref=e27]:
+                  - img [ref=e28]
+                  - generic [ref=e30]: Connected
+                - generic [ref=e31]: Session Active
+            - generic [ref=e32]: "Project: Workflow Test 1756227417140"
+          - generic [ref=e33]:
+            - generic [ref=e38]: No messages yet. Start a conversation!
+            - generic [ref=e40]:
+              - textbox "Type your message... (Enter to send, Shift+Enter for new line)" [ref=e41]
+              - generic [ref=e42]:
+                - button [disabled]:
+                  - img
+                - button "Clear session" [ref=e43] [cursor=pointer]:
+                  - img
+        - generic [ref=e44]:
+          - generic [ref=e46]:
+            - generic [ref=e48]:
+              - generic [ref=e49]:
+                - img [ref=e50]
+                - heading "Code Viewer" [level=3] [ref=e55]
+              - generic [ref=e56]:
+                - generic [ref=e57]: Live Updates
+                - generic [ref=e58]: main.py
+                - button "Refresh code" [ref=e59] [cursor=pointer]:
+                  - img
+            - code [ref=e63]:
+              - generic [ref=e64]:
+                - generic [ref=e66]:
+                  - generic [ref=e69]: "1"
+                  - generic [ref=e71]: "2"
+                  - generic [ref=e73]: "3"
+                  - generic [ref=e74]:
+                    - generic [ref=e75] [cursor=pointer]: 
+                    - generic [ref=e76]: "4"
+                  - generic [ref=e78]: "5"
+                  - generic [ref=e80]: "6"
+                  - generic [ref=e82]: "7"
+                  - generic [ref=e83]:
+                    - generic [ref=e84] [cursor=pointer]: 
+                    - generic [ref=e85]: "8"
+                  - generic [ref=e87]: "9"
+                  - generic [ref=e89]: "10"
+                - generic [ref=e105]:
+                  - generic [ref=e108]: "# Welcome to Vibegrapher"
+                  - generic [ref=e111]: "# Project: Workflow Test 1756227417140"
+                  - generic [ref=e114]:
+                    - generic [ref=e115]: def
+                    - generic [ref=e116]: main
+                    - generic [ref=e117]: (
+                    - generic [ref=e118]: )
+                    - generic [ref=e119]: ":"
+                  - generic [ref=e123]: "\"\"\"Main entry point for the application.\"\"\""
+                  - generic [ref=e125]:
+                    - generic [ref=e127]: print
+                    - generic [ref=e128]: (
+                    - generic [ref=e129]: "\"Ready for vibecoding!\""
+                    - generic [ref=e130]: )
+                  - generic [ref=e133]:
+                    - generic [ref=e134]: if
+                    - generic [ref=e136]: __name__
+                    - generic [ref=e137]: ==
+                    - generic [ref=e138]: "\"__main__\""
+                    - generic [ref=e139]: ":"
+                  - generic [ref=e141]:
+                    - generic [ref=e142]: main
+                    - generic [ref=e143]: (
+                    - generic [ref=e144]: )
+                - textbox "Editor content" [ref=e147]
+          - generic [ref=e152]:
+            - heading "Test Results" [level=3] [ref=e154]
+            - paragraph [ref=e156]: Test runner will be integrated with diff review in Phase 008
+    - region "Notifications (F8)":
+      - list
+  - generic [ref=e157]:
+    - alert
+    - alert
+```

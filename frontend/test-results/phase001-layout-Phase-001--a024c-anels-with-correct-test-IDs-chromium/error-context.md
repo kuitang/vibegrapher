@@ -1,0 +1,44 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "<" [ref=e6] [cursor=pointer]:
+        - /url: /
+      - heading "Layout Test 1756227455467" [level=1] [ref=e7]
+    - generic [ref=e8]:
+      - img [ref=e9]
+      - switch "Toggle dark mode" [ref=e15] [cursor=pointer]
+      - img [ref=e16]
+  - main [ref=e18]:
+    - generic [ref=e19]:
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - generic [ref=e24]:
+            - heading "Vibecode Panel" [level=3] [ref=e25]
+            - generic [ref=e27]:
+              - img [ref=e28]
+              - generic [ref=e30]: Connected
+          - generic [ref=e31]: "Project: Layout Test 1756227455467"
+        - generic [ref=e34]:
+          - img [ref=e35]
+          - paragraph [ref=e37]: Initializing session...
+      - generic [ref=e38]:
+        - generic [ref=e40]:
+          - generic [ref=e42]:
+            - generic [ref=e43]:
+              - img [ref=e44]
+              - heading "Code Viewer" [level=3] [ref=e49]
+            - generic [ref=e50]:
+              - generic [ref=e51]: Live Updates
+              - generic [ref=e52]: main.py
+              - button "Refresh code" [ref=e53] [cursor=pointer]:
+                - img
+          - generic [ref=e58]: Loading editor...
+        - generic [ref=e60]:
+          - heading "Test Results" [level=3] [ref=e62]
+          - paragraph [ref=e64]: Test runner will be integrated with diff review in Phase 008
+  - region "Notifications (F8)":
+    - list
+```
