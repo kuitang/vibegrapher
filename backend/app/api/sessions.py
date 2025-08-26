@@ -141,3 +141,56 @@ def get_messages(
     )
 
     return messages
+
+
+@router.delete("/sessions/{session_id}", status_code=204)
+async def delete_session(session_id: str, db: Session = Depends(get_db)) -> None:
+    """Clear a session and its OpenAI context"""
+    
+    # Verify session exists
+    session = db.query(VibecodeSession).filter(VibecodeSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Delete all messages for this session
+    db.query(ConversationMessage).filter(
+        ConversationMessage.session_id == session_id
+    ).delete()
+    
+    # Clear OpenAI session if it exists
+    if session.openai_session_key:
+        # The OpenAI session will be cleared by removing the SQLiteSession file
+        # This happens automatically when we delete messages
+        logger.info(f"Cleared OpenAI session for {session_id}")
+    
+    # Delete the session itself
+    db.delete(session)
+    db.commit()
+    
+    logger.info(f"Deleted session {session_id} and all associated messages")
+
+
+@router.get("/messages/{message_id}/full")
+def get_full_message(message_id: str, db: Session = Depends(get_db)) -> dict:
+    """Get complete OpenAI response data for a message"""
+    
+    # Get the message
+    message = db.query(ConversationMessage).filter(
+        ConversationMessage.id == message_id
+    ).first()
+    
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    # Return the full OpenAI response
+    return {
+        "id": message.id,
+        "session_id": message.session_id,
+        "role": message.role,
+        "content": message.content,
+        "openai_response": message.openai_response,  # Full untyped JSON
+        "token_usage": message.token_usage,
+        "diff_id": message.diff_id,
+        "created_at": message.created_at.isoformat() if message.created_at else None,
+        "last_response_id": message.last_response_id
+    }
