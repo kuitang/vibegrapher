@@ -102,9 +102,18 @@ export function ProjectPage() {
       throw new Error('Failed to commit diff')
     }
     
-    // Refresh project code
+    // Refresh project code after successful commit
     if (id) {
-      actions.updateCode('# Code updated - refresh to see latest')
+      // Fetch the updated code from backend
+      const projectResponse = await fetch(`${apiUrl}/projects/${id}`)
+      if (projectResponse.ok) {
+        const projectData = await projectResponse.json()
+        if (projectData.current_code) {
+          actions.updateCode(projectData.current_code, 'main.py')
+          console.log('[ProjectPage] Code updated after commit')
+        }
+      }
+      
       actions.setShowCommitMessageModal(false)
       actions.setCurrentReviewDiff(null)
     }

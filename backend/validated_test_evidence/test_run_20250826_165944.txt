@@ -1,0 +1,525 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.2, pytest-8.3.4, pluggy-1.6.0 -- /home/kuitang/git/vibegrapher/backend/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/kuitang/git/vibegrapher/backend
+configfile: pyproject.toml
+plugins: cov-6.0.0, asyncio-0.25.2, anyio-4.10.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function
+collecting ... collected 61 items
+
+tests/integration/test_message_deduplication.py::TestMessageDeduplication::test_client_provided_message_id_prevents_duplicates PASSED [  1%]
+tests/integration/test_message_deduplication.py::TestMessageDeduplication::test_deterministic_agent_message_ids PASSED [  3%]
+tests/integration/test_message_deduplication.py::TestMessageDeduplication::test_no_message_id_generates_unique_ids PASSED [  4%]
+tests/integration/test_message_deduplication.py::TestMessageDeduplication::test_agent_message_deduplication_in_service PASSED [  6%]
+tests/integration/test_message_deduplication.py::TestMessageDeduplication::test_concurrent_message_creation_handling PASSED [  8%]
+tests/integration/test_phase001_infrastructure.py::test_create_project PASSED [  9%]
+tests/integration/test_phase001_infrastructure.py::test_get_project PASSED [ 11%]
+tests/integration/test_phase001_infrastructure.py::test_delete_project PASSED [ 13%]
+tests/integration/test_phase001_infrastructure.py::test_list_projects PASSED [ 14%]
+tests/integration/test_phase001_infrastructure.py::test_database_schema PASSED [ 16%]
+tests/integration/test_phase002_socketio.py::test_socketio_connection PASSED [ 18%]
+tests/integration/test_phase002_socketio.py::test_subscribe_to_project PASSED [ 19%]
+tests/integration/test_phase002_socketio.py::test_heartbeat_events PASSED [ 21%]
+tests/integration/test_phase002_socketio.py::test_multiple_clients_in_room PASSED [ 22%]
+tests/integration/test_phase002_socketio.py::test_disconnection_cleanup PASSED [ 24%]
+tests/integration/test_phase_003_git_seeding.py::test_git_service_repository_operations PASSED [ 26%]
+tests/integration/test_phase_003_git_seeding.py::test_seeded_data_creates_valid_project FAILED [ 27%]
+tests/integration/test_phase_003_git_seeding.py::test_git_service_commit_operations FAILED [ 29%]
+tests/integration/test_phase_003_git_seeding.py::test_git_service_error_handling PASSED [ 31%]
+tests/integration/test_phase_003_git_seeding.py::test_seeded_test_cases_execute FAILED [ 32%]
+tests/integration/test_phase_003_git_seeding.py::test_repository_exists_check PASSED [ 34%]
+tests/integration/test_phase_003_git_seeding.py::test_new_project_has_initial_commit_and_head PASSED [ 36%]
+tests/integration/test_phase_004_agents.py::test_vibecode_patch_submission SKIPPED [ 37%]
+tests/integration/test_phase_004_agents.py::test_vibecode_text_response SKIPPED [ 39%]
+tests/integration/test_phase_004_agents.py::test_evaluator_iteration SKIPPED [ 40%]
+tests/integration/test_phase_004_agents.py::test_diff_creation_flow SKIPPED [ 42%]
+tests/integration/test_phase_004_agents.py::test_real_openai_api_key_required SKIPPED [ 44%]
+tests/integration/test_phase_004_agents.py::test_socket_io_streaming SKIPPED [ 45%]
+tests/integration/test_phase_005_sessions.py::TestSessionCreation::test_create_session PASSED [ 47%]
+tests/integration/test_phase_005_sessions.py::TestSessionCreation::test_create_session_invalid_project PASSED [ 49%]
+tests/integration/test_phase_005_sessions.py::TestMessageSending::test_send_message_to_session FAILED [ 50%]
+tests/integration/test_phase_005_sessions.py::TestMessageSending::test_send_multiple_messages_context PASSED [ 52%]
+tests/integration/test_phase_005_sessions.py::TestSessionDeletion::test_delete_session PASSED [ 54%]
+tests/integration/test_phase_005_sessions.py::TestSessionDeletion::test_delete_nonexistent_session PASSED [ 55%]
+tests/integration/test_phase_005_sessions.py::TestFullMessageRetrieval::test_get_full_message PASSED [ 57%]
+tests/integration/test_phase_005_sessions.py::TestFullMessageRetrieval::test_get_full_message_not_found PASSED [ 59%]
+tests/integration/test_phase_005_sessions.py::TestSocketIOIntegration::test_socket_streaming_token_usage FAILED [ 60%]
+tests/integration/test_phase_005_sessions.py::TestSocketIOIntegration::test_socket_conversation_message PASSED [ 62%]
+tests/integration/test_phase_005_sessions.py::TestSessionPersistence::test_openai_session_key_set PASSED [ 63%]
+tests/integration/test_phase_006_human_review.py::TestDiffRetrieval::test_get_project_diffs ERROR [ 65%]
+tests/integration/test_phase_006_human_review.py::TestDiffRetrieval::test_get_session_diffs ERROR [ 67%]
+tests/integration/test_phase_006_human_review.py::TestDiffRetrieval::test_get_pending_diffs ERROR [ 68%]
+tests/integration/test_phase_006_human_review.py::TestDiffRetrieval::test_get_single_diff ERROR [ 70%]
+tests/integration/test_phase_006_human_review.py::TestDiffRetrieval::test_get_diff_preview ERROR [ 72%]
+tests/integration/test_phase_006_human_review.py::TestHumanReview::test_approve_diff ERROR [ 73%]
+tests/integration/test_phase_006_human_review.py::TestHumanReview::test_reject_diff_with_feedback ERROR [ 75%]
+tests/integration/test_phase_006_human_review.py::TestHumanReview::test_review_non_pending_diff ERROR [ 77%]
+tests/integration/test_phase_006_human_review.py::TestDiffCommit::test_commit_approved_diff ERROR [ 78%]
+tests/integration/test_phase_006_human_review.py::TestDiffCommit::test_commit_unapproved_diff ERROR [ 80%]
+tests/integration/test_phase_006_human_review.py::TestDiffCommit::test_commit_with_base_mismatch ERROR [ 81%]
+tests/integration/test_phase_006_human_review.py::TestMessageRefinement::test_refine_commit_message ERROR [ 83%]
+tests/integration/test_phase_006_human_review.py::TestMessageRefinement::test_refine_message_no_prompt ERROR [ 85%]
+tests/integration/test_phase_006_human_review.py::TestDiffValidation::test_invalid_diff_rejected PASSED [ 86%]
+tests/integration/test_phase_006_human_review.py::TestPageRefreshRecovery::test_recover_pending_diffs ERROR [ 88%]
+tests/unit/test_agents_structure.py::test_evaluator_agent_exists PASSED  [ 90%]
+tests/unit/test_agents_structure.py::test_evaluator_has_correct_model PASSED [ 91%]
+tests/unit/test_agents_structure.py::test_evaluator_has_output_type PASSED [ 93%]
+tests/unit/test_agents_structure.py::test_vibecode_service_exists PASSED [ 95%]
+tests/unit/test_agents_structure.py::test_evaluation_result_model PASSED [ 96%]
+tests/unit/test_agents_structure.py::test_vibecode_result_model PASSED   [ 98%]
+tests/unit/test_agents_structure.py::test_vibecode_result_with_diff PASSED [100%]
+
+==================================== ERRORS ====================================
+__________ ERROR at setup of TestDiffRetrieval.test_get_project_diffs __________
+.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
+    self.dialect.do_execute(
+.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:941: in do_execute
+    cursor.execute(statement, parameters)
+E   sqlite3.IntegrityError: NOT NULL constraint failed: diffs.base_commit
+
+The above exception was the direct cause of the following exception:
+tests/integration/test_phase_006_human_review.py:97: in test_diff
+    db.commit()
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2028: in commit
+    trans.commit(_to_root=True)
+<string>:2: in commit
+    ???
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1313: in commit
+    self._prepare_impl()
+<string>:2: in _prepare_impl
+    ???
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1288: in _prepare_impl
+    self.session.flush()
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4352: in flush
+    self._flush(objects)
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4487: in _flush
+    with util.safe_reraise():
+.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4448: in _flush
+    flush_context.execute()
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:466: in execute
+    rec.execute(self)
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:642: in execute
+    util.preloaded.orm_persistence.save_obj(
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:93: in save_obj
+    _emit_insert_statements(
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1233: in _emit_insert_statements
+    result = connection.execute(
+.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1418: in execute
+    return meth(
+.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:515: in _execute_on_connection
+    return connection._execute_clauseelement(
+.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1640: in _execute_clauseelement
+    ret = self._execute_context(
+.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1846: in _execute_context
+    return self._exec_single_context(
+.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1986: in _exec_single_context
+    self._handle_dbapi_exception(
+.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2355: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
+    self.dialect.do_execute(
+.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:941: in do_execute
+    cursor.execute(statement, parameters)
+E   sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constraint failed: diffs.base_commit
+E   [SQL: INSERT INTO diffs (id, session_id, project_id, base_commit, target_branch, diff_content, status, test_results, tests_run_at, vibecoder_prompt, evaluator_reasoning, commit_message, human_feedback, committed_sha, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING created_at, updated_at]
+E   [parameters: ('4d5d5041-1d6c-4628-9e9e-25277ebf1a5e', 'b02c0c53-6449-41f5-970f-339975b7e031', 'd849869b-71bf-466f-bcf2-01680b2e2abd', None, 'main', "--- a/code.py\n+++ b/code.py\n@@ -1,2 +1,3 @@\n def hello():\n+    # This is a test comment\n     return 'world'", 'evaluator_approved', None, None, 'Add a comment', 'Good addition', 'Add helpful comment to hello function', None, None)]
+E   (Background on this error at: https://sqlalche.me/e/20/gkpj)
+---------------------------- Captured stdout setup -----------------------------
+Starting isolated test server:
+  Database: /tmp/test_vibegrapher_b1375eb8.db
+  Port: 38835
+  Media: /tmp/test_media_b1375eb8
+GitService base_path: /tmp/test_media_b1375eb8/projects
+Database reset and seeded successfully at: sqlite:////tmp/test_vibegrapher_b1375eb8.db
+Created project 'Agent Triage System' with git repository
+Repository path: /tmp/test_media_b1375eb8/projects/agent-triage-system
+Initial commit: 102e111fc76f252a18542d323b697adecb9e90b9
+MEDIA_PATH env: /tmp/test_media_b1375eb8
+Created 2 test cases (1 regular, 1 quick test)
+Test server ready at http://127.0.0.1:38835
+
+DEBUG: Found 254 projects:
+  - Session Test Project (id: d849869b-71bf-466f-bcf2-01680b2e2abd)
+  - Session Test Project (id: eb7de7bf-7985-4917-bf34-7e790b5f4f2d)
+  - Session Test Project (id: 6a4df074-71e0-46dc-8d74-30787f2209a4)
+  - Session Test Project (id: dec1ba1e-0738-4ab3-a569-54892d7a58ed)
+  - Session Test Project (id: cc2367f2-2c96-4c85-ae99-5e25b29397c8)
+  - Session Test Project (id: 51035fbf-cbf4-4f9d-a889-e4fee6570445)
+  - Session Test Project (id: 17bb3b0c-a778-407b-b6e6-d7ae8b8e7763)
+  - Session Test Project (id: 9049be64-7d33-4cd6-9a2b-c04ac7b82380)
+  - Commit Test (id: a66e8e72-ea90-46ce-b9c4-78376752f72d)
+  - Cleanup Test (id: e58185cb-d61a-4f61-824f-b081e6828295)
+  - Multi-client Test (id: 987ba877-ae69-4420-945d-5c78eb2923d8)
+  - Socket Test Project (id: 8fb3bc24-709c-41fc-8b92-3da167c51793)
+  - Get Test Project (id: 2c0f4c7b-d589-4d8e-80dd-5112c191b5b8)
+  - Test Project (id: 6d985852-7092-4171-a496-f41f87135cbd)
+  - Test Deduplication Project (id: 1cbc9dfd-5aa8-4766-813f-9fcac5dd864d)
+  - Test Deduplication Project (id: 6ddc0170-a4c8-4ec8-8c6c-856d02f7db86)
+  - Test Deduplication Project (id: 7056ec19-c807-4933-90ef-537cf4887d41)
+  - Test Deduplication Project (id: 763c4a60-f6f5-409d-8f01-35af99660193)
+  - Test Deduplication Project (id: 17473190-8fc2-48b5-b432-5646fc345876)
+  - Navigation Test 1756227481429 (id: bee90443-9d98-4feb-923c-77d51345e962)
+  - Delete Test 1756227481055 (id: eb2a0552-f280-4c28-a27b-b00ea5f3a6b5)
+  - E2E Test 1756227473824 (id: c2a3e2e2-bde7-45a5-94d0-ea68096b47cd)
+  - Dark Mode Test 1756227463052 (id: 4fd7af62-07fc-4755-8954-acf51586bdd2)
+  - Layout Test 1756227455467 (id: 889cfbc8-7155-421b-a944-bacda8b1a5ed)
+  - Test Project 1756227450734 (id: 16e6755d-66ef-43f4-b6e7-b1fb1531d1cd)
+  - Rapid Test 1 1756227448545 (id: 7bda23f1-6531-425d-9298-42e2e8891a72)
+  - Workflow Test 1756227417140 (id: 076026b9-4b8b-4ad9-8842-8d685cc09fb5)
+  - AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA (id: f99079b2-97dd-4c3e-b3a0-14e23b980245)
+  - Mobile Test Project (id: 842e6279-a687-4c6e-8db6-47a100540246)
+  - Test Project 1756227397125 (id: d74e2233-5816-4367-bc44-f6e1dc692de3)
+  - Height Test Project (id: 7306b4aa-c6a5-4db7-90e8-e7e436fd03e4)
+  - Resize Test Project (id: d83ebfb5-dcb1-4246-baa7-9c8112754b28)
+  - TestGitInit_1756227383542 (id: 5da89ca8-6316-48ed-a7c1-a79f2e690b4f)
+  - TestCodeProject_1756227377511 (id: cf9ce209-a281-4867-b2fb-77f169877cb6)
+  - TestAPIProject_1756227375930 (id: edce4a9f-7f85-4ae9-a4c1-02514ef3640f)
+  - TestProject2 (id: e36865a3-8977-4c9a-b4d5-28d4fb2a5e2f)
+  - TestProject1 (id: 20cbcc5e-a563-4ff5-9f71-dfab5f4cbdc7)
+  - Delete Test 1756227285462 (id: b1257ef5-e2b0-4eeb-8ae7-f0f243b93073)
+  - Mobile Test Project (id: b94c73a6-2f10-4699-98a1-0c22d35a6dde)
+  - Dark Mode Test 1756227273148 (id: 63120906-3c03-46f1-a25b-9f5d6a0eb403)
+  - Resize Test Project (id: ca34e6fd-be1a-42c0-8fbe-26cdacb2a067)
+  - Height Test Project (id: b566bdf2-e4ae-45d2-961a-e5b488bb3fa5)
+  - Layout Test 1756227264410 (id: 7810dcdc-4d9c-4c1e-bbc3-a635a37f4487)
+  - Test Project 1756227257567 (id: 8cf01008-cabb-4a71-880b-557510089901)
+  - Rapid Test 1 1756227251649 (id: 40a5a16a-faf8-4c14-a5bc-983482b75650)
+  - Workflow Test 1756227219636 (id: 94c1b746-dc91-473f-a2a9-0513ecd97ad7)
+  - AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA (id: c9177de0-85d6-4f25-9c06-9f36dec2c3fd)
+  - Test Project 1756227204383 (id: 9878b605-30c7-45a8-bf8e-baab8c549303)
+  - Mobile Test Project (id: 808421a6-ee0d-4662-b838-8132f34ee1e8)
+  - Resize Test Project (id: 45605f3e-8d1e-420c-a330-48dfafb35241)
+  - Height Test Project (id: c435654e-c628-49fd-920d-96a39db3ea2b)
+  - TestGitInit_1756227187912 (id: 2fc16d71-f408-4520-b833-9456a212efce)
+  - TestAPIProject_1756227178236 (id: 8f48d59c-78a6-42ac-8280-0f4365452eb3)
+  - TestCodeProject_1756227180155 (id: 99c4da80-06f3-4fab-b202-1cad5e1a5043)
+  - TestProject2 (id: d2a8dce3-0b12-4b53-a67c-65983f141ac9)
+  - TestProject1 (id: b6a2e6d2-6ed6-42f4-86f4-9cd1effa2bf4)
+  - Session Test Project (id: 7d8915c7-ce42-41fa-b713-c30bc8a0ccf3)
+  - Session Test Project (id: 1988ed9a-d667-4dc7-a0fd-0a15d7271158)
+  - Session Test Project (id: 88f4aab7-4654-4bac-a0be-c6c8b0f96ccc)
+  - Session Test Project (id: 6ffc10de-4092-4186-893f-87366861fa56)
+  - Session Test Project (id: 292382ce-19d6-4d6e-a254-3bd2caee95c2)
+  - Session Test Project (id: dfad076b-222d-4c07-8ac1-52ebdf31c527)
+  - Session Test Project (id: fbba32e4-717f-479b-83b2-92b722ecca2c)
+  - Session Test Project (id: b2669100-5288-4563-b4d5-6917d03e7d2d)
+  - Commit Test (id: 59de7a77-0084-4aa7-860b-acc90852e1eb)
+  - Cleanup Test (id: 9d62b936-a50a-4082-981c-2bb8535122bd)
+  - Multi-client Test (id: fc3c373b-91d8-47f6-82fb-79de029a9da4)
+  - Socket Test Project (id: e3169445-31cd-4578-a5be-0cfa16cc5c6d)
+  - Get Test Project (id: 456bf3af-5753-4b48-83fb-96c9c0fef92f)
+  - Test Project (id: 94d734bd-bdb1-46c9-baae-3d6aa45b14c2)
+  - Test Deduplication Project (id: 8d69a516-0fc1-4fc0-a255-be0c8bc2e0c4)
+  - Test Deduplication Project (id: b1d32422-2f2a-488a-82ee-8c1c245386b7)
+  - Test Deduplication Project (id: d6504925-4b11-40a6-840e-58e21e62cebc)
+  - Test Deduplication Project (id: 9868c8ad-2c8d-41ca-a909-5b89d8c1ce60)
+  - Test Deduplication Project (id: c5512f77-0e32-4b46-ab7f-d46d2c1880f8)
+  - Session Test Project (id: 1f32d91b-6676-4ae9-80eb-610a1a542933)
+  - Session Test Project (id: e83d415b-439a-4f16-97d3-af5ece549582)
+  - Session Test Project (id: 1f156a15-ffac-4469-b0aa-7e248a789499)
+  - Session Test Project (id: f9f53307-10b8-4fcf-8460-70995c37b918)
+  - Session Test Project (id: 766a88c4-de12-4e15-99bf-eb6be994ce52)
+  - Session Test Project (id: 22a474d0-838c-480d-b1dc-eb5e702435ff)
+  - Session Test Project (id: 77941aaf-e541-4eb4-9a5a-bc55cde35daa)
+  - Session Test Project (id: 3e57b2ec-9c8b-4a29-81cf-55c13150dca7)
+  - Commit Test (id: 850b488c-79ce-4bf6-996e-a6a5e1a44d87)
+  - Cleanup Test (id: 81d613fd-b462-4e6d-b38f-8bcc7f2f1465)
+  - Multi-client Test (id: 2096ff69-e21a-488b-97cf-48a33e57a8cb)
+  - Socket Test Project (id: 067dda15-e5d5-4ee7-a37a-1747f2d69af3)
+  - Get Test Project (id: a5cb3a62-e07b-4040-ad8d-858cdf7676fb)
+  - Test Project (id: 0ce5cc98-68f1-40e4-aa75-2fcff36d8bf8)
+  - Test Deduplication Project (id: a25974a7-db78-43d9-8627-bb56c71c140d)
+  - Test Deduplication Project (id: 88290fc2-814e-45bb-ad9f-a7520dac801f)
+  - Test Deduplication Project (id: c03af2ef-810f-4f15-aac4-9ce7ae12dfa1)
+  - Test Deduplication Project (id: 50ffd102-846a-43b6-8cca-517242574045)
+  - Test Deduplication Project (id: bfbe6dc2-67a9-456e-ad65-03a8761655fb)
+  - Session Test Project (id: f93f2448-b18f-4827-92ec-eb54ba64b71e)
+  - Session Test Project (id: 59f199a7-51c9-4ea1-8139-5dbf75034c40)
+  - Session Test Project (id: 3b00d3c3-cd0a-4187-9340-2c015ffdfabe)
+  - Session Test Project (id: 38acc526-b9e8-4a5a-9009-818bfe4b510c)
+  - Session Test Project (id: e8abe3a7-a296-45ca-ab74-415b31168028)
+  - Session Test Project (id: 1da37c0e-824d-40f1-b6d8-1f73b8f7f0b5)
+  - Session Test Project (id: b8d9cb38-18dc-45dc-abd5-d1dd778798bd)
+  - Session Test Project (id: 7cb600c3-964c-406e-a134-8733740ac4de)
+  - Commit Test (id: 55613753-daab-4029-82bb-a5e5314f2a7d)
+  - Cleanup Test (id: 5f96b7ce-5a31-46b9-aa75-86be47eeafbd)
+  - Multi-client Test (id: 56721484-144d-4eb5-9775-f1c819ff7037)
+  - Socket Test Project (id: 4108e0fd-f1e9-4ced-8404-8b03f3db3cbc)
+  - Get Test Project (id: 29b7d287-afbb-490a-b555-e503ab0529a8)
+  - Test Project (id: 6c66d9b0-f0c5-48a6-8a74-f0a08c23ec36)
+  - Test Deduplication Project (id: d22f51e5-e8b0-4c85-ba58-ca34b63dfc55)
+  - Test Deduplication Project (id: 1d9defb5-deaa-429d-b5b8-3b1b47bcf11d)
+  - Test Deduplication Project (id: bbd8e458-7374-4cab-bf27-436060bbd1f6)
+  - Test Deduplication Project (id: 5ac848bd-3264-42c0-8003-d99e85528a99)
+  - Test Deduplication Project (id: ad7ecbc3-a1e2-42d7-a2a5-eaad4996f9b6)
+  - Session Test Project (id: eca18688-aeec-467e-babe-2c3b58bbbab9)
+  - Session Test Project (id: 8381b35c-37b6-44b7-9c52-1ed206cde503)
+  - Session Test Project (id: b1ecdbdb-4f1d-4f9a-b008-7d553c6d14cf)
+  - Session Test Project (id: 3e360856-5f2f-4a07-b240-9881a5e2549f)
+  - Session Test Project (id: 8af0153a-113d-4fbc-b91a-e5b7a3c71153)
+  - Session Test Project (id: 9b02da54-a9d3-4b0f-aa6c-2791e5029c68)
+  - Session Test Project (id: 5e8cf1ab-2ae9-4e68-988a-20204974c400)
+  - Session Test Project (id: b0fd5fcd-f626-4bfe-a2a3-226d7ce6b989)
+  - Commit Test (id: ea138f88-57da-4744-8f08-ab4467917413)
+  - Cleanup Test (id: 933ebba7-c819-42e2-9318-3a8c3f27dd4c)
+  - Multi-client Test (id: 5adcce85-61f0-43ad-b74a-7455070be43a)
+  - Socket Test Project (id: e02afc93-f791-482a-a8d8-285f727d357c)
+  - Get Test Project (id: 76485af7-9077-4614-8265-0a04a1b46c8f)
+  - Test Deduplication Project (id: d6757a6e-4188-486f-850a-ba64159eddda)
+  - Test Project (id: e01db073-294a-4cc0-a151-537de482717c)
+  - Test Deduplication Project (id: 3329b50e-0bec-4511-8110-e05ef39510b9)
+  - Test Deduplication Project (id: e9f322ca-ab7f-4fc2-9b35-02ac753facd8)
+  - Test Deduplication Project (id: 116c5733-5340-4e2b-9721-30fe4a3d5626)
+  - Test Deduplication Project (id: 417117bd-1816-4390-a451-bb14e9fda59e)
+  - Session Test Project (id: e40fbf00-8ceb-49d3-8d14-c0c71e043969)
+  - Session Test Project (id: e2c70466-fd49-4e46-a268-b599af9463d1)
+  - Session Test Project (id: bfe06c85-ae0c-452f-a86f-7cfcd3b0450a)
+  - Session Test Project (id: f9093edd-9c4a-49ad-87a7-47a157230996)
+  - Session Test Project (id: 7fed0110-96af-4fd5-a4d1-539da42c5f1f)
+  - Session Test Project (id: cac23e28-542c-43ff-8695-79935c937322)
+  - Session Test Project (id: 924e2808-8ef5-444d-bbd7-37169b774e6a)
+  - Session Test Project (id: 512ee9c1-67c1-4f0f-be48-c7a52b6b83fb)
+  - Commit Test (id: 1c0673b6-909b-41a7-a439-e05ab797d3b2)
+  - Cleanup Test (id: beb4ede1-1bad-42d9-b22a-8e26e527c582)
+  - Multi-client Test (id: 91fba97d-0042-4a61-90b3-ddcae6c493fd)
+  - Socket Test Project (id: 7f870328-8425-4e7b-a3e0-ade58102d9c3)
+  - Get Test Project (id: 9eb8c2b5-4b4e-4763-82ce-f6ea231b7c68)
+  - Test Deduplication Project (id: e808858f-fbbe-4fa6-81ae-cbfd8041e6d1)
+  - Test Deduplication Project (id: 7ee2e570-bc70-4795-8664-e163f4fa8e9f)
+  - Test Deduplication Project (id: d1774bce-186f-4b13-a495-8b67c2c32017)
+  - Test Deduplication Project (id: 6ac42e21-c3f6-440f-8549-52349aa92f83)
+  - Test Project (id: 9f626285-9fe4-49f2-b017-92bc8d4165b0)
+  - Test Deduplication Project (id: 585ddda3-98c3-4fa0-9b5b-2d133a60a028)
+  - Session Test Project (id: 1bdc8ed1-8269-4a3e-80f3-53bd4beb8fed)
+  - Session Test Project (id: 0d72f8b3-fa82-49a3-af9f-a6c9eda30a78)
+  - Session Test Project (id: 82f25046-d7b6-4bb9-b46d-b958edea259d)
+  - Session Test Project (id: d7d3b17b-41d8-41eb-bc3f-877b63a26a40)
+  - Session Test Project (id: d63ec020-2e7a-4f1b-a870-7756387e4bdf)
+  - Session Test Project (id: 217b8cb1-e2a7-4d76-8c99-a2c1b1f0bd6c)
+  - Session Test Project (id: cb2ba925-aba6-4f6e-bf3e-7f267abe467f)
+  - Session Test Project (id: f1e60c4c-bf24-4a90-8839-0931b216e783)
+  - Commit Test (id: 4273a850-93f4-4f9f-a9e7-7fefd83152c3)
+  - Cleanup Test (id: 4107b4e6-0e02-42f4-8588-73a61e3d2c49)
+  - Multi-client Test (id: 715e790b-1694-4b0d-9867-7a2fc2e8f480)
+  - Socket Test Project (id: b1358f23-097a-451d-b698-6ad4dbc74bfb)
+  - Get Test Project (id: fd9d9a8a-9acd-443c-873b-a1394c143efd)
+  - Test Project (id: 67f33776-20f3-4f22-a52c-38b5351090b6)
+  - Test Deduplication Project (id: b4f5bfbf-2400-42b1-abc9-34386908b6be)
+  - Test Deduplication Project (id: 5bffbaa5-205d-4442-81e5-d2ffcf148edd)
+  - Test Deduplication Project (id: 7c1ed8de-186a-4545-b1e2-cd8096bd4834)
+  - Test Deduplication Project (id: 7ef3a546-fc50-4993-a831-4f538684ef64)
+  - Test Deduplication Project (id: 6fe310f2-398f-4884-a15c-5cb25475d1c9)
+  - Mobile Test Project (id: e775b5d4-5dbd-417d-bb7c-3e733f530d6d)
+  - Height Test Project (id: 88e5dc73-46ec-4fae-8171-f0f855ccb041)
+  - Resize Test Project (id: e6c68804-d533-43cd-a7cf-9515584f8d6c)
+  - Mobile Test Project (id: e8192104-7343-40de-8f0d-22cf04a49f85)
+  - Resize Test Project (id: e762dead-3f90-465a-9d3f-438a1f6a02f1)
+  - Height Test Project (id: edc8f2aa-9970-4fe8-8602-85ebe8cca694)
+  - Session Test Project (id: d5150e3b-e29a-4a21-a0a6-c140fe819152)
+  - Session Test Project (id: 838c9b5d-6fbc-4f70-a818-9671b925bf0f)
+  - Session Test Project (id: de7555e7-9a10-4821-acd7-d25c28ed86c1)
+  - Session Test Project (id: f061ca5b-362a-4859-b110-fe1127c60f90)
+  - Session Test Project (id: d1620dc9-3fe6-40fc-b9e3-b14dad71e8ef)
+  - Session Test Project (id: 1c6153f5-9dd4-4521-b50a-9a48db1a60ed)
+  - Session Test Project (id: e2c8677d-b6ec-451b-b535-3b9c33f61275)
+  - Session Test Project (id: a36cfed9-40b8-4d05-97e7-27479416cd6d)
+  - Commit Test (id: b3558a62-2d15-4d6a-9223-8c3b4c610a2f)
+  - Cleanup Test (id: 928a53da-e934-4c57-9cce-9e45f14adfdb)
+  - Multi-client Test (id: a8b98fba-6f97-436c-9348-1557d0ac11c7)
+  - Socket Test Project (id: a085535a-c6fc-4eec-8259-120bc45c8ca8)
+  - Get Test Project (id: fe26a549-397c-4d82-81a1-419ab2ad5388)
+  - Test Deduplication Project (id: 17d820aa-338c-44ea-8141-40532c72da99)
+  - Test Deduplication Project (id: c38ab6d6-3583-4407-ad68-fc897648f998)
+  - Test Project (id: bb18bf37-c4bb-4f69-ba38-bede68a0696c)
+  - Test Deduplication Project (id: 04ab1d54-a756-428a-974b-f621894c89ba)
+  - Test Deduplication Project (id: ce1e4779-5042-4e88-87f9-c2f19cbdf50d)
+  - Test Deduplication Project (id: 73543e5f-6ac3-4c27-ad32-03688e9c7402)
+  - Mobile Test Project (id: 47a345c9-fe04-4329-9206-1a88e1b94250)
+  - Session Test Project (id: e4cb8dfd-0001-46f4-a1c7-da008242b518)
+  - Session Test Project (id: ff8154e7-173e-44b5-858d-c67c763c7d3b)
+  - Session Test Project (id: 7c978e15-acfa-46da-af52-82b96c3536be)
+  - Session Test Project (id: 66a57d0d-bab2-4077-9ca2-df417a9b6576)
+  - Session Test Project (id: 74d7ff51-2b5b-44d6-b9ac-928be5ba8a97)
+  - Session Test Project (id: 564642bc-8e58-403e-971a-1a9a3521fa15)
+  - Session Test Project (id: befa3520-6d6c-47d1-8074-c0178b869792)
+  - Session Test Project (id: 3957cc63-4943-493a-ae2d-a5efc7972a9f)
+  - Commit Test (id: 3608d5f3-bacd-4d85-bf52-2dee3f57e087)
+  - Test Deduplication Project (id: 3b1d9361-ef48-4986-8dbc-ddc9a6477f9b)
+  - Test Deduplication Project (id: 4710f681-9b09-4e78-8c4d-9ecc0e24a537)
+  - Test Deduplication Project (id: 23d67574-5f2f-4296-9b67-97b7d6c90f5a)
+  - Test Deduplication Project (id: 4a9ae6f9-07ed-4a4e-9521-797aac9d0cae)
+  - Test Deduplication Project (id: c2e3c332-082e-434f-ac38-e326452182d2)
+  - TestDiffProject2_1756219798343 (id: b0af6fa9-9707-4196-8c72-37cc2353d4cd)
+  - TestDiffProject1_1756219797158 (id: 8cc7760d-ab05-43dc-8e86-09aa5171112c)
+  - TestDiffProject2_1756219283004 (id: 99732626-5987-4eef-8fcf-916e82655986)
+  - TestDiffProject1_1756219281662 (id: f468cd09-f6f0-4023-9d83-e1225c750778)
+  - TestDiffProject2_1756219229970 (id: f50d59c7-6566-40cd-bd59-e1f8d1294f8c)
+  - TestDiffProject1_1756219228358 (id: 75e5d1d7-7510-4059-92c2-12b727ccb305)
+  - TestDiffProject2_1756219055679 (id: 88ab1fca-ac08-48c0-b9c7-b84449e0f65e)
+  - TestDiffProject1_1756219054395 (id: 9a0850ca-ecc6-4524-98ef-2e61fe7a2fa4)
+  - TestGitInit_1756218806779 (id: 68b7e526-0972-4754-b498-02703407b947)
+  - TestCodeProject_1756218803438 (id: b0ef8cc9-4893-4a24-a724-efc1e3f8a3b5)
+  - TestAPIProject_1756218801652 (id: 118b0487-e41f-4dfa-9e0a-c21e5895c263)
+  - TestProject2 (id: fca94100-3a73-4f40-9b66-70feb5000db6)
+  - TestProject1 (id: 1bb5b560-cc1e-4c53-a977-50f50e68ea8c)
+  - TestProject2 (id: 54c4df28-b71d-4026-9db8-cb28eaf2c328)
+  - TestProject1 (id: 95e684d1-f49f-438b-be70-7c51145f47e9)
+  - TestGitInit_1756218757757 (id: 9c241340-e16f-478f-b938-e0ea239cff6a)
+  - TestAPIProject_1756218754559 (id: 6dedf9b6-53b8-45a7-9129-8d781524cd5e)
+  - TestCodeProject_1756218754590 (id: 29d906aa-ad7d-4d1c-9e00-6d07d2955234)
+  - TestGitInit_1756218455402 (id: 11ad8a5f-3c13-4f4e-a1ec-0105cde63a34)
+  - TestCodeProject_1756218454237 (id: 2406df17-942c-44de-8c1b-04d5ee80e3f9)
+  - TestAPIProject_1756218454243 (id: 2e1a40af-0f58-421d-959a-39bdcb5fc067)
+  - TestProject2 (id: b20e1234-f5b1-4b6b-9de8-fbc798ba771f)
+  - TestProject1 (id: 4bbd5293-3516-457c-94ff-4b98dba31bf7)
+  - totally random project (id: 06ca9899-7a25-44d1-b5d5-9d06b71fa849)
+  - oldfile (id: b452366c-6e44-4275-8ff8-91d35e4782dc)
+  - newfile (id: f533af44-12af-4e6a-b291-5b1ba0f9711f)
+  - sort 2 (id: bd95b588-6d29-4c98-ac7f-3469722b9647)
+  - abcd (id: 7b2b96ff-6c2a-419c-80a0-974603dbe71b)
+  - whole new project (id: 4b9d4085-17ec-4336-9833-93d31b41849b)
+  - Playwright Test Project (id: bead5d5f-c859-48c5-b972-2608d526e346)
+  - Test Deduplication Project (id: 5ada5de0-275b-4362-8aca-e356af891c33)
+  - Test Deduplication Project (id: 2a03ec40-f1d7-4279-a2a5-de7ec29fe59e)
+  - Test Deduplication Project (id: 735ea509-31c1-48e7-8f7f-97b94c4dcd60)
+  - Test Deduplication Project (id: 9b613722-de7d-46ed-8fc0-c0f6f431603c)
+  - Test Deduplication Project (id: 0db795fd-f08a-48f0-b260-9ef79504ce29)
+  - Test Deduplication Project (id: 0a6bda06-6c0c-4bdb-8f58-5d5862f599c6)
+  - Test Deduplication Project (id: d0a1e9b1-8719-4d7c-9139-39fbe9109499)
+  - Test Deduplication Project (id: e67f0e51-ed42-404c-802f-f6ab0c0520cd)
+  - Test Deduplication Project (id: 6477fc06-a731-408a-8c86-9ce63c4bbd1e)
+  - Test Deduplication Project (id: 222eeffc-bb29-4e4e-9f8c-1dd31de9f8dc)
+  - Test Deduplication Project (id: 155660f0-d59d-4e88-bc9f-6c7963b17091)
+  - sammy (id: 8552d5ae-bfa5-42bf-a355-5bfc693bf10c)
+  - 12345 (id: cac60a40-136e-4cca-b1e0-82aeba44d055)
+  - abcd (id: 31a0a1d1-3f7d-43d1-83d8-c938af7ec524)
+WARNING: 'Agent Triage System' not found, using first project
+------------------------------ Captured log setup ------------------------------
+ERROR    app.services.git_service:git_service.py:78 Error getting HEAD commit: Repository not found at /tmp/test_media_b1375eb8/projects/session-test-project-71
+__________ ERROR at setup of TestDiffRetrieval.test_get_session_diffs __________
+.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
+    self.dialect.do_execute(
+.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:941: in do_execute
+    cursor.execute(statement, parameters)
+E   sqlite3.IntegrityError: NOT NULL constraint failed: diffs.base_commit
+
+The above exception was the direct cause of the following exception:
+tests/integration/test_phase_006_human_review.py:97: in test_diff
+    db.commit()
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2028: in commit
+    trans.commit(_to_root=True)
+<string>:2: in commit
+    ???
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1313: in commit
+    self._prepare_impl()
+<string>:2: in _prepare_impl
+    ???
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1288: in _prepare_impl
+    self.session.flush()
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4352: in flush
+    self._flush(objects)
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4487: in _flush
+    with util.safe_reraise():
+.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4448: in _flush
+    flush_context.execute()
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:466: in execute
+    rec.execute(self)
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:642: in execute
+    util.preloaded.orm_persistence.save_obj(
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:93: in save_obj
+    _emit_insert_statements(
+.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1233: in _emit_insert_statements
+    result = connection.execute(
+.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1418: in execute
+    return meth(
+.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:515: in _execute_on_connection
+    return connection._execute_clauseelement(
+.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1640: in _execute_clauseelement
+    ret = self._execute_context(
+.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1846: in _execute_context
+    return self._exec_single_context(
+.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1986: in _exec_single_context
+    self._handle_dbapi_exception(
+.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2355: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
+    self.dialect.do_execute(
+.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:941: in do_execute
+    cursor.execute(statement, parameters)
+E   sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constraint failed: diffs.base_commit
+E   [SQL: INSERT INTO diffs (id, session_id, project_id, base_commit, target_branch, diff_content, status, test_results, tests_run_at, vibecoder_prompt, evaluator_reasoning, commit_message, human_feedback, committed_sha, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING created_at, updated_at]
+E   [parameters: ('49ac759c-574c-4f54-a2ed-e137812026e5', '14a15af3-ebc8-4cc3-9801-79a6837f5334', 'd849869b-71bf-466f-bcf2-01680b2e2abd', None, 'main', "--- a/code.py\n+++ b/code.py\n@@ -1,2 +1,3 @@\n def hello():\n+    # This is a test comment\n     return 'world'", 'evaluator_approved', None, None, 'Add a comment', 'Good addition', 'Add helpful comment to hello function', None, None)]
+E   (Background on this error at: https://sqlalche.me/e/20/gkpj)
+---------------------------- Captured stdout setup -----------------------------
+Starting isolated test server:
+  Database: /tmp/test_vibegrapher_79a87fc7.db
+  Port: 33221
+  Media: /tmp/test_media_79a87fc7
+GitService base_path: /tmp/test_media_79a87fc7/projects
+Database reset and seeded successfully at: sqlite:////tmp/test_vibegrapher_79a87fc7.db
+Created project 'Agent Triage System' with git repository
+Repository path: /tmp/test_media_79a87fc7/projects/agent-triage-system
+Initial commit: 37b1eefe97a913092d28a16bf1f40a5c05224bb3
+MEDIA_PATH env: /tmp/test_media_79a87fc7
+Created 2 test cases (1 regular, 1 quick test)
+Test server ready at http://127.0.0.1:33221
+
+DEBUG: Found 254 projects:
+  - Session Test Project (id: d849869b-71bf-466f-bcf2-01680b2e2abd)
+  - Session Test Project (id: eb7de7bf-7985-4917-bf34-7e790b5f4f2d)
+  - Session Test Project (id: 6a4df074-71e0-46dc-8d74-30787f2209a4)
+  - Session Test Project (id: dec1ba1e-0738-4ab3-a569-54892d7a58ed)
+  - Session Test Project (id: cc2367f2-2c96-4c85-ae99-5e25b29397c8)
+  - Session Test Project (id: 51035fbf-cbf4-4f9d-a889-e4fee6570445)
+  - Session Test Project (id: 17bb3b0c-a778-407b-b6e6-d7ae8b8e7763)
+  - Session Test Project (id: 9049be64-7d33-4cd6-9a2b-c04ac7b82380)
+  - Commit Test (id: a66e8e72-ea90-46ce-b9c4-78376752f72d)
+  - Cleanup Test (id: e58185cb-d61a-4f61-824f-b081e6828295)
+  - Multi-client Test (id: 987ba877-ae69-4420-945d-5c78eb2923d8)
+  - Socket Test Project (id: 8fb3bc24-709c-41fc-8b92-3da167c51793)
+  - Get Test Project (id: 2c0f4c7b-d589-4d8e-80dd-5112c191b5b8)
+  - Test Project (id: 6d985852-7092-4171-a496-f41f87135cbd)
+  - Test Deduplication Project (id: 1cbc9dfd-5aa8-4766-813f-9fcac5dd864d)
+  - Test Deduplication Project (id: 6ddc0170-a4c8-4ec8-8c6c-856d02f7db86)
+  - Test Deduplication Project (id: 7056ec19-c807-4933-90ef-537cf4887d41)
+  - Test Deduplication Project (id: 763c4a60-f6f5-409d-8f01-35af99660193)
+  - Test Deduplication Project (id: 17473190-8fc2-48b5-b432-5646fc345876)
+  - Navigation Test 1756227481429 (id: bee90443-9d98-4feb-923c-77d51345e962)
+  - Delete Test 1756227481055 (id: eb2a0552-f280-4c28-a27b-b00ea5f3a6b5)
+  - E2E Test 1756227473824 (id: c2a3e2e2-bde7-45a5-94d0-ea68096b47cd)
+  - Dark Mode Test 1756227463052 (id: 4fd7af62-07fc-4755-8954-acf51586bdd2)
+  - Layout Test 1756227455467 (id: 889cfbc8-7155-421b-a944-bacda8b1a5ed)
+  - Test Project 1756227450734 (id: 16e6755d-66ef-43f4-b6e7-b1fb1531d1cd)
+  - Rapid Test 1 1756227448545 (id: 7bda23f1-6531-425d-9298-42e2e8891a72)
+  - Workflow Test 1756227417140 (id: 076026b9-4b8b-4ad9-8842-8d685cc09fb5)
+  - AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA (id: f99079b2-97dd-4c3e-b3a0-14e23b980245)
+  - Mobile Test Project (id: 842e6279-a687-4c6e-8db6-47a100540246)
+  - Test Project 1756227397125 (id: d74e2233-5816-4367-bc44-f6e1dc692de3)
+  - Height Test Project (id: 7306b4aa-c6a5-4db7-90e8-e7e436fd03e4)
+  - Resize Test Project (id: d83ebfb5-dcb1-4246-baa7-9c8112754b28)
+  - TestGitInit_1756227383542 (id: 5da89ca8-6316-48ed-a7c1-a79f2e690b4f)
+  - TestCodeProject_1756227377511 (id: cf9ce209-a281-4867-b2fb-77f169877cb6)
+  - TestAPIProject_1756227375930 (id: edce4a9f-7f85-4ae9-a4c1-02514ef3640f)
+  - TestProject2 (id: e36865a3-8977-4c9a-b4d5-28d4fb2a5e2f)
+  - TestProject1 (id: 20cbcc5e-a563-4ff5-9f71-dfab5f4cbdc7)
+  - Delete Test 1756227285462 (id: b1257ef5-e2b0-4eeb-8ae7-f0f243b93073)
+  - Mobile Test Project (id: b94c73a6-2f10-4699-98a1-0c22d35a6dde)
+  - Dark Mode Test 1756227273148 (id: 63120906-3c03-46f1-a25b-9f5d6a0eb403)
+  - Resize Test Project (id: ca34e6fd-be1a-42c0-8fbe-26cdacb2a067)
+  - Height Test Project (id: b566bdf2-e4ae-45d2-961a-e5b488bb3fa5)
+  - Layout Test 1756227264410 (id: 7810dcdc-4d9c-4c1e-bbc3-a635a37f4487)
+  - Test Project 1756227257567 (id: 8cf01008-cabb-4a71-880b-557510089901)
+  - Rapid Test 1 1756227251649 (id: 40a5a16a-faf8-4c14-a5bc-983482b75650)
+  - Workflow

@@ -129,10 +129,17 @@ class SocketIOService {
       this.emit('debug_iteration', data)
     })
     
-    // Code update event for Monaco editor
+    // Code update events for Monaco editor
+    // Listen for both event names for compatibility
     this.socket.on('code_update', (data: { content: string; filename?: string }) => {
       console.log('[Socket.io] Code update:', data)
       this.emit('code_update', data)
+    })
+    
+    this.socket.on('code_changed', (data: { project_id: string; new_code: string }) => {
+      console.log('[Socket.io] Code changed:', data)
+      // Transform to expected format
+      this.emit('code_update', { content: data.new_code, filename: 'main.py' })
     })
 
     // Error handling

@@ -46,8 +46,7 @@ def test_evaluation_result_model():
 def test_vibecode_result_model():
     """Test VibecodeResult pydantic model"""
     result = VibecodeResult(
-        content="Some text response", 
-        openai_response={"usage": {"total_tokens": 100}}
+        content="Some text response", openai_response={"usage": {"total_tokens": 100}}
     )
     assert result.content == "Some text response"
     assert result.diff_id is None

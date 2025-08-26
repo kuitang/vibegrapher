@@ -146,12 +146,26 @@ export function CodeViewer({ projectId }: CodeViewerProps) {
   }
 
   // Handle manual refresh
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsLoading(true)
-    // Simulate refresh - in production, this would fetch latest from backend
-    setTimeout(() => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
+      const response = await fetch(`${apiUrl}/projects/${projectId}`)
+      if (response.ok) {
+        const projectData = await response.json()
+        if (projectData.current_code) {
+          setCode(projectData.current_code)
+          useAppStore.getState().actions.updateCode(projectData.current_code, 'main.py')
+          console.log('[CodeViewer] Code refreshed from backend')
+        }
+      } else {
+        console.error('[CodeViewer] Failed to refresh code:', response.status)
+      }
+    } catch (error) {
+      console.error('[CodeViewer] Error refreshing code:', error)
+    } finally {
       setIsLoading(false)
-    }, 500)
+    }
   }
 
   // Get theme based on current app theme
