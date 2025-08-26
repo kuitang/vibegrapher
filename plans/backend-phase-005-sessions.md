@@ -1,3 +1,5 @@
+# DONE as of commit 5e66160
+
 # Backend Phase 005: Session Management
 
 ## Objectives
