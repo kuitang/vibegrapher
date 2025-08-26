@@ -51,9 +51,11 @@ async def test_vibecode_patch_submission(test_server: dict, caplog: Any) -> None
         projects_resp = await client.get("/projects")
         assert projects_resp.status_code == 200
         projects = projects_resp.json()
-        
+
         # Find the Agent Triage System project (seeded with actual code)
-        project = next((p for p in projects if p["name"] == "Agent Triage System"), None)
+        project = next(
+            (p for p in projects if p["name"] == "Agent Triage System"), None
+        )
         if not project:
             # Fallback: create project but with initial code
             project_resp = await client.post(
@@ -70,7 +72,9 @@ async def test_vibecode_patch_submission(test_server: dict, caplog: Any) -> None
         # Send vibecode request - now the agent has actual code to modify
         message_resp = await client.post(
             f"/sessions/{session['id']}/messages",
-            json={"prompt": "Add a comment at the top of the file saying '# Modified by AI'"},
+            json={
+                "prompt": "Add a comment at the top of the file saying '# Modified by AI'"
+            },
         )
         assert message_resp.status_code == 200
         result = message_resp.json()
@@ -186,9 +190,11 @@ async def test_evaluator_iteration(test_server: dict, caplog: Any) -> None:
 
         assert iteration_count <= 3, "Should not exceed 3 iterations"
         assert iteration_count >= 1, "Should have at least 1 iteration"
-        
+
         # Verify we got a result (either diff or error)
-        assert result.get("diff_id") or result.get("patch") or result.get("error"), "Should have some result"
+        assert (
+            result.get("diff_id") or result.get("patch") or result.get("error")
+        ), "Should have some result"
 
 
 @pytest.mark.integration
