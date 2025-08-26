@@ -10,4 +10,8 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    host: true,
+    allowedHosts: ['localhost', 'kui-vibes', '.kui-vibes', '188.245.127.39', '100.67.190.52'],
+  },
 })

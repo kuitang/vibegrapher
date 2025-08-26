@@ -1,3 +1,5 @@
+# DONE as of commit pending
+
 # Backend Phase 002: Socket.io & Real-time
 
 ## Objectives
