@@ -99,6 +99,26 @@ class VibecodeService:
                             commit_message = item.output.commit_message
                             evaluator_reasoning = item.output.reasoning
 
+                # Get the actual HEAD commit from the project
+                from ..services.git_service import GitService
+                git_service = GitService()
+                
+                # Get project to find slug
+                from ..models import Project
+                project = db.query(Project).filter(Project.id == project_id).first()
+                
+                # Get actual HEAD commit SHA or use project's current_commit
+                base_commit = None
+                if project:
+                    if project.slug:
+                        base_commit = git_service.get_head_commit(project.slug)
+                    if not base_commit:
+                        base_commit = project.current_commit
+                
+                # If still no commit, use a placeholder (should not happen in production)
+                if not base_commit:
+                    base_commit = "HEAD"
+                
                 # Create the diff
                 diff = Diff(
                     id=str(uuid.uuid4()),
@@ -108,7 +128,7 @@ class VibecodeService:
                     commit_message=commit_message,
                     status="evaluator_approved",
                     evaluator_reasoning=evaluator_reasoning,
-                    base_commit="HEAD",  # Required field
+                    base_commit=base_commit,  # Use actual commit SHA
                     target_branch="main",  # Required field
                     vibecoder_prompt=prompt,  # Required field - the original user prompt
                 )
