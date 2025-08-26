@@ -108,14 +108,14 @@ async def send_message(
         db=db,
     )
 
-    # Return response
+    # Return response - handle dict result
     return MessageResponse(
         session_id=session_id,
-        diff_id=result.diff_id,
-        content=result.content,
-        patch=result.patch,
-        token_usage=result.token_usage,
-        error=result.error,
+        diff_id=result.get("diff_id") if isinstance(result, dict) else result.diff_id,
+        content=result.get("content") if isinstance(result, dict) else result.content,
+        patch=result.get("patch") if isinstance(result, dict) else result.patch,
+        token_usage=result.get("token_usage", {}) if isinstance(result, dict) else result.token_usage,
+        error=result.get("error") if isinstance(result, dict) else result.error,
     )
 
 
