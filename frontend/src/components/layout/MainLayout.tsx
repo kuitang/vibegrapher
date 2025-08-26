@@ -12,7 +12,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         <h1 className="text-xl font-semibold">Vibegrapher</h1>
         <DarkModeToggle />
       </header>
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-auto">
         {children}
       </main>
     </div>

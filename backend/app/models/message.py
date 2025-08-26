@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import JSON, Column, ForeignKey, String, Text
+from sqlalchemy import JSON, Column, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from .base import Base, TimestampMixin
@@ -13,6 +13,7 @@ class ConversationMessage(Base, TimestampMixin):
     session_id = Column(String, ForeignKey("vibecode_sessions.id"), nullable=False)
     role = Column(String, nullable=False)
     content = Column(Text, nullable=False)
+    iteration = Column(Integer, nullable=True)
     openai_response = Column(JSON, nullable=True)
     token_usage = Column(JSON, nullable=True)
     diff_id = Column(String, ForeignKey("diffs.id"), nullable=True)

@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api import projects, tests
+from .api import projects, tests, sessions, diffs
 from .config import settings
 from .database import init_db
 from .services.socketio_service import socketio_manager
@@ -26,6 +26,8 @@ fastapi_app.add_middleware(
 
 fastapi_app.include_router(projects.router)
 fastapi_app.include_router(tests.router)
+fastapi_app.include_router(sessions.router)
+fastapi_app.include_router(diffs.router)
 
 
 @fastapi_app.on_event("startup")

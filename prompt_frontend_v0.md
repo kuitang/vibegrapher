@@ -90,12 +90,17 @@ Before writing Playwright test scripts, use the Playwright MCP server to:
 3. **Monitor Console**: Carefully check error messages and console logs
 4. **Take Screenshots**: Capture UI states and analyze them yourself (ensure reasonable size)
 5. **Visual Analysis**: Look at the screenshots yourself to spot visual bugs
-6. **Test Mobile**: Check at mobile breakpoint (375px width)
-7. **Verify Scrolling**: Ensure mobile scrolling behaves correctly
-8. **Track Bugs**: Keep a list of discovered issues
-9. **Fix Simple Bugs**: Immediately fix and re-test simple issues
-10. **Write Scripts for Complex**: Create Playwright scripts for complex bugs
-11. **Fresh Project Testing**: Start with a new project, delete when done
+6. **IMPORTANT: Commit Screenshots**: Save and git commit screenshots to `frontend/validated_test_evidence/phase-XXX/` showing:
+   - Homepage with projects list
+   - Three-panel layout on project page  
+   - Dark mode enabled/disabled states
+   - Any UI errors or bugs discovered
+7. **Test Mobile**: Check at mobile breakpoint (375px width)
+8. **Verify Scrolling**: Ensure mobile scrolling behaves correctly
+9. **Track Bugs**: Keep a list of discovered issues
+10. **Fix Simple Bugs**: Immediately fix and re-test simple issues
+11. **Write Scripts for Complex**: Create Playwright scripts for complex bugs
+12. **Fresh Project Testing**: Start with a new project, delete when done
 
 ### Running Tests
 ```bash

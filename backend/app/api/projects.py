@@ -18,7 +18,7 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 
 @router.get("", response_model=List[ProjectResponse])
 def list_projects(db: Session = Depends(get_db)) -> List[Project]:
-    projects = db.query(Project).all()
+    projects = db.query(Project).order_by(Project.created_at.desc()).all()
     return projects
 
 
