@@ -4,7 +4,6 @@ Tests human approval workflow for evaluator-approved diffs
 """
 
 import uuid
-from typing import Any, Dict
 
 import httpx
 import pytest
@@ -46,7 +45,6 @@ async def test_session(test_client, test_project):
 async def test_diff(test_server, test_project, test_session):
     """Create a test diff directly in database"""
     # Import here to avoid circular dependency
-    from app.database import get_db
     from app.models import Diff
     from app.services.git_service import GitService
 
@@ -306,7 +304,7 @@ class TestDiffValidation:
 
         try:
             ast.parse(result)
-            assert False, "Should have raised SyntaxError"
+            raise AssertionError("Should have raised SyntaxError")
         except SyntaxError:
             pass  # Expected
 

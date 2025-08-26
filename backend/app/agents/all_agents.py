@@ -5,11 +5,9 @@ VibeCoder and Evaluator agents with patch submission workflow
 
 import ast
 import asyncio
-import json
 import logging
-import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 from agents import Agent, Runner, SQLiteSession, function_tool
 from pydantic import BaseModel
@@ -81,8 +79,8 @@ commit_message: suggested commit message""",
 
 
 class VibecodeResult(BaseModel):
-    content: Optional[str] = None  # if we fail
-    diff_id: Optional[str] = None  # if we succeed
+    content: str | None = None  # if we fail
+    diff_id: str | None = None  # if we succeed
     openai_response: Any  # Full OpenAI response object
 
 
@@ -98,8 +96,8 @@ class VibecodeService:
         prompt: str,
         current_code: str,
         project_slug: str,
-        node_id: Optional[str] = None,
-        session_id: Optional[str] = None,
+        node_id: str | None = None,
+        session_id: str | None = None,
         socketio_manager=None,
     ) -> VibecodeResult:
         """Main vibecode workflow with agent interaction"""
@@ -196,7 +194,7 @@ You have TWO response modes:
      +added line
       context line
      ```
-   
+
 2. TEXT MODE: When the user asks questions about code or needs explanations, respond with text.
    - Explain code functionality
    - Answer questions
@@ -205,10 +203,10 @@ You have TWO response modes:
 Current code is provided in the user message.
 
 CRITICAL REQUIREMENT:
-You must EITHER use the submit_patch tool OR return text to the user. 
+You must EITHER use the submit_patch tool OR return text to the user.
 DO NOT return code in your text response. If you need to provide code changes, you MUST use the submit_patch tool.
 
-IMPORTANT: 
+IMPORTANT:
 - When generating patches, use proper unified diff format
 - Include context lines for clarity
 - Make minimal, focused changes
@@ -346,7 +344,7 @@ IMPORTANT:
 
             # Generate deterministic message ID
             message_id = f"{session_id}_{agent_type}_{iteration}"
-            
+
             # Emit first (priority #1 - user sees response immediately)
             if socketio_manager and session_id and project_id:
                 await socketio_manager.emit_conversation_message(
@@ -362,7 +360,7 @@ IMPORTANT:
                 )
 
             # Database save in background (priority #2)
-            asyncio.create_task(
+            _ = asyncio.create_task(
                 self._save_conversation_message_async(
                     response, agent_type, iteration, session_id, project_id
                 )
@@ -382,10 +380,9 @@ IMPORTANT:
         """Save conversation message to database asynchronously"""
         try:
             # Import here to avoid circular dependency
+
             from ..database import get_db
             from ..models import ConversationMessage
-            import uuid
-            from sqlalchemy.orm import Session
 
             # Create a new database session for async operation
             db = next(get_db())
@@ -422,18 +419,20 @@ IMPORTANT:
                     openai_response = json.loads(
                         json.dumps(response.__dict__, default=str)
                     )
-                except:
+                except Exception:
                     openai_response = str(response)
 
             # Generate a deterministic message ID based on session and iteration
             # This prevents duplicates if the same message is saved twice
             message_id = f"{session_id}_{agent_type}_{iteration}"
-            
+
             # Check if message already exists
-            existing = db.query(ConversationMessage).filter(
-                ConversationMessage.id == message_id
-            ).first()
-            
+            existing = (
+                db.query(ConversationMessage)
+                .filter(ConversationMessage.id == message_id)
+                .first()
+            )
+
             if not existing:
                 # Create and save the message
                 message = ConversationMessage(
@@ -452,10 +451,8 @@ IMPORTANT:
                     f"Saved conversation message {message_id} for session {session_id}, iteration {iteration}"
                 )
             else:
-                logger.info(
-                    f"Message {message_id} already exists, skipping save"
-                )
-            
+                logger.info(f"Message {message_id} already exists, skipping save")
+
             db.close()
 
         except Exception as e:

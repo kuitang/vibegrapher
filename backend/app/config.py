@@ -1,5 +1,4 @@
 import os
-from typing import List
 
 from pydantic_settings import BaseSettings
 
@@ -21,7 +20,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
 
-    def get_cors_origins(self) -> List[str]:
+    def get_cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",")]
 
     def is_production(self) -> bool:

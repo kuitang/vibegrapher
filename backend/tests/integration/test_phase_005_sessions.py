@@ -4,15 +4,10 @@ Tests session endpoints with OpenAI integration and Socket.io streaming
 """
 
 import asyncio
-import json
-import uuid
-from typing import Any, Dict, List
 
 import httpx
 import pytest
 import socketio
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
 
 pytestmark = pytest.mark.asyncio
 

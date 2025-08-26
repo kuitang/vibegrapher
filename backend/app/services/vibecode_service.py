@@ -2,19 +2,16 @@
 Vibecode Service - Orchestrates VibeCoder and Evaluator agents
 """
 
-import asyncio
-import json
 import logging
 import uuid
-from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 from sqlalchemy.orm import Session
 
 from ..agents.all_agents import vibecode_service as agent_vibecode_service
-from ..database import get_db
-from ..models import ConversationMessage, Diff, Project, VibecodeSession
+from ..models import Diff, Project
 from ..services.socketio_service import socketio_manager
+from ..utils.error_handling import emit_error_to_client, log_and_format_error
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +29,8 @@ class VibecodeService:
         prompt: str,
         current_code: str,
         db: Session,
-        node_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        node_id: str | None = None,
+    ) -> dict[str, Any]:
         """
         Run vibecode operation with VibeCoder and Evaluator agents
 
@@ -90,7 +87,7 @@ class VibecodeService:
                                 args = json.loads(item.raw_item.arguments)
                                 if "patch" in args:
                                     patch_content = args["patch"]
-                            except:
+                            except Exception:
                                 pass
                         # Find the evaluation result
                         if hasattr(item, "output") and hasattr(
@@ -101,12 +98,12 @@ class VibecodeService:
 
                 # Get the actual HEAD commit from the project
                 from ..services.git_service import GitService
+
                 git_service = GitService()
-                
-                # Get project to find slug
-                from ..models import Project
+
+                # Get project to find slug (Project already imported at top)
                 project = db.query(Project).filter(Project.id == project_id).first()
-                
+
                 # Get actual HEAD commit SHA or use project's current_commit
                 base_commit = None
                 if project:
@@ -114,11 +111,11 @@ class VibecodeService:
                         base_commit = git_service.get_head_commit(project.slug)
                     if not base_commit:
                         base_commit = project.current_commit
-                
+
                 # If still no commit, use a placeholder (should not happen in production)
                 if not base_commit:
                     base_commit = "HEAD"
-                
+
                 # Create the diff
                 diff = Diff(
                     id=str(uuid.uuid4()),
@@ -174,8 +171,23 @@ class VibecodeService:
             return response
 
         except Exception as e:
-            logger.error(f"Vibecode error: {e}", exc_info=True)
-            return {"error": str(e)}
+            # Log error and get formatted error data with stack trace
+            error_data = log_and_format_error(
+                error=e, context="vibecode operation", logger_instance=logger
+            )
+
+            # Emit error to client with full stack trace via Socket.io
+            if socketio_manager:
+                await emit_error_to_client(
+                    socketio_manager=socketio_manager,
+                    project_id=project_id,
+                    error=e,
+                    event_name="vibecode_failed",
+                    context=f"Session {session_id}",
+                    include_stack_trace=True,
+                )
+
+            return error_data
 
 
 # Global instance

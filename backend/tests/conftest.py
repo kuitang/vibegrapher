@@ -1,16 +1,14 @@
 import os
 import socket
 import sys
-import tempfile
 import time
+from collections.abc import Generator
 from multiprocessing import Process
 from pathlib import Path
-from typing import Generator
 
 import httpx
 import pytest
 import uvicorn
-
 from app.management.reset_db import reset_and_seed_database
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -61,7 +59,7 @@ def test_server() -> Generator[dict, None, None]:
     # Get a random available port
     port = find_free_port()
 
-    print(f"Starting isolated test server:")
+    print("Starting isolated test server:")
     print(f"  Database: {db_path}")
     print(f"  Port: {port}")
     print(f"  Media: {media_path}")
@@ -89,7 +87,9 @@ def test_server() -> Generator[dict, None, None]:
         except Exception:
             if i == max_retries - 1:
                 server_process.terminate()
-                raise RuntimeError(f"Test server failed to start on port {port}")
+                raise RuntimeError(
+                    f"Test server failed to start on port {port}"
+                ) from None
         time.sleep(0.5)
 
     yield {"url": server_url, "media_path": media_path, "test_id": test_id}

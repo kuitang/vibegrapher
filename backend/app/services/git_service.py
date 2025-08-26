@@ -1,9 +1,7 @@
-import difflib
 import logging
 import os
 import shutil
 from pathlib import Path
-from typing import Optional
 
 import pygit2
 
@@ -13,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class GitService:
-    def __init__(self, base_path: Optional[str] = None) -> None:
+    def __init__(self, base_path: str | None = None) -> None:
         if base_path is None:
             base_path = os.path.join(settings.media_path, "projects")
         self.base_path = Path(base_path)
@@ -41,7 +39,7 @@ class GitService:
         logger.info(f"Created git repository at {repo_path}")
         return str(repo_path)
 
-    def get_current_code(self, project_slug: str) -> Optional[str]:
+    def get_current_code(self, project_slug: str) -> str | None:
         """Get current code from repository"""
         repo_path = self._get_repo_path(project_slug)
 
@@ -67,7 +65,7 @@ class GitService:
         logger.warning(f"No Python files found in {repo_path}")
         return None
 
-    def get_head_commit(self, project_slug: str) -> Optional[str]:
+    def get_head_commit(self, project_slug: str) -> str | None:
         """Get current HEAD commit SHA"""
         repo_path = self._get_repo_path(project_slug)
 
@@ -101,7 +99,7 @@ class GitService:
 
     def commit_changes(
         self, project_slug: str, content: str, message: str, filename: str = "agents.py"
-    ) -> Optional[str]:
+    ) -> str | None:
         """Create commit with changes"""
         repo_path = self._get_repo_path(project_slug)
         code_file = repo_path / filename
@@ -219,7 +217,7 @@ class GitService:
             logger.error(f"Error in manual diff apply: {e}")
             return False
 
-    def get_diff(self, project_slug: str) -> Optional[str]:
+    def get_diff(self, project_slug: str) -> str | None:
         """Get diff of uncommitted changes"""
         repo_path = self._get_repo_path(project_slug)
 

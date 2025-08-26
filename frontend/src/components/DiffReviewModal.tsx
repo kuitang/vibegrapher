@@ -3,7 +3,7 @@
  * Modal for reviewing diffs with evaluator reasoning
  */
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { DiffEditor } from '@monaco-editor/react'
 import {
   Dialog,
@@ -45,6 +45,14 @@ export function DiffReviewModal({
   const [rejectionReason, setRejectionReason] = useState('')
   const [showRejectionForm, setShowRejectionForm] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [editorKey, setEditorKey] = useState(0)
+  
+  // Force re-mount of DiffEditor when modal opens to avoid disposal issues
+  useEffect(() => {
+    if (open) {
+      setEditorKey(prev => prev + 1)
+    }
+  }, [open])
 
   // Parse the diff to get original and modified code
   const parseDiff = (diffContent: string) => {
@@ -174,8 +182,9 @@ export function DiffReviewModal({
           </Card>
 
           {/* Diff Viewer */}
-          <div className="flex-1 border rounded-lg overflow-hidden">
+          <div className="flex-1 border rounded-lg overflow-hidden min-h-[300px]">
             <DiffEditor
+              key={editorKey}
               height="400px"
               original={original}
               modified={modified}
@@ -183,10 +192,12 @@ export function DiffReviewModal({
               theme={getTheme()}
               options={{
                 readOnly: true,
-                renderSideBySide: true,
+                renderSideBySide: window.innerWidth > 768,
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
-                fontSize: 13
+                fontSize: window.innerWidth > 768 ? 13 : 11,
+                wordWrap: window.innerWidth <= 768 ? 'on' : 'off',
+                wrappingIndent: 'same'
               }}
             />
           </div>

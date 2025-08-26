@@ -1,12 +1,9 @@
-import json
 import os
 from pathlib import Path
 
 import httpx
 import pygit2
 import pytest
-
-from app.management.reset_db import reset_and_seed_database
 from app.services.git_service import GitService
 
 
@@ -28,7 +25,10 @@ def test_git_service_repository_operations(test_server: dict) -> None:
         response = client.get(f"/projects/{project['id']}")
         assert response.status_code == 200
         project_data = response.json()
-        assert project_data["current_branch"] in ["main", "master"]  # Git default branch
+        assert project_data["current_branch"] in [
+            "main",
+            "master",
+        ]  # Git default branch
 
         # Delete project
         response = client.delete(f"/projects/{project['id']}")
@@ -134,7 +134,7 @@ def test_git_service_error_handling(test_server: dict) -> None:
     assert git_service.commit_changes("nonexistent-project", "code", "message") is None
 
     # Verify delete non-existent is safe
-    assert git_service.delete_repository("nonexistent-project") == True
+    assert git_service.delete_repository("nonexistent-project") is True
 
 
 @pytest.mark.integration
@@ -183,18 +183,18 @@ def test_repository_exists_check() -> None:
 
         # Create a test repository
         test_slug = "test-repo-exists"
-        repo_path = git_service.create_repository(test_slug)
+        git_service.create_repository(test_slug)
 
         try:
             # Should exist after creation
-            assert git_service.repository_exists(test_slug) == True
+            assert git_service.repository_exists(test_slug) is True
 
             # Delete and check again
             git_service.delete_repository(test_slug)
-            assert git_service.repository_exists(test_slug) == False
+            assert git_service.repository_exists(test_slug) is False
 
             # Non-existent should return False
-            assert git_service.repository_exists("never-created") == False
+            assert git_service.repository_exists("never-created") is False
         finally:
             # Cleanup if needed
             git_service.delete_repository(test_slug)
@@ -208,7 +208,7 @@ def test_new_project_has_initial_commit_and_head(test_server: dict) -> None:
         response = client.post("/projects", json={"name": "Test Initial Commit"})
         assert response.status_code == 201
         project = response.json()
-        
+
         # Verify the response contains expected fields
         assert project["name"] == "Test Initial Commit"
         assert project["slug"] is not None
@@ -216,12 +216,12 @@ def test_new_project_has_initial_commit_and_head(test_server: dict) -> None:
         assert project["current_branch"] in ["main", "master"]  # Git default branch
         assert project["current_commit"] is not None  # Should have initial commit
         assert project["current_code"] is not None  # Should have initial code
-        
+
         # Verify the git repository state
         repo_path = Path(project["repository_path"])
         assert repo_path.exists()
         assert (repo_path / ".git").exists()
-        
+
         # Check that main.py was created
         main_py = repo_path / "main.py"
         assert main_py.exists()
@@ -229,34 +229,37 @@ def test_new_project_has_initial_commit_and_head(test_server: dict) -> None:
         assert "Welcome to Vibegrapher" in content
         assert f"Project: {project['name']}" in content
         assert "def main():" in content
-        
+
         # Open the repository with pygit2 and verify HEAD
         repo = pygit2.Repository(str(repo_path))
         assert not repo.is_empty, "Repository should not be empty"
         assert repo.head is not None, "HEAD should be set"
-        
+
         # Get HEAD commit
         head = repo.head
         assert head.target is not None, "HEAD should point to a commit"
         commit = repo.get(head.target)
-        
+
         # Verify commit details
         assert commit is not None
         assert commit.message == "Initial project setup"
         assert commit.author.name == "Vibegrapher"
         assert commit.author.email == "vibegrapher@example.com"
-        
+
         # Verify the commit SHA matches what's in the database
         assert str(commit.id) == project["current_commit"]
-        
+
         # Test that we can retrieve the project and it still has HEAD
         response = client.get(f"/projects/{project['id']}")
         assert response.status_code == 200
         updated_project = response.json()
         assert updated_project["current_commit"] is not None
         assert updated_project["current_code"] is not None
-        assert updated_project["current_branch"] in ["main", "master"]  # Git default branch
-        
+        assert updated_project["current_branch"] in [
+            "main",
+            "master",
+        ]  # Git default branch
+
         # Clean up
         response = client.delete(f"/projects/{project['id']}")
         assert response.status_code == 204

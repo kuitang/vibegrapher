@@ -2,7 +2,6 @@ import os
 import sys
 import uuid
 from pathlib import Path
-from typing import Optional
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -14,7 +13,7 @@ from app.services.git_service import GitService
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 
-def reset_and_seed_database(database_url: Optional[str] = None) -> None:
+def reset_and_seed_database(database_url: str | None = None) -> None:
     url = database_url or settings.database_url
 
     if "sqlite" in url:
@@ -30,8 +29,8 @@ def reset_and_seed_database(database_url: Optional[str] = None) -> None:
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
 
-    Session = sessionmaker(bind=engine)
-    db = Session()
+    session_factory = sessionmaker(bind=engine)
+    db = session_factory()
 
     # Sample agent code based on OpenAI quickstart
     sample_agent_code = '''"""
@@ -44,13 +43,13 @@ from openai_agents_sdk import Agent, Runner, TriageStrategy
 
 class TriageAgent(Agent):
     """Routes customer inquiries to appropriate department agents"""
-    
+
     def __init__(self):
         super().__init__(
             name="TriageAgent",
             system_prompt="You are a triage agent that routes inquiries."
         )
-    
+
     def process(self, message: str) -> str:
         """Process incoming message and route to appropriate agent"""
         # Simple routing logic
@@ -66,7 +65,7 @@ def main():
     """Initialize and run the agent"""
     agent = TriageAgent()
     runner = Runner(agent)
-    
+
     # Example usage
     response = runner.run("I have a technical issue with my account")
     print(response)
@@ -142,10 +141,10 @@ assert "technical" in response.lower()
     db.close()
 
     print(f"Database reset and seeded successfully at: {url}")
-    print(f"Created project 'Agent Triage System' with git repository")
+    print("Created project 'Agent Triage System' with git repository")
     print(f"Repository path: {repo_path}")
     print(f"Initial commit: {commit_sha}")
-    print(f"Created 2 test cases (1 regular, 1 quick test)")
+    print("Created 2 test cases (1 regular, 1 quick test)")
 
 
 if __name__ == "__main__":

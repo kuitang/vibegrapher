@@ -65,12 +65,34 @@ export function VibecodePanel({ projectId }: VibecodePanelProps) {
     }
   })
 
-  // Restore session on mount
+  // Restore session on mount and auto-create if needed
   useEffect(() => {
     if (projectId) {
       restoreSession(projectId)
     }
   }, [projectId, restoreSession])
+  
+  // Auto-create session when connected if no session exists
+  useEffect(() => {
+    const autoCreateSession = async () => {
+      if (isConnected && !session && !isLoading && projectId) {
+        console.log('[VibecodePanel] Auto-creating session for project:', projectId)
+        setIsLoading(true)
+        try {
+          await createSession(projectId)
+          console.log('[VibecodePanel] Session auto-created')
+        } catch (error) {
+          console.error('[VibecodePanel] Failed to auto-create session:', error)
+        } finally {
+          setIsLoading(false)
+        }
+      }
+    }
+    
+    // Small delay to ensure connection is stable
+    const timer = setTimeout(autoCreateSession, 500)
+    return () => clearTimeout(timer)
+  }, [isConnected, session, projectId, createSession, isLoading])
 
   // Auto-resize textarea
   useEffect(() => {
@@ -151,8 +173,8 @@ export function VibecodePanel({ projectId }: VibecodePanelProps) {
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="flex-shrink-0">
+    <div className="h-full flex flex-col">
+      <CardHeader className="flex-shrink-0 border-b">
         <div className="flex items-center justify-between">
           <CardTitle>Vibecode Panel</CardTitle>
           <div className="flex items-center gap-2">
@@ -170,23 +192,15 @@ export function VibecodePanel({ projectId }: VibecodePanelProps) {
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col overflow-hidden">
-        {/* Session controls */}
+        {/* Session auto-creates when connected */}
         {!session ? (
           <div className="flex items-center justify-center p-8">
-            <Button 
-              onClick={handleCreateSession}
-              disabled={isLoading || !isConnected}
-              size="lg"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating Session...
-                </>
-              ) : (
-                'Start Session'
-              )}
-            </Button>
+            <div className="text-center space-y-2">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                {isConnected ? 'Initializing session...' : 'Connecting...'}
+              </p>
+            </div>
           </div>
         ) : (
           <>
@@ -278,6 +292,6 @@ export function VibecodePanel({ projectId }: VibecodePanelProps) {
           </>
         )}
       </CardContent>
-    </Card>
+    </div>
   )
 }

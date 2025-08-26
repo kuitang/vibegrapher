@@ -75,7 +75,7 @@ async def test_list_projects(test_server: str) -> None:
         response = await client.get(f"{test_server}/projects")
 
     print(f"Result: {response.status_code}, {len(response.json())} projects found")
-    print(f"Expected: 200")
+    print("Expected: 200")
 
     assert response.status_code == 200
     data = response.json()

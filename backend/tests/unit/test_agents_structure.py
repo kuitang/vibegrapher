@@ -2,14 +2,11 @@
 Unit tests to verify the agents structure is correctly implemented
 """
 
-import pytest
-
 from app.agents.all_agents import (
     EvaluationResult,
     VibecodeResult,
     apply_patch,
     evaluator_agent,
-    submit_patch,
     validate_patch,
     vibecoder_agent,
 )

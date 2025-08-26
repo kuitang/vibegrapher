@@ -5,7 +5,6 @@ Based on Aider's approach to diff parsing
 
 import difflib
 import logging
-from typing import List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +13,7 @@ class DiffParser:
     """Parse and apply unified diff patches using difflib"""
 
     @staticmethod
-    def apply_patch(original_code: str, patch: str) -> Optional[str]:
+    def apply_patch(original_code: str, patch: str) -> str | None:
         """Apply a unified diff patch to the original code using difflib
 
         This follows a similar approach to Aider's diff parsing.
@@ -51,7 +50,7 @@ class DiffParser:
                         continue
 
                     old_start = int(match.group(1)) - 1  # Convert to 0-based index
-                    old_count = int(match.group(2)) if match.group(2) else 1
+                    int(match.group(2)) if match.group(2) else 1
 
                     # Add any unchanged lines before this hunk
                     while original_idx < old_start and original_idx < len(
@@ -119,7 +118,7 @@ class DiffParser:
         return "".join(diff)
 
     @staticmethod
-    def extract_file_info(patch: str) -> Tuple[Optional[str], bool]:
+    def extract_file_info(patch: str) -> tuple[str | None, bool]:
         """Extract filename and whether it's a new file from patch"""
         lines = patch.strip().split("\n")
         filename = None

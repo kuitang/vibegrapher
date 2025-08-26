@@ -1,7 +1,7 @@
 import asyncio
+import contextlib
 import logging
 from datetime import datetime
-from typing import Dict, Optional, Set
 
 import socketio
 
@@ -16,10 +16,10 @@ class SocketIOManager:
             logger=False,
             engineio_logger=False,
         )
-        self.app: Optional[socketio.ASGIApp] = None
+        self.app: socketio.ASGIApp | None = None
         self.connections: int = 0
-        self.project_rooms: Dict[str, Set[str]] = {}
-        self.heartbeat_task: Optional[asyncio.Task] = None
+        self.project_rooms: dict[str, set[str]] = {}
+        self.heartbeat_task: asyncio.Task | None = None
 
     def create_app(self, app) -> socketio.ASGIApp:
         """Wrap FastAPI app with Socket.io"""
@@ -85,11 +85,11 @@ class SocketIOManager:
         project_id: str,
         message_id: str,
         role: str,
-        agent: Optional[str],
+        agent: str | None,
         content: str,
-        patch_preview: Optional[str],
+        patch_preview: str | None,
         iteration: int,
-        token_usage: Optional[dict],
+        token_usage: dict | None,
     ) -> None:
         """Emit conversation message event"""
         data = {
@@ -117,7 +117,7 @@ class SocketIOManager:
         project_id: str,
         test_name: str,
         status: str,
-        output: Optional[str],
+        output: str | None,
     ) -> None:
         """Emit test completion event"""
         data = {
@@ -129,7 +129,7 @@ class SocketIOManager:
         await self.emit_to_project(project_id, "test_completed", data)
 
     async def emit_token_usage(
-        self, session_id: str, project_id: str, message_id: Optional[str], usage: dict
+        self, session_id: str, project_id: str, message_id: str | None, usage: dict
     ) -> None:
         """Emit token usage event"""
         data = {
@@ -163,10 +163,8 @@ class SocketIOManager:
         """Stop heartbeat task"""
         if self.heartbeat_task:
             self.heartbeat_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self.heartbeat_task
-            except asyncio.CancelledError:
-                pass
             self.heartbeat_task = None
             logger.info("Heartbeat task stopped")
 

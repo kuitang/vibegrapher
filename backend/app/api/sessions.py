@@ -4,7 +4,6 @@ Session API endpoints
 
 import logging
 import uuid
-from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -23,16 +22,16 @@ router = APIRouter(tags=["sessions"])
 
 class MessageRequest(BaseModel):
     prompt: str
-    message_id: Optional[str] = None  # Client can provide ID to prevent duplicates
+    message_id: str | None = None  # Client can provide ID to prevent duplicates
 
 
 class MessageResponse(BaseModel):
     session_id: str
-    diff_id: Optional[str] = None
-    content: Optional[str] = None
-    patch: Optional[str] = None
-    token_usage: Optional[dict] = None
-    error: Optional[str] = None
+    diff_id: str | None = None
+    content: str | None = None
+    patch: str | None = None
+    token_usage: dict | None = None
+    error: str | None = None
 
 
 @router.post(
@@ -100,10 +99,12 @@ async def send_message(
     message_id = request.message_id or str(uuid.uuid4())
     existing_message = None
     if request.message_id:
-        existing_message = db.query(ConversationMessage).filter(
-            ConversationMessage.id == request.message_id
-        ).first()
-    
+        existing_message = (
+            db.query(ConversationMessage)
+            .filter(ConversationMessage.id == request.message_id)
+            .first()
+        )
+
     # Only save if message doesn't exist (prevent duplicates)
     if not existing_message:
         user_message = ConversationMessage(
@@ -150,11 +151,11 @@ async def send_message(
 
 
 @router.get(
-    "/sessions/{session_id}/messages", response_model=List[MessageResponseSchema]
+    "/sessions/{session_id}/messages", response_model=list[MessageResponseSchema]
 )
 def get_messages(
     session_id: str, db: Session = Depends(get_db)
-) -> List[ConversationMessage]:
+) -> list[ConversationMessage]:
     """Get all messages for a session"""
 
     # Verify session exists

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, Literal, Optional
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -13,11 +13,11 @@ class MessageResponse(BaseModel):
     session_id: str
     role: str
     content: str
-    iteration: Optional[int] = None
-    openai_response: Optional[Dict[str, Any]] = None
-    token_usage: Optional[Dict[str, Any]] = None
-    diff_id: Optional[str] = None
-    last_response_id: Optional[str] = None
+    iteration: int | None = None
+    openai_response: dict[str, Any] | None = None
+    token_usage: dict[str, Any] | None = None
+    diff_id: str | None = None
+    last_response_id: str | None = None
     created_at: datetime
     updated_at: datetime
 

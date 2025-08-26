@@ -30,6 +30,23 @@ export function ProjectPage() {
   // Use diff recovery hook
   useDiffRecovery(id)
 
+  // Clear project state when project ID changes
+  useEffect(() => {
+    const currentProject = useAppStore.getState().project
+    if (id && currentProject && currentProject.id !== id) {
+      console.log('[ProjectPage] Clearing project state, switching from', currentProject.id, 'to', id)
+      actions.clearProjectState()
+    }
+  }, [id, actions])
+  
+  // Clear project state when component unmounts (browser back or < button)
+  useEffect(() => {
+    return () => {
+      console.log('[ProjectPage] Component unmounting, clearing project state')
+      actions.clearProjectState()
+    }
+  }, [actions])
+
   useEffect(() => {
     if (project) {
       actions.setProject(project)
@@ -226,15 +243,15 @@ function OldCodePanel() {
 
 function TestPanel() {
   return (
-    <>
-      <CardHeader>
+    <div className="h-full flex flex-col border rounded-lg bg-card">
+      <CardHeader className="flex-shrink-0 border-b">
         <CardTitle>Test Results</CardTitle>
       </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground">
+      <CardContent className="flex-1 flex items-center justify-center">
+        <p className="text-muted-foreground text-center">
           Test runner will be integrated with diff review in Phase 008
         </p>
       </CardContent>
-    </>
+    </div>
   )
 }

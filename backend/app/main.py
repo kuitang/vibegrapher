@@ -1,6 +1,5 @@
 import logging
 import traceback
-from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -63,7 +62,7 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
     logger.exception(
         f"Unexpected error at {request.url.path}\n"
         f"Exception type: {type(exc).__name__}\n"
-        f"Exception: {str(exc)}\n"
+        f"Exception: {exc!s}\n"
         f"Request method: {request.method}\n"
         f"Client: {request.client}\n"
         f"Full stack trace:\n{traceback.format_exc()}"

@@ -22,8 +22,81 @@ export function CodeViewer({ projectId }: CodeViewerProps) {
   const [code, setCode] = useState<string>('# Loading...')
   const [fileName, setFileName] = useState<string>('main.py')
   const [isLoading, setIsLoading] = useState(true)
+  const [isMobile, setIsMobile] = useState(false)
+  const [containerHeight, setContainerHeight] = useState<number | string>('100%')
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
   const monacoRef = useRef<any>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  
+  // Check if mobile on mount
+  useEffect(() => {
+    setIsMobile(window.innerWidth <= 768)
+    
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768)
+      // Trigger Monaco layout when window resizes
+      if (editorRef.current) {
+        editorRef.current.layout()
+      }
+    }
+    
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+  
+  // Force Monaco to layout when component becomes visible
+  useEffect(() => {
+    const calculateHeight = () => {
+      if (containerRef.current && isMobile) {
+        // Calculate available height for mobile
+        const header = document.querySelector('header')
+        const tabs = document.querySelector('[role="tablist"]')
+        const cardHeader = containerRef.current.closest('[data-testid="code-viewer"]')?.querySelector('.border-b')
+        
+        let usedHeight = 0
+        if (header) usedHeight += header.getBoundingClientRect().height
+        if (tabs) usedHeight += tabs.getBoundingClientRect().height
+        if (cardHeader) usedHeight += cardHeader.getBoundingClientRect().height
+        
+        // Add padding
+        usedHeight += 32 // 16px top + 16px bottom padding
+        
+        const availableHeight = window.innerHeight - usedHeight
+        console.log('[CodeViewer] Calculated height for mobile:', availableHeight)
+        setContainerHeight(Math.max(300, availableHeight))
+        
+        // Force Monaco layout after setting height
+        setTimeout(() => {
+          if (editorRef.current) {
+            editorRef.current.layout()
+          }
+        }, 100)
+      } else {
+        setContainerHeight('100%')
+      }
+    }
+    
+    // Calculate on mount and when visibility changes
+    calculateHeight()
+    
+    // Listen for tab changes
+    const checkVisibility = () => {
+      calculateHeight()
+      if (editorRef.current) {
+        setTimeout(() => {
+          editorRef.current?.layout()
+        }, 100)
+      }
+    }
+    
+    document.addEventListener('click', checkVisibility)
+    window.addEventListener('resize', calculateHeight)
+    
+    return () => {
+      document.removeEventListener('click', checkVisibility)
+      window.removeEventListener('resize', calculateHeight)
+    }
+  }, [isMobile])
 
   // Socket.io connection for real-time updates
   const { isConnected } = useSocketIO(projectId, {
@@ -45,18 +118,26 @@ export function CodeViewer({ projectId }: CodeViewerProps) {
         if (currentCode) {
           setCode(currentCode)
           setIsLoading(false)
-        } else {
-          // Default Python code
-          setCode(`# Welcome to Vibegrapher
-# Project: ${project?.name || 'Loading...'}
-
-def main():
-    """Main entry point for the application."""
-    print("Ready for vibecoding!")
-    
-if __name__ == "__main__":
-    main()
-`)
+        } else if (project) {
+          // Fetch current code from backend
+          const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
+          try {
+            const response = await fetch(`${apiUrl}/projects/${projectId}`)
+            if (response.ok) {
+              const projectData = await response.json()
+              if (projectData.current_code) {
+                setCode(projectData.current_code)
+                useAppStore.getState().actions.updateCode(projectData.current_code, 'main.py')
+              } else {
+                setCode('# No code available')
+              }
+            } else {
+              setCode('# Failed to load code from server')
+            }
+          } catch (fetchError) {
+            console.error('[CodeViewer] Failed to fetch code from backend:', fetchError)
+            setCode('# Failed to load code')
+          }
           setIsLoading(false)
         }
       } catch (error) {
@@ -67,25 +148,33 @@ if __name__ == "__main__":
     }
 
     loadInitialCode()
-  }, [project])
+  }, [project, projectId])
 
   // Handle editor mount
   const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor, monaco: any) => {
     editorRef.current = editor
     monacoRef.current = monaco
     
-    // Configure editor options
+    // Configure editor options based on viewport
+    const isMobileViewport = window.innerWidth <= 768
     editor.updateOptions({
       readOnly: true,
-      minimap: { enabled: true },
+      minimap: { enabled: !isMobileViewport },
       lineNumbers: 'on',
       renderWhitespace: 'selection',
       scrollBeyondLastLine: false,
       automaticLayout: true,
-      fontSize: 14,
+      fontSize: isMobileViewport ? 12 : 14,
       fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
-      fontLigatures: true
+      fontLigatures: true,
+      wordWrap: isMobileViewport ? 'on' : 'off',
+      wrappingIndent: 'same'
     })
+    
+    // Force layout update to ensure proper height
+    setTimeout(() => {
+      editor.layout()
+    }, 100)
   }
 
   // Handle manual refresh
@@ -105,7 +194,7 @@ if __name__ == "__main__":
   }
 
   return (
-    <Card className="h-full flex flex-col" data-testid="code-viewer">
+    <div className="h-full flex flex-col border rounded-lg bg-card" data-testid="code-viewer">
       <CardHeader className="flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -134,22 +223,24 @@ if __name__ == "__main__":
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 p-0 overflow-hidden">
+      <CardContent className="flex-1 p-0 overflow-hidden flex flex-col">
         <div 
-          className="h-full w-full" 
+          ref={containerRef}
+          className="flex-1 w-full min-h-[300px] md:min-h-[400px]" 
           data-testid="monaco-container"
           data-language="python"
           data-readonly="true"
+          style={{ height: typeof containerHeight === 'number' ? `${containerHeight}px` : containerHeight }}
         >
           <Editor
-            height="100%"
+            height={typeof containerHeight === 'number' ? containerHeight : "100%"}
             defaultLanguage="python"
             language="python"
             value={code}
             theme={getTheme()}
             onMount={handleEditorDidMount}
             loading={
-              <div className="flex items-center justify-center h-full">
+              <div className="flex items-center justify-center h-full min-h-[300px]">
                 <div className="text-muted-foreground">Loading editor...</div>
               </div>
             }
@@ -167,6 +258,6 @@ if __name__ == "__main__":
           />
         </div>
       </CardContent>
-    </Card>
+    </div>
   )
 }
