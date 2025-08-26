@@ -61,14 +61,15 @@ class SocketIOManager:
                 return
 
             # Add to project room
-            self.sio.enter_room(sid, f"project_{project_id}")
+            room_name = f"project_{project_id}"
+            self.sio.enter_room(sid, room_name)
 
             # Track in our rooms dict
             if project_id not in self.project_rooms:
                 self.project_rooms[project_id] = set()
             self.project_rooms[project_id].add(sid)
 
-            logger.info(f"Client {sid} subscribed to project {project_id}")
+            logger.info(f"Client {sid} subscribed to project {project_id} (room: {room_name})")
             await self.sio.emit(
                 "subscribed", {"project_id": project_id, "sid": sid}, room=sid
             )
@@ -76,6 +77,7 @@ class SocketIOManager:
     async def emit_to_project(self, project_id: str, event: str, data: dict) -> None:
         """Emit event to all clients subscribed to a project"""
         room = f"project_{project_id}"
+        logger.info(f"Emitting {event} to room {room}")
         await self.sio.emit(event, data, room=room)
         logger.info(f"Emitted {event} to project room {project_id}")
 

@@ -24,19 +24,32 @@ export function useSession(projectId: string | undefined) {
   
   // Start session mutation
   const startSessionMutation = useMutation({
-    mutationFn: (projectId: string) => startSession(projectId),
+    mutationFn: (projectId: string) => {
+      console.log('[useSession] Starting session mutation for project:', projectId)
+      return startSession(projectId)
+    },
     onSuccess: (session) => {
+      console.log('[useSession] Session started successfully:', session)
       actions.setCurrentSession(session)
       queryClient.invalidateQueries({ queryKey: ['session', session.id] })
+    },
+    onError: (error) => {
+      console.error('[useSession] Failed to start session:', error)
     }
   })
   
   // Send message mutation
   const sendMessageMutation = useMutation({
-    mutationFn: ({ sessionId, content }: { sessionId: string; content: string }) => 
-      sendMessage(sessionId, content),
+    mutationFn: ({ sessionId, content }: { sessionId: string; content: string }) => {
+      console.log('[useSession] Sending message mutation:', { sessionId, content })
+      return sendMessage(sessionId, content)
+    },
     onSuccess: (_, variables) => {
+      console.log('[useSession] Message sent successfully')
       queryClient.invalidateQueries({ queryKey: ['session', variables.sessionId, 'messages'] })
+    },
+    onError: (error) => {
+      console.error('[useSession] Failed to send message:', error)
     }
   })
   
@@ -63,7 +76,7 @@ export function useSession(projectId: string | undefined) {
   const { data: pendingDiffs, isLoading: diffsLoading } = useQuery({
     queryKey: ['session', currentSession?.id, 'pendingDiffs'],
     queryFn: () => currentSession ? getPendingDiffs(currentSession.id) : Promise.resolve([]),
-    enabled: !!currentSession,
+    enabled: !!currentSession && false, // TODO: Enable this in later phases when endpoint is implemented
     staleTime: 0 // Always fetch fresh data
   })
   
@@ -88,8 +101,20 @@ export function useSession(projectId: string | undefined) {
   // Send a message
   const send = useCallback((content: string) => {
     if (!currentSession) return
+    
+    // Immediately add user message to store for instant feedback
+    const userMessage: ConversationMessage = {
+      id: `temp-${Date.now()}`,
+      session_id: currentSession.id,
+      role: 'user',
+      content: content,
+      created_at: new Date().toISOString()
+    }
+    actions.addMessage(userMessage)
+    
+    // Send to backend
     sendMessageMutation.mutate({ sessionId: currentSession.id, content })
-  }, [currentSession, sendMessageMutation])
+  }, [currentSession, sendMessageMutation, actions])
   
   // Clear the session
   const clear = useCallback(() => {
