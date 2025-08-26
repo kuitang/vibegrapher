@@ -1,135 +1,210 @@
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { useProject } from '@/hooks/useProjects'
 import { ProjectLayout } from '@/components/layout/MainLayout'
 import { MobileLayout } from '@/components/layout/MobileLayout'
+import { VibecodePanel } from '@/components/vibecode/VibecodePanel'
+import { CodePanel } from '@/components/CodePanel'
+import { DiffReviewModal } from '@/components/DiffReviewModal'
+import { CommitMessageModal } from '@/components/CommitMessageModal'
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import useAppStore, { useAppActions } from '@/store/useAppStore'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
-import { useSocketIO } from '@/hooks/useSocketIO'
-import { ConnectionStatus } from '@/components/ConnectionStatus'
-import type { ConversationMessageEvent, DiffCreatedEvent, DebugIterationEvent, ConnectionState } from '@/services/socketio'
+import { useDiffRecovery } from '@/hooks/useDiffRecovery'
+import { useToast } from '@/hooks/use-toast'
+import { Toaster } from '@/components/ui/toaster'
+import { DarkModeToggle } from '@/components/layout/MainLayout'
 
 export function ProjectPage() {
   const { id } = useParams<{ id: string }>()
   const { data: project, isLoading, error } = useProject(id)
   const actions = useAppActions()
   const isMobile = useMediaQuery('(max-width: 768px)')
-  const [messages, setMessages] = useState<ConversationMessageEvent[]>([])
+  const { toast } = useToast()
   
-  // Socket.io connection
-  const { connectionState, isConnected } = useSocketIO(id, {
-    onConversationMessage: (message: ConversationMessageEvent) => {
-      console.log('[ProjectPage] Received conversation message:', message)
-      setMessages(prev => [...prev, message])
-    },
-    onDiffCreated: (diff: DiffCreatedEvent) => {
-      console.log('[ProjectPage] Diff created:', diff)
-    },
-    onDebugIteration: (debug: DebugIterationEvent) => {
-      console.log('[ProjectPage] Debug iteration:', debug)
-    },
-    onError: (error) => {
-      console.error('[ProjectPage] Socket.io error:', error)
-    }
-  })
+  // Diff management state
+  const currentReviewDiff = useAppStore((state) => state.currentReviewDiff)
+  const showDiffReviewModal = useAppStore((state) => state.showDiffReviewModal)
+  const showCommitMessageModal = useAppStore((state) => state.showCommitMessageModal)
+  
+  // Use diff recovery hook
+  useDiffRecovery(id)
 
   useEffect(() => {
     if (project) {
       actions.setProject(project)
     }
   }, [project, actions])
+  
+  // Handlers for diff modals
+  const handleApproveDiff = async (diffId: string) => {
+    try {
+      await actions.approveDiff(diffId)
+      toast({
+        title: "Diff Approved",
+        description: "Preparing commit message",
+      })
+    } catch (error) {
+      toast({
+        title: "Approval Failed",
+        description: error instanceof Error ? error.message : "Failed to approve diff",
+        variant: "destructive",
+      })
+    }
+  }
+  
+  const handleRejectDiff = async (diffId: string, reason: string) => {
+    try {
+      await actions.rejectDiff(diffId, reason)
+      toast({
+        title: "Diff Rejected",
+        description: "Your feedback will be used to generate an improved solution",
+      })
+    } catch (error) {
+      toast({
+        title: "Rejection Failed", 
+        description: error instanceof Error ? error.message : "Failed to reject diff",
+        variant: "destructive",
+      })
+    }
+  }
+  
+  const handleCommit = async (diffId: string, message: string) => {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
+    const response = await fetch(`${apiUrl}/diffs/${diffId}/commit`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        commit_message: message
+      })
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to commit diff')
+    }
+    
+    // Refresh project code
+    if (id) {
+      actions.updateCode('# Code updated - refresh to see latest')
+      actions.setShowCommitMessageModal(false)
+      actions.setCurrentReviewDiff(null)
+    }
+  }
+  
+  const handleRefineMessage = async (diffId: string, currentMessage: string): Promise<string> => {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
+    const response = await fetch(`${apiUrl}/diffs/${diffId}/refine-message`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        current_message: currentMessage
+      })
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to refine message')
+    }
+    
+    const data = await response.json()
+    return data.refined_message
+  }
 
   if (isLoading) return <div className="p-4">Loading project...</div>
   if (error) return <div className="p-4 text-red-500">Error loading project</div>
   if (!project) return <div className="p-4">Project not found</div>
 
-  const vibecodePanel = <VibecodePanel connectionState={connectionState} messages={messages} />
-  const codePanel = <CodePanel />
+  const vibecodePanel = id ? <VibecodePanel projectId={id} /> : null
+  const codePanel = id ? <CodePanel projectId={id} /> : <OldCodePanel />
   const testPanel = <TestPanel />
 
   if (isMobile) {
     return (
-      <MobileLayout
-        vibecodePanel={vibecodePanel}
-        codePanel={codePanel}
-        testPanel={testPanel}
-        projectName={project.name}
-      />
+      <>
+        <MobileLayout
+          vibecodePanel={vibecodePanel}
+          codePanel={codePanel}
+          testPanel={testPanel}
+          projectName={project.name}
+        />
+        
+        {/* Diff Review Modals */}
+        {currentReviewDiff && (
+          <>
+            <DiffReviewModal
+              diff={currentReviewDiff}
+              open={showDiffReviewModal}
+              onClose={() => actions.setShowDiffReviewModal(false)}
+              onApprove={handleApproveDiff}
+              onReject={handleRejectDiff}
+            />
+            <CommitMessageModal
+              diff={currentReviewDiff}
+              open={showCommitMessageModal}
+              onClose={() => actions.setShowCommitMessageModal(false)}
+              onCommit={handleCommit}
+              onRefine={handleRefineMessage}
+            />
+          </>
+        )}
+        
+        <Toaster />
+      </>
     )
   }
 
   return (
-    <ProjectLayout
-      vibecodePanel={vibecodePanel}
-      codePanel={codePanel}
-      testPanel={testPanel}
-    />
+    <div className="h-screen flex flex-col">
+      {/* Custom header for project page */}
+      <header className="border-b px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Link to="/" className="text-xl text-muted-foreground hover:text-foreground transition-colors">
+            &lt;
+          </Link>
+          <h1 className="text-xl font-semibold">{project.name}</h1>
+        </div>
+        <DarkModeToggle />
+      </header>
+      
+      {/* Main project content */}
+      <main className="flex-1 overflow-auto">
+        <ProjectLayout
+          vibecodePanel={vibecodePanel}
+          codePanel={codePanel}
+          testPanel={testPanel}
+          projectName={project.name}
+        />
+      </main>
+      
+      {/* Diff Review Modals */}
+      {currentReviewDiff && (
+        <>
+          <DiffReviewModal
+            diff={currentReviewDiff}
+            open={showDiffReviewModal}
+            onClose={() => actions.setShowDiffReviewModal(false)}
+            onApprove={handleApproveDiff}
+            onReject={handleRejectDiff}
+          />
+          <CommitMessageModal
+            diff={currentReviewDiff}
+            open={showCommitMessageModal}
+            onClose={() => actions.setShowCommitMessageModal(false)}
+            onCommit={handleCommit}
+            onRefine={handleRefineMessage}
+          />
+        </>
+      )}
+      
+      <Toaster />
+    </div>
   )
 }
 
-interface VibecodePanelProps {
-  connectionState: ConnectionState
-  messages: ConversationMessageEvent[]
-}
-
-function VibecodePanel({ connectionState, messages }: VibecodePanelProps) {
-  const project = useAppStore((state) => state.project)
-
-  return (
-    <>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Vibecode Panel</CardTitle>
-        <ConnectionStatus state={connectionState} />
-      </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground mb-4">
-          Project: {project?.name || 'Loading...'}
-        </p>
-        
-        {/* Display conversation messages */}
-        {messages.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Messages ({messages.length})</h4>
-            <div className="max-h-[300px] overflow-y-auto space-y-2 border rounded p-2">
-              {messages.map((msg, idx) => (
-                <div key={idx} className="text-xs space-y-1 border-b pb-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-primary">
-                      {msg.agent_type === 'vibecoder' ? '🤖 VibeCoder' : '✅ Evaluator'}
-                    </span>
-                    <span className="text-muted-foreground">
-                      Iteration {msg.iteration + 1}
-                    </span>
-                  </div>
-                  <div className="text-muted-foreground">
-                    Session: {msg.session_id}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(msg.timestamp).toLocaleTimeString()}
-                  </div>
-                  {typeof msg.content === 'object' && msg.content.token_usage && (
-                    <div className="text-xs text-blue-500">
-                      💵 Tokens: {msg.content.token_usage.total_tokens}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {messages.length === 0 && (
-          <p className="text-sm text-muted-foreground mt-2">
-            No messages yet. Session management will be implemented in Phase 005
-          </p>
-        )}
-      </CardContent>
-    </>
-  )
-}
-
-function CodePanel() {
+function OldCodePanel() {
   const project = useAppStore((state) => state.project)
 
   return (

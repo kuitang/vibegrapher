@@ -16,6 +16,7 @@ interface UseSocketIOOptions {
   onConversationMessage?: (message: ConversationMessageEvent) => void
   onDiffCreated?: (diff: DiffCreatedEvent) => void
   onDebugIteration?: (debug: DebugIterationEvent) => void
+  onCodeUpdate?: (data: { content: string; filename?: string }) => void
   onError?: (error: any) => void
 }
 
@@ -62,6 +63,12 @@ export function useSocketIO(projectId: string | undefined, options: UseSocketIOO
     if (options.onDebugIteration) {
       unsubscribers.push(
         socketIOService.on('debug_iteration', options.onDebugIteration)
+      )
+    }
+
+    if (options.onCodeUpdate) {
+      unsubscribers.push(
+        socketIOService.on('code_update', options.onCodeUpdate)
       )
     }
 

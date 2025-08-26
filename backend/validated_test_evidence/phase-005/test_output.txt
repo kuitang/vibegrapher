@@ -1,0 +1,114 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.2, pytest-8.3.4, pluggy-1.6.0 -- /home/kuitang/git/vibegrapher/backend/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/kuitang/git/vibegrapher/backend
+configfile: pyproject.toml
+plugins: cov-6.0.0, asyncio-0.25.2, anyio-4.10.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function
+collecting ... collected 11 items
+
+tests/integration/test_phase_005_sessions.py::TestSessionCreation::test_create_session PASSED [  9%]
+tests/integration/test_phase_005_sessions.py::TestSessionCreation::test_create_session_invalid_project PASSED [ 18%]
+tests/integration/test_phase_005_sessions.py::TestMessageSending::test_send_message_to_session FAILED [ 27%]
+tests/integration/test_phase_005_sessions.py::TestMessageSending::test_send_multiple_messages_context FAILED [ 36%]
+tests/integration/test_phase_005_sessions.py::TestSessionDeletion::test_delete_session PASSED [ 45%]
+tests/integration/test_phase_005_sessions.py::TestSessionDeletion::test_delete_nonexistent_session PASSED [ 54%]
+tests/integration/test_phase_005_sessions.py::TestFullMessageRetrieval::test_get_full_message FAILED [ 63%]
+tests/integration/test_phase_005_sessions.py::TestFullMessageRetrieval::test_get_full_message_not_found PASSED [ 72%]
+tests/integration/test_phase_005_sessions.py::TestSocketIOIntegration::test_socket_streaming_token_usage FAILED [ 81%]
+tests/integration/test_phase_005_sessions.py::TestSocketIOIntegration::test_socket_conversation_message PASSED [ 90%]
+tests/integration/test_phase_005_sessions.py::TestSessionPersistence::test_openai_session_key_set PASSED [100%]
+
+=================================== FAILURES ===================================
+_______________ TestMessageSending.test_send_message_to_session ________________
+tests/integration/test_phase_005_sessions.py:102: in test_send_message_to_session
+    assert result.get("content") or result.get("diff_id")
+E   AssertionError: assert (None or None)
+E    +  where None = <built-in method get of dict object at 0xffff89a09a80>('content')
+E    +    where <built-in method get of dict object at 0xffff89a09a80> = {'content': None, 'diff_id': None, 'error': 'The api_key client option must be set either by passing api_key to the client or by setting the OPENAI_API_KEY environment variable', 'patch': None, ...}.get
+E    +  and   None = <built-in method get of dict object at 0xffff89a09a80>('diff_id')
+E    +    where <built-in method get of dict object at 0xffff89a09a80> = {'content': None, 'diff_id': None, 'error': 'The api_key client option must be set either by passing api_key to the client or by setting the OPENAI_API_KEY environment variable', 'patch': None, ...}.get
+---------------------------- Captured stdout setup -----------------------------
+Starting isolated test server:
+  Database: /tmp/test_vibegrapher_7a898228.db
+  Port: 52489
+  Media: /tmp/test_media_7a898228
+Database reset and seeded successfully at: sqlite:////tmp/test_vibegrapher_7a898228.db
+Created project 'Agent Triage System' with git repository
+Repository path: media/projects/agent-triage-system
+Initial commit: 22c10f951d5987942b94444a120ca97de4ea0ba9
+Created 2 test cases (1 regular, 1 quick test)
+Test server ready at http://127.0.0.1:52489
+--------------------------- Captured stdout teardown ---------------------------
+Cleaning up test server...
+____________ TestMessageSending.test_send_multiple_messages_context ____________
+tests/integration/test_phase_005_sessions.py:136: in test_send_multiple_messages_context
+    assert len(messages) >= 2
+E   assert 0 >= 2
+E    +  where 0 = len([])
+---------------------------- Captured stdout setup -----------------------------
+Starting isolated test server:
+  Database: /tmp/test_vibegrapher_514ee14b.db
+  Port: 36327
+  Media: /tmp/test_media_514ee14b
+Database reset and seeded successfully at: sqlite:////tmp/test_vibegrapher_514ee14b.db
+Created project 'Agent Triage System' with git repository
+Repository path: media/projects/agent-triage-system
+Initial commit: 85afeffe35bd0d19b0ff69b0e061177a5aa0751d
+Created 2 test cases (1 regular, 1 quick test)
+Test server ready at http://127.0.0.1:36327
+--------------------------- Captured stdout teardown ---------------------------
+Cleaning up test server...
+________________ TestFullMessageRetrieval.test_get_full_message ________________
+tests/integration/test_phase_005_sessions.py:196: in test_get_full_message
+    assert len(messages) > 0
+E   assert 0 > 0
+E    +  where 0 = len([])
+---------------------------- Captured stdout setup -----------------------------
+Starting isolated test server:
+  Database: /tmp/test_vibegrapher_708333d9.db
+  Port: 58327
+  Media: /tmp/test_media_708333d9
+Database reset and seeded successfully at: sqlite:////tmp/test_vibegrapher_708333d9.db
+Created project 'Agent Triage System' with git repository
+Repository path: media/projects/agent-triage-system
+Initial commit: a4ae0455e5673404fc65811f8688628fd1cd1bb7
+Created 2 test cases (1 regular, 1 quick test)
+Test server ready at http://127.0.0.1:58327
+--------------------------- Captured stdout teardown ---------------------------
+Cleaning up test server...
+__________ TestSocketIOIntegration.test_socket_streaming_token_usage ___________
+tests/integration/test_phase_005_sessions.py:256: in test_socket_streaming_token_usage
+    assert len(received_events) > 0
+E   assert 0 > 0
+E    +  where 0 = len([])
+---------------------------- Captured stdout setup -----------------------------
+Starting isolated test server:
+  Database: /tmp/test_vibegrapher_10295540.db
+  Port: 36473
+  Media: /tmp/test_media_10295540
+Database reset and seeded successfully at: sqlite:////tmp/test_vibegrapher_10295540.db
+Created project 'Agent Triage System' with git repository
+Repository path: media/projects/agent-triage-system
+Initial commit: 15ea75d02d287a43082bce46829672849e129ec7
+Created 2 test cases (1 regular, 1 quick test)
+Test server ready at http://127.0.0.1:36473
+--------------------------- Captured stdout teardown ---------------------------
+Cleaning up test server...
+=============================== warnings summary ===============================
+.venv/lib/python3.11/site-packages/pydantic/_internal/_config.py:295
+  /home/kuitang/git/vibegrapher/backend/.venv/lib/python3.11/site-packages/pydantic/_internal/_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+tests/integration/test_phase_005_sessions.py::TestSocketIOIntegration::test_socket_streaming_token_usage
+tests/integration/test_phase_005_sessions.py::TestSocketIOIntegration::test_socket_conversation_message
+  /home/kuitang/git/vibegrapher/backend/.venv/lib/python3.11/site-packages/engineio/async_client.py:339: DeprecationWarning: parameter 'timeout' of type 'float' is deprecated, please use 'timeout=ClientWSTimeout(ws_close=...)'
+    ws = await self.http.ws_connect(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_phase_005_sessions.py::TestMessageSending::test_send_message_to_session
+FAILED tests/integration/test_phase_005_sessions.py::TestMessageSending::test_send_multiple_messages_context
+FAILED tests/integration/test_phase_005_sessions.py::TestFullMessageRetrieval::test_get_full_message
+FAILED tests/integration/test_phase_005_sessions.py::TestSocketIOIntegration::test_socket_streaming_token_usage
+=================== 4 failed, 7 passed, 3 warnings in 35.90s ===================

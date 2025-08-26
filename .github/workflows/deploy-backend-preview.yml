@@ -1,0 +1,128 @@
+name: Deploy Backend Preview for PRs
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend-preview.yml'
+
+jobs:
+  deploy-preview:
+    name: Deploy Preview Environment
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+      
+      - name: Generate App Name
+        id: app_name
+        run: |
+          APP_NAME="vibegrapher-api-pr-${{ github.event.pull_request.number }}"
+          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
+      
+      - name: Check if Preview App Exists
+        id: check_app
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          if flyctl apps list | grep -q "${{ steps.app_name.outputs.app_name }}"; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Create Preview App
+        if: steps.check_app.outputs.exists == 'false'
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          # Create the app
+          flyctl apps create ${{ steps.app_name.outputs.app_name }} --org personal
+          
+          # Set secrets
+          flyctl secrets set \
+            OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+            DATABASE_URL="sqlite:///./preview.db" \
+            ENVIRONMENT="preview" \
+            --app ${{ steps.app_name.outputs.app_name }}
+      
+      - name: Update fly.preview.toml with PR Number
+        run: |
+          sed -i "s/vibegrapher-api-pr-PRNUMBER/${{ steps.app_name.outputs.app_name }}/g" fly.preview.toml
+      
+      - name: Deploy Preview
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          flyctl deploy \
+            --app ${{ steps.app_name.outputs.app_name }} \
+            --config fly.preview.toml \
+            --remote-only
+      
+      - name: Get Preview URL
+        id: preview_url
+        run: |
+          echo "url=https://${{ steps.app_name.outputs.app_name }}.fly.dev" >> $GITHUB_OUTPUT
+      
+      - name: Comment on PR
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const appName = '${{ steps.app_name.outputs.app_name }}';
+            const url = '${{ steps.preview_url.outputs.url }}';
+            const prNumber = context.issue.number;
+            
+            // Check for existing comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            
+            const botComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('Preview Environment')
+            );
+            
+            const body = `## 🚀 Preview Environment
+            
+            Your preview environment is ready!
+            
+            **URL:** ${url}
+            **App Name:** ${appName}
+            **Health Check:** ${url}/health
+            
+            This preview will be automatically destroyed when the PR is closed.
+            
+            ---
+            _Last updated: ${new Date().toISOString()}_`;
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body
+              });
+            }
+      
+      - name: Health Check
+        run: |
+          sleep 10
+          curl -f ${{ steps.preview_url.outputs.url }}/health || exit 1

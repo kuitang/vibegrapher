@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useProjects, useCreateProject, useDeleteProject } from '@/hooks/useProjects'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,13 +8,16 @@ export function HomePage() {
   const { data: projects, isLoading, error } = useProjects()
   const createProject = useCreateProject()
   const deleteProject = useDeleteProject()
+  const navigate = useNavigate()
   const [newProjectName, setNewProjectName] = useState('')
 
   const handleCreateProject = async () => {
     if (!newProjectName.trim()) return
     try {
-      await createProject.mutateAsync({ name: newProjectName })
+      const newProject = await createProject.mutateAsync({ name: newProjectName })
       setNewProjectName('')
+      // Automatically navigate to the newly created project
+      navigate(`/project/${newProject.id}`)
     } catch (err) {
       console.error('Failed to create project:', err)
     }

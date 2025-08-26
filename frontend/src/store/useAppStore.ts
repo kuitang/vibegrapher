@@ -18,6 +18,12 @@ interface AppState {
   messages: ConversationMessage[]
   pendingDiffs: Diff[]
   isHydrating: boolean
+  currentCode: string | null
+  currentFileName: string | null
+  
+  // Diff management
+  showDiffReviewModal: boolean
+  showCommitMessageModal: boolean
   
   // Actions
   actions: {
@@ -35,6 +41,14 @@ interface AppState {
     clearStaleState: () => void
     clearPersistedState: () => void
     setHasHydrated: (hydrated: boolean) => void
+    updateCode: (code: string, fileName?: string) => void
+    
+    // Diff management actions
+    setShowDiffReviewModal: (show: boolean) => void
+    setShowCommitMessageModal: (show: boolean) => void
+    approveDiff: (diffId: string) => Promise<void>
+    rejectDiff: (diffId: string, reason: string) => Promise<void>
+    loadPendingDiffs: (projectId: string) => Promise<void>
   }
 }
 
@@ -83,6 +97,10 @@ const useAppStore = create<AppState>()(
         messages: [],
         pendingDiffs: [],
         isHydrating: false,
+        currentCode: null,
+        currentFileName: null,
+        showDiffReviewModal: false,
+        showCommitMessageModal: false,
         
         actions: {
           setProject: (project) => set({ project }),
@@ -153,7 +171,77 @@ const useAppStore = create<AppState>()(
             })
           },
           
-          setHasHydrated: (hydrated) => set({ hasHydrated: hydrated })
+          setHasHydrated: (hydrated) => set({ hasHydrated: hydrated }),
+          
+          updateCode: (code, fileName) => set({ 
+            currentCode: code,
+            currentFileName: fileName || 'main.py'
+          }),
+          
+          // Diff management actions
+          setShowDiffReviewModal: (show) => set({ showDiffReviewModal: show }),
+          
+          setShowCommitMessageModal: (show) => set({ showCommitMessageModal: show }),
+          
+          approveDiff: async (diffId) => {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
+            const response = await fetch(`${apiUrl}/diffs/${diffId}/review`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                approved: true,
+                feedback: 'Approved via UI'
+              })
+            })
+            
+            if (!response.ok) {
+              throw new Error('Failed to approve diff')
+            }
+            
+            set({ 
+              showDiffReviewModal: false,
+              showCommitMessageModal: true 
+            })
+          },
+          
+          rejectDiff: async (diffId, reason) => {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
+            const response = await fetch(`${apiUrl}/diffs/${diffId}/review`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                approved: false,
+                feedback: reason
+              })
+            })
+            
+            if (!response.ok) {
+              throw new Error('Failed to reject diff')
+            }
+            
+            set({ 
+              showDiffReviewModal: false,
+              currentReviewDiff: null
+            })
+          },
+          
+          loadPendingDiffs: async (projectId) => {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
+            const response = await fetch(`${apiUrl}/projects/${projectId}/diffs?status=evaluator_approved`)
+            
+            if (response.ok) {
+              const diffs = await response.json()
+              set({ 
+                pendingDiffs: diffs,
+                currentReviewDiff: diffs[0] || null,
+                showDiffReviewModal: diffs.length > 0
+              })
+            }
+          }
         }
       }
     },

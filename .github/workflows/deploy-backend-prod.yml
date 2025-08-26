@@ -1,0 +1,102 @@
+name: Deploy Backend to Production
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend-prod.yml'
+
+jobs:
+  test:
+    name: Run Integration Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgit2-dev
+      
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run integration tests
+        env:
+          DATABASE_URL: sqlite:///./test.db
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ENVIRONMENT: test
+        run: |
+          pytest tests/integration -v --tb=short
+  
+  deploy:
+    name: Deploy to Fly.io Production
+    needs: test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+      
+      - name: Deploy to Production
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          flyctl deploy --remote-only --config fly.toml
+      
+      - name: Run Migrations
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          flyctl ssh console -C "alembic upgrade head" --app vibegrapher-api
+      
+      - name: Health Check
+        run: |
+          sleep 10
+          curl -f https://vibegrapher-api.fly.dev/health || exit 1
+      
+      - name: Notify Success
+        if: success()
+        run: |
+          echo "✅ Backend deployed successfully to production"
+          echo "URL: https://vibegrapher-api.fly.dev"
+      
+      - name: Rollback on Failure
+        if: failure()
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          echo "❌ Deployment failed, initiating rollback"
+          flyctl releases list --app vibegrapher-api
+          # Get the previous release version and rollback
+          PREV_VERSION=$(flyctl releases list --app vibegrapher-api --json | jq -r '.[1].version')
+          if [ -n "$PREV_VERSION" ]; then
+            flyctl deploy --image-label $PREV_VERSION --app vibegrapher-api
+          fi

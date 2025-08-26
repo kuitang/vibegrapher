@@ -1,0 +1,71 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.2, pytest-8.3.4, pluggy-1.6.0 -- /home/kuitang/git/vibegrapher/backend/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/kuitang/git/vibegrapher/backend
+configfile: pyproject.toml
+plugins: cov-6.0.0, asyncio-0.25.2, anyio-4.10.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function
+collecting ... collected 15 items
+
+tests/integration/test_phase_006_human_review.py::TestDiffRetrieval::test_get_project_diffs PASSED [  6%]
+tests/integration/test_phase_006_human_review.py::TestDiffRetrieval::test_get_session_diffs PASSED [ 13%]
+tests/integration/test_phase_006_human_review.py::TestDiffRetrieval::test_get_pending_diffs PASSED [ 20%]
+tests/integration/test_phase_006_human_review.py::TestDiffRetrieval::test_get_single_diff PASSED [ 26%]
+tests/integration/test_phase_006_human_review.py::TestDiffRetrieval::test_get_diff_preview PASSED [ 33%]
+tests/integration/test_phase_006_human_review.py::TestHumanReview::test_approve_diff PASSED [ 40%]
+tests/integration/test_phase_006_human_review.py::TestHumanReview::test_reject_diff_with_feedback PASSED [ 46%]
+tests/integration/test_phase_006_human_review.py::TestHumanReview::test_review_non_pending_diff PASSED [ 53%]
+tests/integration/test_phase_006_human_review.py::TestDiffCommit::test_commit_approved_diff FAILED [ 60%]
+tests/integration/test_phase_006_human_review.py::TestDiffCommit::test_commit_unapproved_diff PASSED [ 66%]
+tests/integration/test_phase_006_human_review.py::TestDiffCommit::test_commit_with_base_mismatch FAILED [ 73%]
+tests/integration/test_phase_006_human_review.py::TestMessageRefinement::test_refine_commit_message PASSED [ 80%]
+tests/integration/test_phase_006_human_review.py::TestMessageRefinement::test_refine_message_no_prompt PASSED [ 86%]
+tests/integration/test_phase_006_human_review.py::TestDiffValidation::test_invalid_diff_rejected PASSED [ 93%]
+tests/integration/test_phase_006_human_review.py::TestPageRefreshRecovery::test_recover_pending_diffs PASSED [100%]
+
+=================================== FAILURES ===================================
+___________________ TestDiffCommit.test_commit_approved_diff ___________________
+tests/integration/test_phase_006_human_review.py:210: in test_commit_approved_diff
+    assert response.status_code == 200
+E   assert 409 == 200
+E    +  where 409 = <Response [409 Conflict]>.status_code
+---------------------------- Captured stdout setup -----------------------------
+Starting isolated test server:
+  Database: /tmp/test_vibegrapher_e97371bb.db
+  Port: 39587
+  Media: /tmp/test_media_e97371bb
+Database reset and seeded successfully at: sqlite:////tmp/test_vibegrapher_e97371bb.db
+Created project 'Agent Triage System' with git repository
+Repository path: media/projects/agent-triage-system
+Initial commit: d31f584ff5c5fa9ff022eccc003fea22af5b7f6e
+Created 2 test cases (1 regular, 1 quick test)
+Test server ready at http://127.0.0.1:39587
+--------------------------- Captured stdout teardown ---------------------------
+Cleaning up test server...
+________________ TestDiffCommit.test_commit_with_base_mismatch _________________
+tests/integration/test_phase_006_human_review.py:243: in test_commit_with_base_mismatch
+    git_service.write_code(
+E   AttributeError: 'GitService' object has no attribute 'write_code'
+---------------------------- Captured stdout setup -----------------------------
+Starting isolated test server:
+  Database: /tmp/test_vibegrapher_2f3e9ab7.db
+  Port: 46839
+  Media: /tmp/test_media_2f3e9ab7
+Database reset and seeded successfully at: sqlite:////tmp/test_vibegrapher_2f3e9ab7.db
+Created project 'Agent Triage System' with git repository
+Repository path: media/projects/agent-triage-system
+Initial commit: e84d4a6e7bd3e346c308c2698e9a74d8a9698bf9
+Created 2 test cases (1 regular, 1 quick test)
+Test server ready at http://127.0.0.1:46839
+--------------------------- Captured stdout teardown ---------------------------
+Cleaning up test server...
+=============================== warnings summary ===============================
+.venv/lib/python3.11/site-packages/pydantic/_internal/_config.py:295
+  /home/kuitang/git/vibegrapher/backend/.venv/lib/python3.11/site-packages/pydantic/_internal/_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_phase_006_human_review.py::TestDiffCommit::test_commit_approved_diff
+FAILED tests/integration/test_phase_006_human_review.py::TestDiffCommit::test_commit_with_base_mismatch
+=================== 2 failed, 13 passed, 1 warning in 41.71s ===================

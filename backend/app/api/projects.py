@@ -41,12 +41,39 @@ def create_project(
 
     # Get initial state
     current_branch = git_service.get_current_branch(slug)
+    
+    # Create initial commit with starter code
+    initial_code = f"""# Welcome to Vibegrapher
+# Project: {project_data.name}
+
+def main():
+    \"\"\"Main entry point for the application.\"\"\"
+    print("Ready for vibecoding!")
+    
+if __name__ == "__main__":
+    main()
+"""
+    
+    # Make initial commit
+    initial_commit = git_service.commit_changes(
+        slug, 
+        initial_code, 
+        "Initial project setup",
+        filename="main.py"
+    )
+    
+    if not initial_commit:
+        logger.warning(f"Failed to create initial commit for project {slug}")
+    else:
+        logger.info(f"Created initial commit {initial_commit} for project {slug}")
 
     project = Project(
         name=project_data.name,
         slug=slug,
         repository_path=repository_path,
         current_branch=current_branch,
+        current_code=initial_code,
+        current_commit=initial_commit,
     )
 
     db.add(project)

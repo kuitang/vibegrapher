@@ -23,9 +23,10 @@ interface ProjectLayoutProps {
   vibecodePanel: ReactNode
   codePanel: ReactNode
   testPanel: ReactNode
+  projectName?: string
 }
 
-export function ProjectLayout({ vibecodePanel, codePanel, testPanel }: ProjectLayoutProps) {
+export function ProjectLayout({ vibecodePanel, codePanel, testPanel, projectName }: ProjectLayoutProps) {
   return (
     <div className="h-full flex gap-4 p-4">
       <div className="w-1/3 min-w-[300px]">
@@ -47,6 +48,7 @@ export function ProjectLayout({ vibecodePanel, codePanel, testPanel }: ProjectLa
 
 import { Switch } from '@/components/ui/switch'
 import { useEffect, useState } from 'react'
+import { Sun, Moon } from 'lucide-react'
 
 export function DarkModeToggle() {
   const [isDark, setIsDark] = useState(false)
@@ -74,12 +76,13 @@ export function DarkModeToggle() {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm">Dark Mode</span>
+      <Sun className="h-4 w-4 text-muted-foreground" />
       <Switch
         checked={isDark}
         onCheckedChange={toggleDarkMode}
         aria-label="Toggle dark mode"
       />
+      <Moon className="h-4 w-4 text-muted-foreground" />
     </div>
   )
 }

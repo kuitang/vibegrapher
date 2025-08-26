@@ -11,7 +11,9 @@ class DiffResponse(BaseModel):
     base_commit: str
     target_branch: str
     diff_content: str
-    status: Literal["evaluator_approved", "human_rejected", "committed"]
+    status: Literal[
+        "evaluator_approved", "human_approved", "human_rejected", "committed"
+    ]
     test_results: Optional[str] = None
     tests_run_at: Optional[datetime] = None
     vibecoder_prompt: str
