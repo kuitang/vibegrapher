@@ -95,6 +95,20 @@ async def send_message(
     # Get current code
     current_code = session.current_code or project.current_code or ""
 
+    # Save user message to database
+    user_message = ConversationMessage(
+        id=str(uuid.uuid4()),
+        session_id=session_id,
+        role="user",
+        content=request.prompt,
+        iteration=None,  # User messages don't have iterations
+        openai_response=None,
+        token_usage=None,
+    )
+    db.add(user_message)
+    db.commit()
+    logger.info(f"Saved user message for session {session_id}")
+
     # Run vibecode
     logger.info(
         f"Running vibecode for session {session_id} with prompt: {request.prompt}"

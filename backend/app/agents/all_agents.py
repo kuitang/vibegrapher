@@ -373,8 +373,72 @@ IMPORTANT:
         project_id: str,
     ):
         """Save conversation message to database asynchronously"""
-        # This would save to the database - implementation depends on your database models
-        pass
+        try:
+            # Import here to avoid circular dependency
+            from ..database import get_db
+            from ..models import ConversationMessage
+            import uuid
+            from sqlalchemy.orm import Session
+
+            # Create a new database session for async operation
+            db = next(get_db())
+
+            # Extract content from response
+            content = ""
+            if hasattr(response, "final_output"):
+                if isinstance(response.final_output, EvaluationResult):
+                    content = f"Approved: {response.final_output.approved}\nReasoning: {response.final_output.reasoning}\nCommit Message: {response.final_output.commit_message}"
+                else:
+                    content = str(response.final_output)
+            else:
+                content = str(response)
+
+            # Extract token usage if available
+            token_usage = None
+            openai_response = None
+
+            if hasattr(response, "usage"):
+                token_usage = {
+                    "total_tokens": getattr(response.usage, "total_tokens", 0),
+                    "prompt_tokens": getattr(response.usage, "prompt_tokens", 0),
+                    "completion_tokens": getattr(
+                        response.usage, "completion_tokens", 0
+                    ),
+                }
+
+            # Store the full response if available
+            if hasattr(response, "__dict__"):
+                try:
+                    # Try to serialize the response
+                    import json
+
+                    openai_response = json.loads(
+                        json.dumps(response.__dict__, default=str)
+                    )
+                except:
+                    openai_response = str(response)
+
+            # Create and save the message
+            message = ConversationMessage(
+                id=str(uuid.uuid4()),
+                session_id=session_id,
+                role="assistant",
+                content=content,
+                iteration=iteration,
+                openai_response=openai_response,
+                token_usage=token_usage,
+            )
+
+            db.add(message)
+            db.commit()
+            db.close()
+
+            logger.info(
+                f"Saved conversation message for session {session_id}, iteration {iteration}"
+            )
+
+        except Exception as e:
+            logger.error(f"Error saving conversation message: {e}", exc_info=True)
 
     async def handle_human_rejection(
         self,
