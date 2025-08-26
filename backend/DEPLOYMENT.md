@@ -24,6 +24,14 @@ fly auth login
 
 ## Production Deployment
 
+### Important Configuration Notes
+
+- **Database**: PostgreSQL is automatically configured via `DATABASE_URL` environment variable
+- **Media Storage**: Persistent volume mounted at `/app/media` for git repositories
+- **Git Repositories**: Each project gets its own git repository in `/app/media/projects/{slug}`
+- **Health Checks**: Available at `/health` and `/health/detailed` endpoints
+- **WebSocket Support**: Socket.io enabled for real-time updates
+
 ### Initial Setup
 
 1. Create the Fly.io app:
@@ -222,6 +230,22 @@ fly deploy --image-label v123 --app vibegrapher-api
    fly volumes extend vol_xxx --size 20 --app vibegrapher-api
    ```
 
+5. **Git Commit Endpoint Errors**
+   - Ensure projects have initial commits before attempting diffs
+   - Verify base_commit matches current HEAD
+   - Check that repository exists in media/projects/
+   ```bash
+   # SSH into container to debug
+   fly ssh console --app vibegrapher-api
+   cd /app/media/projects
+   ls -la
+   ```
+
+6. **Message Deduplication Issues**
+   - Frontend and backend both create messages
+   - Use deterministic message IDs to prevent duplicates
+   - Check ConversationMessage table for duplicate entries
+
 ## Cost Estimation
 
 Based on Fly.io pricing (as of 2024):
@@ -252,6 +276,20 @@ Based on Fly.io pricing (as of 2024):
 - Triggers on PR close
 - Destroys preview app
 - Comments confirmation on PR
+
+## Recent Updates & Fixes
+
+### Phase 007 Deployment (Latest)
+- Added Docker configuration with non-root user
+- Created GitHub Actions CI/CD workflows
+- Implemented health check endpoints
+- Added preview deployments for PRs
+
+### Critical Fixes Applied
+- **Commit Endpoint**: Fixed missing request parameter in `/diffs/{id}/commit`
+- **Message Deduplication**: Implemented deterministic IDs to prevent duplicates
+- **Socket.io Integration**: Fixed `emit_to_room` to `emit_conversation_message`
+- **Git Service**: Corrected commit method signature and parameters
 
 ## Support
 
