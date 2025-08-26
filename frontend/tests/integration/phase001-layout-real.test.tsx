@@ -2,9 +2,8 @@ import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ProjectLayout, DarkModeToggle } from '@/components/layout/MainLayout'
+import { ProjectLayout } from '@/components/layout/MainLayout'
 import { HomePage } from '@/pages/HomePage'
-import { ProjectPage } from '@/pages/ProjectPage'
 import useAppStore from '@/store/useAppStore'
 
 const API_URL = 'http://localhost:8000'
@@ -124,7 +123,7 @@ describe('Phase 001: Layout with Real Backend', () => {
       // Store ID for cleanup - get it from the actual backend
       const response = await fetch(`${API_URL}/projects`)
       const projects = await response.json()
-      const createdProject = projects.find((p: any) => p.name === projectName)
+      const createdProject = projects.find((p: { name: string }) => p.name === projectName)
       if (createdProject) {
         testProjectId = createdProject.id
       }
@@ -133,7 +132,7 @@ describe('Phase 001: Layout with Real Backend', () => {
     it('should delete a project via backend API', async () => {
       // First create a project to delete
       const projectName = `Delete Test ${Date.now()}`
-      const project = await createTestProject(projectName)
+      await createTestProject(projectName)
       
       renderWithProviders(<HomePage />)
       
@@ -189,7 +188,7 @@ describe('Phase 001: Layout with Real Backend', () => {
         expect(response.ok).toBe(true)
         const html = await response.text()
         expect(html).toContain('<!doctype html>')
-      } catch (error) {
+      } catch {
         throw new Error(
           'FRONTEND SERVER NOT RUNNING! Start it with:\n' +
           'cd frontend && npm run dev'

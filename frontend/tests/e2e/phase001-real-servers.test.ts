@@ -85,7 +85,7 @@ test.describe('Phase 001: E2E Tests with Real Servers', () => {
     // Verify project exists in backend
     const response = await request.get(`${API_URL}/projects`)
     const projects = await response.json()
-    const createdProject = projects.find((p: any) => p.name === projectName)
+    const createdProject = projects.find((p: { name: string; id?: string }) => p.name === projectName)
     expect(createdProject).toBeTruthy()
     expect(createdProject.name).toBe(projectName)
     
@@ -145,7 +145,7 @@ test.describe('Phase 001: E2E Tests with Real Servers', () => {
     // Verify it's deleted from backend
     const response = await request.get(`${API_URL}/projects`)
     const projects = await response.json()
-    const deletedProject = projects.find((p: any) => p.id === project.id)
+    const deletedProject = projects.find((p: { id: string }) => p.id === project.id)
     expect(deletedProject).toBeUndefined()
   })
 

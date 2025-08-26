@@ -11,7 +11,7 @@ export interface ConversationMessageEvent {
   iteration: number
   session_id: string
   timestamp: string
-  content: any
+  content: unknown
 }
 
 export interface DiffCreatedEvent {
@@ -36,7 +36,7 @@ class SocketIOService {
   private socket: Socket | null = null
   private projectId: string | null = null
   private connectionState: ConnectionState = 'disconnected'
-  private listeners: Map<string, Set<Function>> = new Map()
+  private listeners: Map<string, Set<(...args: unknown[]) => void>> = new Map()
 
   constructor() {
     // Initialize socket connection will be done per project
@@ -129,17 +129,11 @@ class SocketIOService {
       this.emit('debug_iteration', data)
     })
     
-    // Code update events for Monaco editor
-    // Listen for both event names for compatibility
+    // Code update event for Monaco editor
+    // Note: Backend doesn't currently emit this event, but keeping for future use
     this.socket.on('code_update', (data: { content: string; filename?: string }) => {
       console.log('[Socket.io] Code update:', data)
       this.emit('code_update', data)
-    })
-    
-    this.socket.on('code_changed', (data: { project_id: string; new_code: string }) => {
-      console.log('[Socket.io] Code changed:', data)
-      // Transform to expected format
-      this.emit('code_update', { content: data.new_code, filename: 'main.py' })
     })
 
     // Error handling
@@ -176,7 +170,7 @@ class SocketIOService {
   /**
    * Send a message to the server
    */
-  send(event: string, data: any) {
+  send(event: string, data: unknown) {
     if (this.socket && this.socket.connected) {
       console.log('[Socket.io] Sending:', event, data)
       this.socket.emit(event, data)
@@ -188,7 +182,7 @@ class SocketIOService {
   /**
    * Subscribe to Socket.io events
    */
-  on(event: string, callback: Function) {
+  on(event: string, callback: (...args: unknown[]) => void) {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set())
     }
@@ -203,7 +197,7 @@ class SocketIOService {
   /**
    * Emit event to local listeners
    */
-  private emit(event: string, data: any) {
+  private emit(event: string, data: unknown) {
     const callbacks = this.listeners.get(event)
     if (callbacks) {
       callbacks.forEach(callback => callback(data))

@@ -42,7 +42,6 @@ interface DiffViewerProps {
 export function DiffViewer({
   original,
   proposed,
-  patch,
   sessionId,
   diffId,
   fileName = 'main.py',

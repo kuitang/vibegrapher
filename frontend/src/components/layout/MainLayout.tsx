@@ -26,7 +26,7 @@ interface ProjectLayoutProps {
   projectName?: string
 }
 
-export function ProjectLayout({ vibecodePanel, codePanel, testPanel, projectName }: ProjectLayoutProps) {
+export function ProjectLayout({ vibecodePanel, codePanel, testPanel }: ProjectLayoutProps) {
   return (
     <div className="h-full flex gap-4 p-4">
       <div className="w-1/3 min-w-[300px]">

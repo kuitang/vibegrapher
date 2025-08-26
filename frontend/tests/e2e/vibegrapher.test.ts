@@ -7,7 +7,6 @@ import { test, expect, Page } from '@playwright/test'
 import { v4 as uuidv4 } from 'uuid'
 
 const BASE_URL = 'http://localhost:5173'
-const API_URL = 'http://kui-vibes:8000'
 const SCREENSHOT_DIR = '.playwright-test-evidence'
 
 // Helper function to take timestamped screenshots
@@ -321,7 +320,6 @@ test.describe('Vibegrapher Full Test Suite', () => {
       await expect(codeViewer).toBeVisible()
       
       // Check for refresh button
-      const refreshBtn = page.locator('button:has(svg)').filter({ hasText: '' })
       
       // Check file name display
       const fileName = page.locator('text=main.py').or(page.locator('text=.py'))
@@ -343,8 +341,6 @@ test.describe('Vibegrapher Full Test Suite', () => {
     await waitForNetworkIdle(page)
     
     // Count existing projects
-    const projectCards = page.locator('[class*="card"]').filter({ has: page.locator('h3') })
-    const initialCount = await projectCards.count()
     
     await takeScreenshot(page, 'test-09-initial-project-list')
     
@@ -504,7 +500,6 @@ test.describe('Vibegrapher Full Test Suite', () => {
     await page.getByRole('button', { name: 'Create' }).click()
     await page.waitForURL(/\/project\/[a-f0-9-]+/)
     
-    const projectUrl = page.url()
     
     // Reload page
     await page.reload()

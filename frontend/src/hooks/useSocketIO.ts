@@ -17,7 +17,7 @@ interface UseSocketIOOptions {
   onDiffCreated?: (diff: DiffCreatedEvent) => void
   onDebugIteration?: (debug: DebugIterationEvent) => void
   onCodeUpdate?: (data: { content: string; filename?: string }) => void
-  onError?: (error: any) => void
+  onError?: (error: unknown) => void
 }
 
 export function useSocketIO(projectId: string | undefined, options: UseSocketIOOptions = {}) {
@@ -36,7 +36,7 @@ export function useSocketIO(projectId: string | undefined, options: UseSocketIOO
     socketIOService.connect(projectId)
 
     // Setup event listeners
-    const unsubscribers: Function[] = []
+    const unsubscribers: ((...args: unknown[]) => void)[] = []
 
     // Connection state listener
     unsubscribers.push(
@@ -92,10 +92,10 @@ export function useSocketIO(projectId: string | undefined, options: UseSocketIOO
       // Disconnect socket
       socketIOService.disconnect()
     }
-  }, [projectId]) // Only reconnect if projectId changes
+  }, [projectId, options.onConversationMessage, options.onDiffCreated, options.onDebugIteration, options.onCodeUpdate, options.onError]) // Only reconnect if projectId changes
 
   // Send message function
-  const sendMessage = useCallback((event: string, data: any) => {
+  const sendMessage = useCallback((event: string, data: unknown) => {
     socketIOService.send(event, data)
   }, [])
 

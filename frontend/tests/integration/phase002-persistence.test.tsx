@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
-import useAppStore, { useAppActions, useHydration } from '../../src/store/useAppStore'
+import useAppStore from '../../src/store/useAppStore'
 
 // Mock localStorage for testing
 const localStorageMock = (() => {

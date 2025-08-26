@@ -22,7 +22,7 @@ test.describe('Diff State Management', () => {
       const parsedStore = store ? JSON.parse(store) : null
       
       // Also check the actual store state if available
-      const appStore = (window as any).__APP_STORE__
+      const appStore = (window as unknown as { __APP_STORE__?: { getState: () => unknown } }).__APP_STORE__
       const currentState = appStore ? appStore.getState() : null
       
       return {
@@ -46,7 +46,7 @@ test.describe('Diff State Management', () => {
       const store = window.localStorage.getItem('vibegrapher-storage')
       const parsedStore = store ? JSON.parse(store) : null
       
-      const appStore = (window as any).__APP_STORE__
+      const appStore = (window as unknown as { __APP_STORE__?: { getState: () => unknown } }).__APP_STORE__
       const currentState = appStore ? appStore.getState() : null
       
       return {
@@ -110,7 +110,7 @@ test.describe('Diff State Management', () => {
     
     // Check that pendingDiffs in store matches project 1's diffs
     const storeStateProject1 = await page.evaluate(() => {
-      const appStore = (window as any).__APP_STORE__
+      const appStore = (window as unknown as { __APP_STORE__?: { getState: () => unknown } }).__APP_STORE__
       const state = appStore ? appStore.getState() : null
       return {
         currentProjectId: state?.project?.id,
@@ -126,7 +126,7 @@ test.describe('Diff State Management', () => {
     
     // Check that pendingDiffs in store matches project 2's diffs
     const storeStateProject2 = await page.evaluate(() => {
-      const appStore = (window as any).__APP_STORE__
+      const appStore = (window as unknown as { __APP_STORE__?: { getState: () => unknown } }).__APP_STORE__
       const state = appStore ? appStore.getState() : null
       return {
         currentProjectId: state?.project?.id,
@@ -169,7 +169,7 @@ test.describe('Diff State Management', () => {
     
     // Check state to ensure it's clean
     const finalState = await page.evaluate(() => {
-      const appStore = (window as any).__APP_STORE__
+      const appStore = (window as unknown as { __APP_STORE__?: { getState: () => unknown } }).__APP_STORE__
       const state = appStore ? appStore.getState() : null
       return {
         projectId: state?.project?.id,

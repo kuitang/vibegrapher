@@ -73,12 +73,12 @@ async def test_diff(test_server, test_project, test_session):
     projects_path = os.path.join(test_server["media_path"], "projects")
     git_service = GitService(base_path=projects_path)
     base_commit = git_service.get_head_commit(test_project["slug"])
-    
+
     # If base_commit is None, try to get it from the project
     if not base_commit:
         # The project API response includes current_commit
         base_commit = test_project.get("current_commit")
-    
+
     # Ensure we have a base_commit
     assert base_commit, f"Could not get base_commit for project {test_project['slug']}"
 

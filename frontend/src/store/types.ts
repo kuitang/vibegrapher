@@ -35,7 +35,7 @@ export interface ConversationMessage {
   session_id: string
   role: 'user' | 'assistant'
   content: string
-  openai_response?: any
+  openai_response?: Record<string, unknown>
   token_usage?: TokenUsage
   diff_id?: string
   created_at: string

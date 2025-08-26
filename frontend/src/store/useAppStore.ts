@@ -315,7 +315,7 @@ export const useHydration = () => useAppStore((state) => state.hasHydrated)
 
 // Expose store for debugging and testing
 if (typeof window !== 'undefined') {
-  (window as any).__APP_STORE__ = useAppStore
+  (window as unknown as { __APP_STORE__: typeof useAppStore }).__APP_STORE__ = useAppStore
 }
 
 export default useAppStore

@@ -25,7 +25,7 @@ export function CodePanel({ projectId }: CodePanelProps) {
   
   // TEST: Add test button to simulate diff
   useEffect(() => {
-    // @ts-ignore - Test code
+    // @ts-expect-error - Test code for development
     window.testDiff = () => {
       const testDiff: Diff = {
         id: 'test-diff-' + Date.now(),
@@ -66,10 +66,10 @@ export function CodePanel({ projectId }: CodePanelProps) {
       setCurrentDiff(testDiff)
     }
     console.log('[CodePanel] Test diff function available: window.testDiff()')
-  }, [])
+  }, [parseDiff, projectId])
 
   // Listen for diff created events
-  const { } = useSocketIO(projectId, {
+  useSocketIO(projectId, {
     onDiffCreated: async (event: DiffCreatedEvent) => {
       console.log('[CodePanel] Diff created:', event)
       

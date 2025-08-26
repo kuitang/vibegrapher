@@ -9,12 +9,12 @@ import { persist } from 'zustand/middleware'
 export interface Message {
   id: string
   role: 'user' | 'assistant' | 'system'
-  content: string | any
+  content: string | Record<string, unknown>
   agent_type?: 'vibecoder' | 'evaluator'
   iteration?: number
   session_id?: string
   timestamp: string
-  token_usage?: any
+  token_usage?: Record<string, unknown>
 }
 
 export interface Session {

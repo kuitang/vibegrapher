@@ -5,7 +5,7 @@
 import { Button } from '@/components/ui/button'
 import socketIOService from '@/services/socketio'
 
-export function TestDiffButton({ projectId }: { projectId: string }) {
+export function TestDiffButton() {
   const handleTestDiff = () => {
     // Simulate a diff_created event
     const testDiff = {

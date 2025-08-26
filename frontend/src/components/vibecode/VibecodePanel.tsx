@@ -4,7 +4,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -15,7 +15,7 @@ import { Loader2, Send, RefreshCw, Bot, User, CheckCircle } from 'lucide-react'
 import { useSocketIO } from '@/hooks/useSocketIO'
 import { useSessionStore } from '@/store/sessionStore'
 import useAppStore from '@/store/useAppStore'
-import type { ConversationMessageEvent, ConnectionState } from '@/services/socketio'
+import type { ConversationMessageEvent } from '@/services/socketio'
 
 interface VibecodePanelProps {
   projectId: string
@@ -103,18 +103,6 @@ export function VibecodePanel({ projectId }: VibecodePanelProps) {
       textareaRef.current.style.height = `${newHeight}px`
     }
   }, [input])
-
-  const handleCreateSession = async () => {
-    setIsLoading(true)
-    try {
-      await createSession(projectId)
-      console.log('[VibecodePanel] Session created')
-    } catch (error) {
-      console.error('[VibecodePanel] Failed to create session:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   const handleSendMessage = async () => {
     if (!input.trim() || !session || isLoading) return

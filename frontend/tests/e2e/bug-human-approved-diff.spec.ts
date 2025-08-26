@@ -20,11 +20,11 @@ test.describe('Bug: Human-approved diffs should not prompt for approval', () => 
       const diffs = await response.json()
       
       // Return the actual status of any diffs found
-      return diffs.map((d: any) => ({ id: d.id, status: d.status }))
+      return diffs.map((d: { id: string; status: string }) => ({ id: d.id, status: d.status }))
     })
     
     // Check if any diffs have human_approved status
-    const hasHumanApprovedDiff = diffStatus.some((d: any) => d.status === 'human_approved')
+    const hasHumanApprovedDiff = diffStatus.some((d: { id: string; status: string }) => d.status === 'human_approved')
     
     if (hasHumanApprovedDiff) {
       // If there's a human_approved diff, the modal should NOT be visible
@@ -65,12 +65,12 @@ test.describe('Bug: Human-approved diffs should not prompt for approval', () => 
       const diffs = await response.json()
       
       // Check if any returned diffs have status !== 'evaluator_approved'
-      const incorrectDiffs = diffs.filter((d: any) => d.status !== 'evaluator_approved')
+      const incorrectDiffs = diffs.filter((d: { status: string }) => d.status !== 'evaluator_approved')
       
       return {
         total: diffs.length,
         incorrect: incorrectDiffs.length,
-        incorrectStatuses: incorrectDiffs.map((d: any) => d.status)
+        incorrectStatuses: incorrectDiffs.map((d: { status: string }) => d.status)
       }
     })
     

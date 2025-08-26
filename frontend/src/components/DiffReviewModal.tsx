@@ -3,7 +3,7 @@
  * Modal for reviewing diffs with evaluator reasoning
  */
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { DiffEditor } from '@monaco-editor/react'
 import {
   Dialog,

@@ -25,7 +25,7 @@ describe('Phase 004: Socket.io Setup', () => {
   test('connects to Socket.io server for project', async () => {
     const consoleSpy = vi.spyOn(console, 'log')
     
-    const { result } = renderHook(() => 
+    renderHook(() => 
       useSocketIO('test-project-123', {})
     )
     
@@ -62,9 +62,9 @@ describe('Phase 004: Socket.io Setup', () => {
     
     // Simulate message from service
     act(() => {
-      const listeners = (socketIOService as any).listeners.get('conversation_message')
+      const listeners = (socketIOService as unknown as { listeners: Map<string, Set<(...args: unknown[]) => void>> }).listeners.get('conversation_message')
       if (listeners) {
-        listeners.forEach((cb: Function) => cb(testMessage))
+        listeners.forEach((cb: (...args: unknown[]) => void) => cb(testMessage))
       }
     })
     
@@ -88,9 +88,9 @@ describe('Phase 004: Socket.io Setup', () => {
     
     // Simulate diff event from service
     act(() => {
-      const listeners = (socketIOService as any).listeners.get('diff_created')
+      const listeners = (socketIOService as unknown as { listeners: Map<string, Set<(...args: unknown[]) => void>> }).listeners.get('diff_created')
       if (listeners) {
-        listeners.forEach((cb: Function) => cb(testDiff))
+        listeners.forEach((cb: (...args: unknown[]) => void) => cb(testDiff))
       }
     })
     
@@ -108,9 +108,9 @@ describe('Phase 004: Socket.io Setup', () => {
     
     // Simulate connection state change
     act(() => {
-      const listeners = (socketIOService as any).listeners.get('connection_state_change')
+      const listeners = (socketIOService as unknown as { listeners: Map<string, Set<(...args: unknown[]) => void>> }).listeners.get('connection_state_change')
       if (listeners) {
-        listeners.forEach((cb: Function) => cb('connected'))
+        listeners.forEach((cb: (...args: unknown[]) => void) => cb('connected'))
       }
     })
     
@@ -137,9 +137,9 @@ describe('Phase 004: Socket.io Setup', () => {
     
     // Simulate debug event
     act(() => {
-      const listeners = (socketIOService as any).listeners.get('debug_iteration')
+      const listeners = (socketIOService as unknown as { listeners: Map<string, Set<(...args: unknown[]) => void>> }).listeners.get('debug_iteration')
       if (listeners) {
-        listeners.forEach((cb: Function) => cb(debugEvent))
+        listeners.forEach((cb: (...args: unknown[]) => void) => cb(debugEvent))
       }
     })
     
@@ -164,9 +164,9 @@ describe('Phase 004: Socket.io Setup', () => {
     
     // Simulate message
     act(() => {
-      const listeners = (socketIOService as any).listeners.get('conversation_message')
+      const listeners = (socketIOService as unknown as { listeners: Map<string, Set<(...args: unknown[]) => void>> }).listeners.get('conversation_message')
       if (listeners) {
-        listeners.forEach((cb: Function) => cb(testMessage))
+        listeners.forEach((cb: (...args: unknown[]) => void) => cb(testMessage))
       }
     })
     
