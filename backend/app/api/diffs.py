@@ -160,7 +160,9 @@ def review_diff(
 
 
 @router.post("/diffs/{diff_id}/commit", response_model=CommitResponse)
-async def commit_diff(diff_id: str, db: Session = Depends(get_db)) -> dict:
+async def commit_diff(
+    diff_id: str, request: CommitRequest, db: Session = Depends(get_db)
+) -> dict:
     """Commit an approved diff to git"""
     diff = db.query(Diff).filter(Diff.id == diff_id).first()
     if not diff:
@@ -195,8 +197,12 @@ async def commit_diff(diff_id: str, db: Session = Depends(get_db)) -> dict:
         )
 
     # Write new code and commit
-    git_service.write_code(project.slug, new_code)
-    commit_sha = git_service.commit_changes(project.slug, diff.commit_message)
+    commit_sha = git_service.commit_changes(
+        project.slug, 
+        new_code, 
+        request.commit_message or diff.commit_message,
+        filename="script.py"
+    )
 
     # Update diff status
     diff.status = "committed"
