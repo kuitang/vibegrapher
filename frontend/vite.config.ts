@@ -11,7 +11,8 @@ export default defineConfig({
     },
   },
   server: {
-    host: true,
-    allowedHosts: ['localhost', 'kui-vibes', '.kui-vibes', '188.245.127.39', '100.67.190.52'],
+    host: '0.0.0.0',
+    port: 5173,
+    allowedHosts: ['localhost', 'kui-vibes', '.kui-vibes', '100.67.190.52'],
   },
 })
