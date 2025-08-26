@@ -1,6 +1,6 @@
+import logging
 import os
 from typing import List
-import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from slugify import slugify
@@ -38,10 +38,10 @@ def create_project(
     repository_path = git_service.create_repository(slug)
     if not repository_path:
         raise HTTPException(status_code=500, detail="Failed to create repository")
-    
+
     # Get initial state
     current_branch = git_service.get_current_branch(slug)
-    
+
     project = Project(
         name=project_data.name,
         slug=slug,
@@ -61,15 +61,15 @@ def get_project(project_id: str, db: Session = Depends(get_db)) -> Project:
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    
+
     # Update current code and commit from git
     project.current_code = git_service.get_current_code(project.slug)
     project.current_commit = git_service.get_head_commit(project.slug)
     project.current_branch = git_service.get_current_branch(project.slug)
-    
+
     db.commit()
     db.refresh(project)
-    
+
     return project
 
 
@@ -81,7 +81,7 @@ def delete_project(project_id: str, db: Session = Depends(get_db)) -> None:
 
     # Delete git repository
     git_service.delete_repository(project.slug)
-    
+
     db.delete(project)
     db.commit()
 
@@ -92,6 +92,6 @@ def get_project_tests(project_id: str, db: Session = Depends(get_db)) -> List[Te
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    
+
     tests = db.query(TestCase).filter(TestCase.project_id == project_id).all()
     return tests

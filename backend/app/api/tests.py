@@ -1,5 +1,5 @@
-from typing import List
 import logging
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -18,7 +18,7 @@ def run_test(test_id: str, db: Session = Depends(get_db)) -> TestResult:
     test_case = db.query(TestCase).filter(TestCase.id == test_id).first()
     if not test_case:
         raise HTTPException(status_code=404, detail="Test case not found")
-    
+
     # For now, create a mock successful result
     # Phase 006 will implement actual test execution
     test_result = TestResult(
@@ -26,13 +26,13 @@ def run_test(test_id: str, db: Session = Depends(get_db)) -> TestResult:
         status="passed",
         output="Test executed successfully",
         error=None,
-        execution_time_ms=100
+        execution_time_ms=100,
     )
-    
+
     db.add(test_result)
     db.commit()
     db.refresh(test_result)
-    
+
     return test_result
 
 

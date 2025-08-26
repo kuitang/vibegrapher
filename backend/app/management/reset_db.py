@@ -1,17 +1,17 @@
 import os
 import sys
+import uuid
 from pathlib import Path
 from typing import Optional
-import uuid
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
 from app.config import settings
 from app.models import Base, Project, TestCase
 from app.services.git_service import GitService
+
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 
 def reset_and_seed_database(database_url: Optional[str] = None) -> None:
@@ -79,23 +79,21 @@ if __name__ == "__main__":
     # Create main project: Agent Triage System
     project_id = str(uuid.uuid4())
     project_slug = "agent-triage-system"
-    
+
     # Create GitService instance with the proper media path
     git_service = GitService()
-    
+
     # Initialize git repository
     repo_path = git_service.create_repository(project_slug)
-    
+
     # Commit initial code
     commit_sha = git_service.commit_changes(
-        project_slug,
-        sample_agent_code,
-        "Initial agent code"
+        project_slug, sample_agent_code, "Initial agent code"
     )
-    
+
     # Get the committed code
     current_code = git_service.get_current_code(project_slug)
-    
+
     # Create project record
     project = Project(
         id=project_id,
@@ -107,7 +105,7 @@ if __name__ == "__main__":
         current_branch="main",
     )
     db.add(project)
-    
+
     # Create test cases for the project
     test1 = TestCase(
         id=str(uuid.uuid4()),
@@ -118,9 +116,9 @@ agent = TriageAgent()
 response = agent.process("I have a billing issue")
 assert "billing" in response.lower()
 """,
-        quick_test=False
+        quick_test=False,
     )
-    
+
     test2 = TestCase(
         id=str(uuid.uuid4()),
         project_id=project_id,
@@ -134,9 +132,9 @@ elapsed = time.time() - start
 assert elapsed < 1.0  # Should respond quickly
 assert "technical" in response.lower()
 """,
-        quick_test=True
+        quick_test=True,
     )
-    
+
     db.add(test1)
     db.add(test2)
 

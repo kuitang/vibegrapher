@@ -1,0 +1,189 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.2, pytest-8.3.4, pluggy-1.6.0 -- /home/kuitang/git/vibegrapher/backend/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/kuitang/git/vibegrapher/backend
+configfile: pyproject.toml
+plugins: cov-6.0.0, asyncio-0.25.2, anyio-4.10.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function
+collecting ... collected 1 item
+
+tests/integration/test_phase_004_agents.py::test_vibecode_patch_submission Starting isolated test server:
+  Database: /tmp/test_vibegrapher_44ae49c4.db
+  Port: 43807
+  Media: /tmp/test_media_44ae49c4
+Database reset and seeded successfully at: sqlite:////tmp/test_vibegrapher_44ae49c4.db
+Created project 'Agent Triage System' with git repository
+Repository path: media/projects/agent-triage-system
+Initial commit: 4b59870da6083de7d32196347be85509d1cf7b99
+Created 2 test cases (1 regular, 1 quick test)
+Test server ready at http://127.0.0.1:43807
+FAILEDCleaning up test server...
+
+
+=================================== FAILURES ===================================
+________________________ test_vibecode_patch_submission ________________________
+
+    @contextlib.contextmanager
+    def map_httpcore_exceptions() -> typing.Iterator[None]:
+        global HTTPCORE_EXC_MAP
+        if len(HTTPCORE_EXC_MAP) == 0:
+            HTTPCORE_EXC_MAP = _load_httpcore_exceptions()
+        try:
+>           yield
+
+.venv/lib/python3.11/site-packages/httpx/_transports/default.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.11/site-packages/httpx/_transports/default.py:394: in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+.venv/lib/python3.11/site-packages/httpcore/_async/connection_pool.py:256: in handle_async_request
+    raise exc from None
+.venv/lib/python3.11/site-packages/httpcore/_async/connection_pool.py:236: in handle_async_request
+    response = await connection.handle_async_request(
+.venv/lib/python3.11/site-packages/httpcore/_async/connection.py:103: in handle_async_request
+    return await self._connection.handle_async_request(request)
+.venv/lib/python3.11/site-packages/httpcore/_async/http11.py:136: in handle_async_request
+    raise exc
+.venv/lib/python3.11/site-packages/httpcore/_async/http11.py:106: in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+.venv/lib/python3.11/site-packages/httpcore/_async/http11.py:177: in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+.venv/lib/python3.11/site-packages/httpcore/_async/http11.py:217: in _receive_event
+    data = await self._network_stream.read(
+.venv/lib/python3.11/site-packages/httpcore/_backends/anyio.py:32: in read
+    with map_exceptions(exc_map):
+/usr/lib/python3.11/contextlib.py:155: in __exit__
+    self.gen.throw(typ, value, traceback)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+map = {<class 'TimeoutError'>: <class 'httpcore.ReadTimeout'>, <class 'anyio.BrokenResourceError'>: <class 'httpcore.ReadErr... 'anyio.ClosedResourceError'>: <class 'httpcore.ReadError'>, <class 'anyio.EndOfStream'>: <class 'httpcore.ReadError'>}
+
+    @contextlib.contextmanager
+    def map_exceptions(map: ExceptionMapping) -> typing.Iterator[None]:
+        try:
+            yield
+        except Exception as exc:  # noqa: PIE786
+            for from_exc, to_exc in map.items():
+                if isinstance(exc, from_exc):
+>                   raise to_exc(exc) from exc
+E                   httpcore.ReadTimeout
+
+.venv/lib/python3.11/site-packages/httpcore/_exceptions.py:14: ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+test_server = {'media_path': '/tmp/test_media_44ae49c4', 'test_id': '44ae49c4', 'url': 'http://127.0.0.1:43807'}
+caplog = <_pytest.logging.LogCaptureFixture object at 0xffffb9fe6ed0>
+
+    @pytest.mark.integration
+    @pytest.mark.asyncio
+    async def test_vibecode_patch_submission(test_server: dict, caplog: Any) -> None:
+        """Test vibecode with patch submission using REAL OpenAI API"""
+    
+        # Set API key for test
+        os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
+        if not os.environ["OPENAI_API_KEY"]:
+            pytest.skip("OPENAI_API_KEY not set")
+    
+        caplog.set_level(logging.INFO)
+    
+        async with httpx.AsyncClient(base_url=test_server["url"], timeout=60.0) as client:
+            # Create project
+            project_resp = await client.post("/projects", json={"name": "Test Agent Project"})
+            assert project_resp.status_code == 201
+            project = project_resp.json()
+    
+            # Create session
+            session_resp = await client.post(f"/projects/{project['id']}/sessions")
+            assert session_resp.status_code == 201
+            session = session_resp.json()
+    
+            # Send vibecode request - simple patch that should succeed
+>           message_resp = await client.post(
+                f"/sessions/{session['id']}/messages",
+                json={"prompt": "Add a comment at the top saying '# Modified by AI'"}
+            )
+
+tests/integration/test_phase_004_agents.py:61: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.11/site-packages/httpx/_client.py:1859: in post
+    return await self.request(
+.venv/lib/python3.11/site-packages/httpx/_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+.venv/lib/python3.11/site-packages/httpx/_client.py:1629: in send
+    response = await self._send_handling_auth(
+.venv/lib/python3.11/site-packages/httpx/_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+.venv/lib/python3.11/site-packages/httpx/_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+.venv/lib/python3.11/site-packages/httpx/_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+.venv/lib/python3.11/site-packages/httpx/_transports/default.py:393: in handle_async_request
+    with map_httpcore_exceptions():
+/usr/lib/python3.11/contextlib.py:155: in __exit__
+    self.gen.throw(typ, value, traceback)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextlib.contextmanager
+    def map_httpcore_exceptions() -> typing.Iterator[None]:
+        global HTTPCORE_EXC_MAP
+        if len(HTTPCORE_EXC_MAP) == 0:
+            HTTPCORE_EXC_MAP = _load_httpcore_exceptions()
+        try:
+            yield
+        except Exception as exc:
+            mapped_exc = None
+    
+            for from_exc, to_exc in HTTPCORE_EXC_MAP.items():
+                if not isinstance(exc, from_exc):
+                    continue
+                # We want to map to the most specific exception we can find.
+                # Eg if `exc` is an `httpcore.ReadTimeout`, we want to map to
+                # `httpx.ReadTimeout`, not just `httpx.TimeoutException`.
+                if mapped_exc is None or issubclass(to_exc, mapped_exc):
+                    mapped_exc = to_exc
+    
+            if mapped_exc is None:  # pragma: no cover
+                raise
+    
+            message = str(exc)
+>           raise mapped_exc(message) from exc
+E           httpx.ReadTimeout
+
+.venv/lib/python3.11/site-packages/httpx/_transports/default.py:118: ReadTimeout
+------------------------------ Captured log call -------------------------------
+INFO     httpx:_client.py:1740 HTTP Request: POST http://127.0.0.1:43807/projects "HTTP/1.1 201 Created"
+INFO     httpx:_client.py:1740 HTTP Request: POST http://127.0.0.1:43807/projects/747a76b6-9c5b-4bcc-8c4a-5326192d3b22/sessions "HTTP/1.1 201 Created"
+=============================== warnings summary ===============================
+.venv/lib/python3.11/site-packages/pydantic/_internal/_config.py:323
+  /home/kuitang/git/vibegrapher/backend/.venv/lib/python3.11/site-packages/pydantic/_internal/_config.py:323: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+tests/integration/test_phase_004_agents.py:37
+  /home/kuitang/git/vibegrapher/backend/tests/integration/test_phase_004_agents.py:37: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests/integration/test_phase_004_agents.py:94
+  /home/kuitang/git/vibegrapher/backend/tests/integration/test_phase_004_agents.py:94: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests/integration/test_phase_004_agents.py:132
+  /home/kuitang/git/vibegrapher/backend/tests/integration/test_phase_004_agents.py:132: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests/integration/test_phase_004_agents.py:175
+  /home/kuitang/git/vibegrapher/backend/tests/integration/test_phase_004_agents.py:175: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests/integration/test_phase_004_agents.py:234
+  /home/kuitang/git/vibegrapher/backend/tests/integration/test_phase_004_agents.py:234: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests/integration/test_phase_004_agents.py:247
+  /home/kuitang/git/vibegrapher/backend/tests/integration/test_phase_004_agents.py:247: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_phase_004_agents.py::test_vibecode_patch_submission
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+=================== 1 failed, 7 warnings in 63.60s (0:01:03) ===================

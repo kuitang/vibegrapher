@@ -1,0 +1,30 @@
+
+ RUN  v3.2.4 /home/kuitang/git/vibegrapher/frontend
+
+stdout | tests/integration/phase003-mobile.test.tsx
+State rehydrated from localStorage
+
+stderr | tests/integration/phase003-mobile.test.tsx > Phase 003: Mobile Responsive > mobile layout with shadcn Sheet
+`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.
+
+If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/dialog
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | tests/integration/phase003-mobile.test.tsx > Phase 003: Mobile Responsive > drawer for bottom actions
+`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.
+
+If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/dialog
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ tests/integration/phase003-mobile.test.tsx (7 tests) 1006ms
+   ✓ Phase 003: Mobile Responsive > mobile layout with shadcn Sheet  406ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  02:18:45
+   Duration  3.84s (transform 482ms, setup 179ms, collect 1.09s, tests 1.01s, environment 732ms, prepare 316ms)
+

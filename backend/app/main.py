@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api import projects, tests, sessions, diffs
+from .api import diffs, projects, sessions, tests
 from .config import settings
 from .database import init_db
 from .services.socketio_service import socketio_manager

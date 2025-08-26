@@ -127,8 +127,9 @@ class VibecodeService:
                     logger.error(error_msg)
                     
                     # Stream error message
-                    await socketio_manager.emit_to_room(
-                        room_id,
+                    project_id = room_id.replace("project_", "")
+                    await socketio_manager.emit_to_project(
+                        project_id,
                         "validation_error",
                         {"error": validation.error, "iteration": iteration}
                     )
@@ -170,12 +171,14 @@ class VibecodeService:
                     diff = Diff(
                         id=str(uuid.uuid4()),
                         session_id=session_id,
-                        original_code=current_code,
-                        modified_code=validation.patched_code,
-                        patch=patch,
+                        project_id=project_id,
+                        base_commit=project.current_commit or "unknown",
+                        target_branch=project.current_branch or "main",
+                        diff_content=patch,
                         status="evaluator_approved",
-                        commit_message=eval_result.commit_message,
-                        evaluator_reasoning=eval_result.reasoning
+                        vibecoder_prompt=prompt,
+                        evaluator_reasoning=eval_result.reasoning,
+                        commit_message=eval_result.commit_message
                     )
                     db.add(diff)
                     db.commit()
@@ -183,8 +186,9 @@ class VibecodeService:
                     logger.info(f"Diff approved and saved: {diff.id}")
                     
                     # Emit diff created event
-                    await socketio_manager.emit_to_room(
-                        room_id,
+                    project_id = room_id.replace("project_", "")
+                    await socketio_manager.emit_to_project(
+                        project_id,
                         "diff_created",
                         {
                             "diff_id": diff.id,
@@ -233,8 +237,10 @@ class VibecodeService:
             "content": response
         }
         
-        await socketio_manager.emit_to_room(
-            room_id,
+        # Extract project_id from room_id (format: project_{project_id})
+        project_id = room_id.replace("project_", "")
+        await socketio_manager.emit_to_project(
+            project_id,
             "conversation_message",
             event_data
         )

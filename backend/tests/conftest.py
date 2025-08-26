@@ -29,17 +29,17 @@ def run_test_server(db_path: str, port: int, media_path: str) -> None:
     os.environ["DATABASE_URL"] = f"sqlite:///{db_path}"
     os.environ["MEDIA_PATH"] = media_path
     os.environ["PORT"] = str(port)
-    
+
     # Force reimport of modules to ensure they pick up the new env vars
-    if 'app.config' in sys.modules:
-        del sys.modules['app.config']
-    if 'app.database' in sys.modules:
-        del sys.modules['app.database']
-    if 'app.services.git_service' in sys.modules:
-        del sys.modules['app.services.git_service']
-    if 'app.main' in sys.modules:
-        del sys.modules['app.main']
-    
+    if "app.config" in sys.modules:
+        del sys.modules["app.config"]
+    if "app.database" in sys.modules:
+        del sys.modules["app.database"]
+    if "app.services.git_service" in sys.modules:
+        del sys.modules["app.services.git_service"]
+    if "app.main" in sys.modules:
+        del sys.modules["app.main"]
+
     # Import app AFTER setting env vars to ensure isolation
     from app.main import app
 
@@ -50,16 +50,17 @@ def run_test_server(db_path: str, port: int, media_path: str) -> None:
 def test_server() -> Generator[dict, None, None]:
     # Create temp database in /tmp with unique name
     import uuid
+
     test_id = str(uuid.uuid4())[:8]
     db_path = f"/tmp/test_vibegrapher_{test_id}.db"
     media_path = f"/tmp/test_media_{test_id}"
-    
+
     # Create media directory
     Path(media_path).mkdir(parents=True, exist_ok=True)
 
     # Get a random available port
     port = find_free_port()
-    
+
     print(f"Starting isolated test server:")
     print(f"  Database: {db_path}")
     print(f"  Port: {port}")
@@ -67,7 +68,7 @@ def test_server() -> Generator[dict, None, None]:
 
     # Set env vars for the reset_and_seed function
     os.environ["MEDIA_PATH"] = media_path
-    
+
     # Reset and seed the test database
     reset_and_seed_database(f"sqlite:///{db_path}")
 
@@ -106,4 +107,5 @@ def test_server() -> Generator[dict, None, None]:
         Path(db_path).unlink()
     if Path(media_path).exists():
         import shutil
+
         shutil.rmtree(media_path)

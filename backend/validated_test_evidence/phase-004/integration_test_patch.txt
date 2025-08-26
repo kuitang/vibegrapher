@@ -1,0 +1,153 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.2, pytest-8.3.4, pluggy-1.6.0 -- /home/kuitang/git/vibegrapher/backend/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/kuitang/git/vibegrapher/backend
+configfile: pyproject.toml
+plugins: cov-6.0.0, asyncio-0.25.2, anyio-4.10.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function
+collecting ... collected 1 item
+
+tests/integration/test_phase_004_agents.py::test_vibecode_patch_submission Starting isolated test server:
+  Database: /tmp/test_vibegrapher_ac4a5652.db
+  Port: 44431
+  Media: /tmp/test_media_ac4a5652
+
+-------------------------------- live log setup --------------------------------
+INFO     app.services.git_service:git_service.py:40 Created git repository at media/projects/agent-triage-system
+INFO     app.services.git_service:git_service.py:152 Created commit 407794e5c437bb52d887bc593f59d0108cfa1e1e for project agent-triage-system
+Database reset and seeded successfully at: sqlite:////tmp/test_vibegrapher_ac4a5652.db
+Created project 'Agent Triage System' with git repository
+Repository path: media/projects/agent-triage-system
+Initial commit: 407794e5c437bb52d887bc593f59d0108cfa1e1e
+Created 2 test cases (1 regular, 1 quick test)
+INFO     app.main:main.py:36 Database initialized
+INFO     app.services.socketio_service:socketio_service.py:161 Heartbeat task started
+INFO     app.main:main.py:39 Socket.io heartbeat started
+INFO     httpx:_client.py:1025 HTTP Request: GET http://127.0.0.1:44431/health "HTTP/1.1 200 OK"
+INFO     app.services.git_service:git_service.py:40 Created git repository at /tmp/test_media_ac4a5652/projects/test-agent-project
+Test server ready at http://127.0.0.1:44431
+-------------------------------- live log call ---------------------------------
+INFO     httpx:_client.py:1740 HTTP Request: POST http://127.0.0.1:44431/projects "HTTP/1.1 201 Created"
+INFO     app.api.sessions:sessions.py:57 Created session 8f09c5f6-bc0a-4577-9997-b0d2705931c2 for project 99725146-6769-497c-9787-f88e3a8cb2d5
+INFO     httpx:_client.py:1740 HTTP Request: POST http://127.0.0.1:44431/projects/99725146-6769-497c-9787-f88e3a8cb2d5/sessions "HTTP/1.1 201 Created"
+INFO     app.api.sessions:sessions.py:98 Running vibecode for session 8f09c5f6-bc0a-4577-9997-b0d2705931c2 with prompt: Add a comment at the top saying '# Modified by AI'
+INFO     app.services.vibecode_service:vibecode_service.py:86 Running VibeCoder iteration 1
+INFO     app.services.vibecode_service:vibecode_service.py:99 [VIBECODER PROMPT] Current code:
+```python
+
+```
+
+User request: Add a comment at the top saying '# Modified by AI'...
+INFO     httpx:_client.py:1025 HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+INFO     httpx:_client.py:1740 HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 OK"
+INFO     app.services.vibecode_service:vibecode_service.py:120 VibeCoder response type: <class 'agents.result.RunResult'>
+INFO     app.services.vibecode_service:vibecode_service.py:121 VibeCoder attributes: ['__abstractmethods__', '__annotations__', '__class__', '__dataclass_fields__', '__dataclass_params__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__getstate__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__match_args__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__slots__', '__str__', '__subclasshook__', '__weakref__', '_abc_impl', '_last_agent', 'context_wrapper', 'final_output', 'final_output_as', 'input', 'input_guardrail_results', 'last_agent', 'last_response_id', 'new_items', 'output_guardrail_results', 'raw_responses', 'to_input_list']
+INFO     app.services.vibecode_service:vibecode_service.py:123 VibeCoder new_items count: 2
+INFO     app.services.socketio_service:socketio_service.py:75 Emitted conversation_message to project room 99725146-6769-497c-9787-f88e3a8cb2d5
+INFO     app.services.vibecode_service:vibecode_service.py:431 Streamed vibecoder response for iteration 0
+INFO     app.services.vibecode_service:vibecode_service.py:140 Found 2 new items
+ERROR    app.services.vibecode_service:vibecode_service.py:461 Error saving conversation message: Object of type RunResult is not JSON serializable
+INFO     httpx:_client.py:1740 HTTP Request: POST http://127.0.0.1:44431/sessions/8f09c5f6-bc0a-4577-9997-b0d2705931c2/messages "HTTP/1.1 200 OK"
+Running: vibecode with patch prompt
+Result: patch=False, diff_id=None
+Token usage: {'total_tokens': 0}
+Expected: patch should be created
+FAILEDINFO     app.services.socketio_service:socketio_service.py:172 Heartbeat task stopped
+INFO     app.main:main.py:45 Socket.io heartbeat stopped
+Cleaning up test server...
+
+
+=================================== FAILURES ===================================
+________________________ test_vibecode_patch_submission ________________________
+
+test_server = {'media_path': '/tmp/test_media_ac4a5652', 'test_id': 'ac4a5652', 'url': 'http://127.0.0.1:44431'}
+caplog = <_pytest.logging.LogCaptureFixture object at 0xffffb1f46d50>
+
+    @pytest.mark.integration
+    @pytest.mark.asyncio
+    async def test_vibecode_patch_submission(test_server: dict, caplog: Any) -> None:
+        """Test vibecode with patch submission using REAL OpenAI API"""
+    
+        # Set API key for test
+        os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
+        if not os.environ["OPENAI_API_KEY"]:
+            pytest.skip("OPENAI_API_KEY not set")
+    
+        caplog.set_level(logging.INFO)
+    
+        async with httpx.AsyncClient(base_url=test_server["url"], timeout=120.0) as client:
+            # Create project
+            project_resp = await client.post("/projects", json={"name": "Test Agent Project"})
+            assert project_resp.status_code == 201
+            project = project_resp.json()
+    
+            # Create session
+            session_resp = await client.post(f"/projects/{project['id']}/sessions")
+            assert session_resp.status_code == 201
+            session = session_resp.json()
+    
+            # Send vibecode request - simple patch that should succeed
+            message_resp = await client.post(
+                f"/sessions/{session['id']}/messages",
+                json={"prompt": "Add a comment at the top saying '# Modified by AI'"}
+            )
+            assert message_resp.status_code == 200
+            result = message_resp.json()
+    
+            print(f"Running: vibecode with patch prompt")
+            print(f"Result: patch={bool(result.get('patch'))}, diff_id={result.get('diff_id')}")
+            print(f"Token usage: {result.get('token_usage', {})}")
+            print(f"Expected: patch should be created")
+    
+            # Verify response
+            assert result.get("error") is None, f"Error: {result.get('error')}"
+>           assert result.get("diff_id") or result.get("patch"), "Should have diff_id or patch"
+E           AssertionError: Should have diff_id or patch
+E           assert (None or None)
+E            +  where None = <built-in method get of dict object at 0xffffb1d6e580>('diff_id')
+E            +    where <built-in method get of dict object at 0xffffb1d6e580> = {'content': 'Which file should I add the comment to? If there’s no existing file, I can create script.py and put the exact line:\n# Modified by AI\nPlease confirm the target file path or approve creating script.py.', 'diff_id': None, 'error': None, 'patch': None, ...}.get
+E            +  and   None = <built-in method get of dict object at 0xffffb1d6e580>('patch')
+E            +    where <built-in method get of dict object at 0xffffb1d6e580> = {'content': 'Which file should I add the comment to? If there’s no existing file, I can create script.py and put the exact line:\n# Modified by AI\nPlease confirm the target file path or approve creating script.py.', 'diff_id': None, 'error': None, 'patch': None, ...}.get
+
+tests/integration/test_phase_004_agents.py:75: AssertionError
+------------------------------ Captured log setup ------------------------------
+INFO     app.services.git_service:git_service.py:40 Created git repository at media/projects/agent-triage-system
+INFO     app.services.git_service:git_service.py:152 Created commit 407794e5c437bb52d887bc593f59d0108cfa1e1e for project agent-triage-system
+INFO     httpx:_client.py:1025 HTTP Request: GET http://127.0.0.1:44431/health "HTTP/1.1 200 OK"
+------------------------------ Captured log call -------------------------------
+INFO     httpx:_client.py:1740 HTTP Request: POST http://127.0.0.1:44431/projects "HTTP/1.1 201 Created"
+INFO     httpx:_client.py:1740 HTTP Request: POST http://127.0.0.1:44431/projects/99725146-6769-497c-9787-f88e3a8cb2d5/sessions "HTTP/1.1 201 Created"
+INFO     httpx:_client.py:1740 HTTP Request: POST http://127.0.0.1:44431/sessions/8f09c5f6-bc0a-4577-9997-b0d2705931c2/messages "HTTP/1.1 200 OK"
+=============================== warnings summary ===============================
+.venv/lib/python3.11/site-packages/pydantic/_internal/_config.py:323
+  /home/kuitang/git/vibegrapher/backend/.venv/lib/python3.11/site-packages/pydantic/_internal/_config.py:323: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+tests/integration/test_phase_004_agents.py:37
+  /home/kuitang/git/vibegrapher/backend/tests/integration/test_phase_004_agents.py:37: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests/integration/test_phase_004_agents.py:94
+  /home/kuitang/git/vibegrapher/backend/tests/integration/test_phase_004_agents.py:94: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests/integration/test_phase_004_agents.py:132
+  /home/kuitang/git/vibegrapher/backend/tests/integration/test_phase_004_agents.py:132: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests/integration/test_phase_004_agents.py:175
+  /home/kuitang/git/vibegrapher/backend/tests/integration/test_phase_004_agents.py:175: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests/integration/test_phase_004_agents.py:234
+  /home/kuitang/git/vibegrapher/backend/tests/integration/test_phase_004_agents.py:234: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests/integration/test_phase_004_agents.py:247
+  /home/kuitang/git/vibegrapher/backend/tests/integration/test_phase_004_agents.py:247: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_phase_004_agents.py::test_vibecode_patch_submission
+======================== 1 failed, 7 warnings in 16.60s ========================

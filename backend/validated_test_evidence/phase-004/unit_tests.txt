@@ -1,0 +1,25 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.2, pytest-8.3.4, pluggy-1.6.0 -- /home/kuitang/git/vibegrapher/backend/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/kuitang/git/vibegrapher/backend
+configfile: pyproject.toml
+plugins: cov-6.0.0, asyncio-0.25.2, anyio-4.10.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function
+collecting ... collected 8 items
+
+tests/unit/test_agents_structure.py::test_agents_exist PASSED            [ 12%]
+tests/unit/test_agents_structure.py::test_vibecoder_has_tools PASSED     [ 25%]
+tests/unit/test_agents_structure.py::test_evaluator_has_output_type PASSED [ 37%]
+tests/unit/test_agents_structure.py::test_apply_patch_simple PASSED      [ 50%]
+tests/unit/test_agents_structure.py::test_validate_patch_valid_code PASSED [ 62%]
+tests/unit/test_agents_structure.py::test_validate_patch_invalid_syntax PASSED [ 75%]
+tests/unit/test_agents_structure.py::test_evaluation_result_model PASSED [ 87%]
+tests/unit/test_agents_structure.py::test_vibecode_result_model PASSED   [100%]
+
+=============================== warnings summary ===============================
+.venv/lib/python3.11/site-packages/pydantic/_internal/_config.py:323
+  /home/kuitang/git/vibegrapher/backend/.venv/lib/python3.11/site-packages/pydantic/_internal/_config.py:323: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+========================= 8 passed, 1 warning in 0.86s =========================
