@@ -230,6 +230,7 @@ IMPORTANT:
                     "vibecoder",
                     iteration,
                     session_id,
+                    project_id,
                     socketio_manager,
                 )
 
@@ -248,7 +249,12 @@ IMPORTANT:
                     # Evaluator was called via submit_patch
                     # CRITICAL: Immediately stream Evaluator response to frontend
                     await self._stream_agent_response(
-                        evaluation, "evaluator", iteration, session_id, socketio_manager
+                        evaluation,
+                        "evaluator",
+                        iteration,
+                        session_id,
+                        project_id,
+                        socketio_manager,
                     )
 
                     if evaluation.approved:
@@ -289,6 +295,7 @@ IMPORTANT:
         agent_type: str,
         iteration: int,
         session_id: str,
+        project_id: str,
         socketio_manager,
     ):
         """Stream agent response to frontend via Socket.io"""
@@ -334,22 +341,23 @@ IMPORTANT:
                 )
 
             # Emit first (priority #1 - user sees response immediately)
-            if socketio_manager and session_id:
-                await socketio_manager.emit_to_room(
-                    session_id,
-                    "conversation_message",
-                    {
-                        "agent_type": agent_type,
-                        "iteration": iteration,
-                        "content": content,
-                        "token_usage": token_usage,
-                    },
+            if socketio_manager and session_id and project_id:
+                await socketio_manager.emit_conversation_message(
+                    session_id=session_id,
+                    project_id=project_id,
+                    message_id=f"{session_id}_{iteration}",
+                    role="assistant",
+                    agent=agent_type,
+                    content=content,
+                    patch_preview=None,
+                    iteration=iteration,
+                    token_usage=token_usage if token_usage else None,
                 )
 
             # Database save in background (priority #2)
             asyncio.create_task(
                 self._save_conversation_message_async(
-                    response, agent_type, iteration, session_id
+                    response, agent_type, iteration, session_id, project_id
                 )
             )
 
@@ -357,7 +365,12 @@ IMPORTANT:
             logger.error(f"Error streaming agent response: {e}")
 
     async def _save_conversation_message_async(
-        self, response, agent_type: str, iteration: int, session_id: str
+        self,
+        response,
+        agent_type: str,
+        iteration: int,
+        session_id: str,
+        project_id: str,
     ):
         """Save conversation message to database asynchronously"""
         # This would save to the database - implementation depends on your database models
