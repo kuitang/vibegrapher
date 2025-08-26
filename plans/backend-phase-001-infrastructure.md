@@ -1,3 +1,5 @@
+# DONE as of commit 93bb73a
+
 # Backend Phase 001: Core Infrastructure
 
 ## Objectives
