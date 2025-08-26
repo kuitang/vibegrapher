@@ -1,0 +1,167 @@
+
+> frontend@0.0.0 test
+> vitest --run tests/integration/phase002-persistence.test.tsx
+
+
+ RUN  v3.2.4 /home/kuitang/git/vibegrapher/frontend
+
+stdout | tests/integration/phase002-persistence.test.tsx
+State rehydrated from localStorage
+
+stdout | tests/integration/phase002-persistence.test.tsx > Phase 002: Local State Persistence > rehydrates state from localStorage on initialization
+State rehydrated from localStorage
+
+stdout | tests/integration/phase002-persistence.test.tsx > Phase 002: Local State Persistence > clears stale state after 24 hours
+State rehydrated from localStorage
+
+ ❯ tests/integration/phase002-persistence.test.tsx (10 tests | 6 failed) 6456ms
+   × Phase 002: Local State Persistence > persists selected state fields to localStorage 1063ms
+     → expected undefined to be defined
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div />[39m
+  [36m</body>[39m
+[36m</html>[39m
+   ✓ Phase 002: Local State Persistence > does not persist non-persisted fields 108ms
+   × Phase 002: Local State Persistence > rehydrates state from localStorage on initialization 10ms
+     → expected undefined to be 'session-999' // Object.is equality
+   ✓ Phase 002: Local State Persistence > clears stale state after 24 hours 14ms
+   × Phase 002: Local State Persistence > debounces draft message saving -721575705ms
+     → expected undefined to be 'Hello' // Object.is equality
+   ✓ Phase 002: Local State Persistence > gracefully handles localStorage errors
+   × Phase 002: Local State Persistence > clearPersistedState clears all persisted fields
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   ✓ Phase 002: Local State Persistence > updates lastActiveTime on user actions  721580744ms
+   × Phase 002: Local State Persistence > preserves approval mode preference 110ms
+     → expected undefined to be 'auto' // Object.is equality
+   × Phase 002: Local State Persistence > preserves pending diff IDs but not full diff objects 108ms
+     → expected undefined to deeply equal [ 'diff-1', 'diff-2', 'diff-3' ]
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase002-persistence.test.tsx > Phase 002: Local State Persistence > persists selected state fields to localStorage
+AssertionError: expected undefined to be defined
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div />[39m
+  [36m</body>[39m
+[36m</html>[39m
+ ❯ tests/integration/phase002-persistence.test.tsx:71:32
+     69|     await waitFor(() => {
+     70|       const storedData = JSON.parse(localStorageMock.getItem('vibegrap…
+     71|       expect(storedData.state).toBeDefined()
+       |                                ^
+     72|     })
+     73| 
+ ❯ runWithExpensiveErrorDiagnosticsDisabled node_modules/@testing-library/dom/dist/config.js:47:12
+ ❯ checkCallback node_modules/@testing-library/dom/dist/wait-for.js:124:77
+ ❯ Timeout.checkRealTimersCallback node_modules/@testing-library/dom/dist/wait-for.js:118:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  tests/integration/phase002-persistence.test.tsx > Phase 002: Local State Persistence > rehydrates state from localStorage on initialization
+AssertionError: expected undefined to be 'session-999' // Object.is equality
+
+[32m- Expected:[39m 
+"session-999"
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ tests/integration/phase002-persistence.test.tsx:146:38
+    144|     
+    145|     // Check state was recovered
+    146|     expect(state.currentSession?.id).toBe('session-999')
+       |                                      ^
+    147|     expect(state.draftMessage).toBe('Recovered draft')
+    148|     expect(state.approvalMode).toBe('auto')
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  tests/integration/phase002-persistence.test.tsx > Phase 002: Local State Persistence > debounces draft message saving
+AssertionError: expected undefined to be 'Hello' // Object.is equality
+
+[32m- Expected:[39m 
+"Hello"
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ tests/integration/phase002-persistence.test.tsx:206:44
+    204|     // Now localStorage should be updated
+    205|     const storedData = JSON.parse(localStorageMock.getItem('vibegraphe…
+    206|     expect(storedData.state?.draftMessage).toBe('Hello')
+       |                                            ^
+    207| 
+    208|     vi.useRealTimers()
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  tests/integration/phase002-persistence.test.tsx > Phase 002: Local State Persistence > clearPersistedState clears all persisted fields
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ tests/integration/phase002-persistence.test.tsx:253:3
+    251|   })
+    252| 
+    253|   test('clearPersistedState clears all persisted fields', async () => {
+       |   ^
+    254|     const { result } = renderHook(() => useAppStore())
+    255|     
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  tests/integration/phase002-persistence.test.tsx > Phase 002: Local State Persistence > preserves approval mode preference
+AssertionError: expected undefined to be 'auto' // Object.is equality
+
+[32m- Expected:[39m 
+"auto"
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ tests/integration/phase002-persistence.test.tsx:323:44
+    321|     // Check it's persisted
+    322|     const storedData = JSON.parse(localStorageMock.getItem('vibegraphe…
+    323|     expect(storedData.state?.approvalMode).toBe('auto')
+       |                                            ^
+    324|   })
+    325| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  tests/integration/phase002-persistence.test.tsx > Phase 002: Local State Persistence > preserves pending diff IDs but not full diff objects
+AssertionError: expected undefined to deeply equal [ 'diff-1', 'diff-2', 'diff-3' ]
+
+[32m- Expected:[39m 
+[
+  "diff-1",
+  "diff-2",
+  "diff-3",
+]
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ tests/integration/phase002-persistence.test.tsx:351:46
+    349|     // Check localStorage
+    350|     const storedData = JSON.parse(localStorageMock.getItem('vibegraphe…
+    351|     expect(storedData.state?.pendingDiffIds).toEqual(['diff-1', 'diff-…
+       |                                              ^
+    352|     expect(storedData.state?.pendingDiffs).toBeUndefined()
+    353|   })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  6 failed | 4 passed (10)
+   Start at  01:55:55
+   Duration  8.73s (transform 272ms, setup 170ms, collect 358ms, tests 6.46s, environment 842ms, prepare 388ms)
+

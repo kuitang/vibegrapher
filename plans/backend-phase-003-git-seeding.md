@@ -1,3 +1,5 @@
+# DONE as of commit 0882337
+
 # Backend Phase 003: Git Service & Database Seeding
 
 ## Objectives

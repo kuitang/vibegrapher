@@ -1,0 +1,172 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - heading "Vibegrapher" [level=1] [ref=e5]
+    - generic [ref=e6]:
+      - generic [ref=e7]: Dark Mode
+      - switch "Toggle dark mode" [ref=e8] [cursor=pointer]
+  - main [ref=e9]:
+    - generic [ref=e10]:
+      - heading "Projects" [level=1] [ref=e11]
+      - generic [ref=e12]:
+        - heading "Create New Project" [level=3] [ref=e14]
+        - generic [ref=e16]:
+          - textbox "Project name" [ref=e17]
+          - button "Create" [active] [ref=e18] [cursor=pointer]
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e22]:
+            - heading "Test Project 1756172819478" [level=3] [ref=e23]
+            - generic [ref=e24]:
+              - link "Open" [ref=e25] [cursor=pointer]:
+                - /url: /project/0a541aed-a8ef-4710-bbf0-be052b7f7395
+                - button "Open" [ref=e26] [cursor=pointer]
+              - button "Delete" [ref=e27] [cursor=pointer]
+          - paragraph [ref=e29]: "Created: 8/26/2025"
+        - generic [ref=e30]:
+          - generic [ref=e32]:
+            - heading "abcd" [level=3] [ref=e33]
+            - generic [ref=e34]:
+              - link "Open" [ref=e35] [cursor=pointer]:
+                - /url: /project/77151033-779b-4a53-b221-e8109170231a
+                - button "Open" [ref=e36] [cursor=pointer]
+              - button "Delete" [ref=e37] [cursor=pointer]
+          - paragraph [ref=e39]: "Created: 8/26/2025"
+        - generic [ref=e40]:
+          - generic [ref=e42]:
+            - heading "ffff" [level=3] [ref=e43]
+            - generic [ref=e44]:
+              - link "Open" [ref=e45] [cursor=pointer]:
+                - /url: /project/64290f61-5294-4454-ad7c-1c16bc702439
+                - button "Open" [ref=e46] [cursor=pointer]
+              - button "Delete" [ref=e47] [cursor=pointer]
+          - paragraph [ref=e49]: "Created: 8/26/2025"
+        - generic [ref=e50]:
+          - generic [ref=e52]:
+            - heading "Test Create Button" [level=3] [ref=e53]
+            - generic [ref=e54]:
+              - link "Open" [ref=e55] [cursor=pointer]:
+                - /url: /project/7495e8cc-1f8f-4ef0-a232-2b29ca228ded
+                - button "Open" [ref=e56] [cursor=pointer]
+              - button "Delete" [ref=e57] [cursor=pointer]
+          - paragraph [ref=e59]: "Created: 8/26/2025"
+        - generic [ref=e60]:
+          - generic [ref=e62]:
+            - heading "abdcd" [level=3] [ref=e63]
+            - generic [ref=e64]:
+              - link "Open" [ref=e65] [cursor=pointer]:
+                - /url: /project/6ca92c5e-02bd-4297-8b31-5fe075d45dc4
+                - button "Open" [ref=e66] [cursor=pointer]
+              - button "Delete" [ref=e67] [cursor=pointer]
+          - paragraph [ref=e69]: "Created: 8/26/2025"
+        - generic [ref=e70]:
+          - generic [ref=e72]:
+            - heading "hihihi" [level=3] [ref=e73]
+            - generic [ref=e74]:
+              - link "Open" [ref=e75] [cursor=pointer]:
+                - /url: /project/ff28d9ab-aa0d-401b-a0b1-d9b5647ca88d
+                - button "Open" [ref=e76] [cursor=pointer]
+              - button "Delete" [ref=e77] [cursor=pointer]
+          - paragraph [ref=e79]: "Created: 8/26/2025"
+        - generic [ref=e80]:
+          - generic [ref=e82]:
+            - heading "hihi" [level=3] [ref=e83]
+            - generic [ref=e84]:
+              - link "Open" [ref=e85] [cursor=pointer]:
+                - /url: /project/81d998a0-9676-452a-89b1-15f43cbdd052
+                - button "Open" [ref=e86] [cursor=pointer]
+              - button "Delete" [ref=e87] [cursor=pointer]
+          - paragraph [ref=e89]: "Created: 8/26/2025"
+        - generic [ref=e90]:
+          - generic [ref=e92]:
+            - heading "Navigation Test 1756171580790" [level=3] [ref=e93]
+            - generic [ref=e94]:
+              - link "Open" [ref=e95] [cursor=pointer]:
+                - /url: /project/59661b55-f2af-4f89-b07a-4b20016d0d7b
+                - button "Open" [ref=e96] [cursor=pointer]
+              - button "Delete" [ref=e97] [cursor=pointer]
+          - paragraph [ref=e99]: "Created: 8/26/2025"
+        - generic [ref=e100]:
+          - generic [ref=e102]:
+            - heading "Delete Test 1756171529310" [level=3] [ref=e103]
+            - generic [ref=e104]:
+              - link "Open" [ref=e105] [cursor=pointer]:
+                - /url: /project/2cf7285e-97dd-4cff-a072-f9ed088dcecf
+                - button "Open" [ref=e106] [cursor=pointer]
+              - button "Delete" [ref=e107] [cursor=pointer]
+          - paragraph [ref=e109]: "Created: 8/26/2025"
+        - generic [ref=e110]:
+          - generic [ref=e112]:
+            - heading "Cleanup Test" [level=3] [ref=e113]
+            - generic [ref=e114]:
+              - link "Open" [ref=e115] [cursor=pointer]:
+                - /url: /project/21e3dbcc-05ff-4aff-9fb7-554129c893f2
+                - button "Open" [ref=e116] [cursor=pointer]
+              - button "Delete" [ref=e117] [cursor=pointer]
+          - paragraph [ref=e119]: "Created: 8/26/2025"
+        - generic [ref=e120]:
+          - generic [ref=e122]:
+            - heading "Multi-client Test" [level=3] [ref=e123]
+            - generic [ref=e124]:
+              - link "Open" [ref=e125] [cursor=pointer]:
+                - /url: /project/7bc5c3c8-d7da-408d-8580-267656efdae2
+                - button "Open" [ref=e126] [cursor=pointer]
+              - button "Delete" [ref=e127] [cursor=pointer]
+          - paragraph [ref=e129]: "Created: 8/26/2025"
+        - generic [ref=e130]:
+          - generic [ref=e132]:
+            - heading "Socket Test Project" [level=3] [ref=e133]
+            - generic [ref=e134]:
+              - link "Open" [ref=e135] [cursor=pointer]:
+                - /url: /project/b670f106-d9b1-415a-b922-4e810aaf05fe
+                - button "Open" [ref=e136] [cursor=pointer]
+              - button "Delete" [ref=e137] [cursor=pointer]
+          - paragraph [ref=e139]: "Created: 8/26/2025"
+        - generic [ref=e140]:
+          - generic [ref=e142]:
+            - heading "Cleanup Test" [level=3] [ref=e143]
+            - generic [ref=e144]:
+              - link "Open" [ref=e145] [cursor=pointer]:
+                - /url: /project/f7e2a57c-97a9-4b75-8a4f-f4856cc28991
+                - button "Open" [ref=e146] [cursor=pointer]
+              - button "Delete" [ref=e147] [cursor=pointer]
+          - paragraph [ref=e149]: "Created: 8/26/2025"
+        - generic [ref=e150]:
+          - generic [ref=e152]:
+            - heading "Multi-client Test" [level=3] [ref=e153]
+            - generic [ref=e154]:
+              - link "Open" [ref=e155] [cursor=pointer]:
+                - /url: /project/f51dffe7-263a-4afb-94bd-eb72fc2e198b
+                - button "Open" [ref=e156] [cursor=pointer]
+              - button "Delete" [ref=e157] [cursor=pointer]
+          - paragraph [ref=e159]: "Created: 8/26/2025"
+        - generic [ref=e160]:
+          - generic [ref=e162]:
+            - heading "Socket Test Project" [level=3] [ref=e163]
+            - generic [ref=e164]:
+              - link "Open" [ref=e165] [cursor=pointer]:
+                - /url: /project/650f6a50-e798-4bf5-a97d-e51ee31d9581
+                - button "Open" [ref=e166] [cursor=pointer]
+              - button "Delete" [ref=e167] [cursor=pointer]
+          - paragraph [ref=e169]: "Created: 8/26/2025"
+        - generic [ref=e170]:
+          - generic [ref=e172]:
+            - heading "Socket Test Project" [level=3] [ref=e173]
+            - generic [ref=e174]:
+              - link "Open" [ref=e175] [cursor=pointer]:
+                - /url: /project/73c1f797-953c-4ba4-8770-5dc60b957dd6
+                - button "Open" [ref=e176] [cursor=pointer]
+              - button "Delete" [ref=e177] [cursor=pointer]
+          - paragraph [ref=e179]: "Created: 8/26/2025"
+        - generic [ref=e180]:
+          - generic [ref=e182]:
+            - heading "Test Project" [level=3] [ref=e183]
+            - generic [ref=e184]:
+              - link "Open" [ref=e185] [cursor=pointer]:
+                - /url: /project/10392914-5f97-4c53-8818-801409ffa1ec
+                - button "Open" [ref=e186] [cursor=pointer]
+              - button "Delete" [ref=e187] [cursor=pointer]
+          - paragraph [ref=e189]: "Created: 8/26/2025"
+```

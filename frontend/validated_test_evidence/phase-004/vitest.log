@@ -1,0 +1,346 @@
+
+ RUN  v3.2.4 /home/kuitang/git/vibegrapher/frontend
+
+stdout | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > connects to Socket.io server for project
+[useSocketIO] Connecting to project: test-project-123
+[Socket.io] Connecting to: http://localhost:8000 for project: test-project-123
+
+stderr | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > connects to Socket.io server for project
+An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stdout | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > connects to Socket.io server for project
+[Socket.io] Disconnecting from project: test-project-123
+[useSocketIO] Connection state changed: disconnected
+
+stdout | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > connects to Socket.io server for project
+[useSocketIO] Cleaning up Socket.io connection
+
+stdout | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > handles conversation message events
+[useSocketIO] Connecting to project: test-project
+[Socket.io] Connecting to: http://localhost:8000 for project: test-project
+
+stderr | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > handles conversation message events
+An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stdout | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > handles conversation message events
+[Socket.io] Disconnecting from project: test-project
+[useSocketIO] Connection state changed: disconnected
+
+stdout | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > handles conversation message events
+[useSocketIO] Cleaning up Socket.io connection
+
+stdout | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > handles diff created events
+[useSocketIO] Connecting to project: test-project
+[Socket.io] Connecting to: http://localhost:8000 for project: test-project
+
+stderr | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > handles diff created events
+An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stdout | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > handles diff created events
+[Socket.io] Disconnecting from project: test-project
+[useSocketIO] Connection state changed: disconnected
+
+stdout | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > handles diff created events
+[useSocketIO] Cleaning up Socket.io connection
+
+stdout | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > handles connection state changes
+[useSocketIO] Connecting to project: test-project
+[Socket.io] Connecting to: http://localhost:8000 for project: test-project
+
+stderr | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > handles connection state changes
+An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stdout | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > handles connection state changes
+[Socket.io] Disconnecting from project: test-project
+[useSocketIO] Connection state changed: disconnected
+
+stdout | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > handles connection state changes
+[useSocketIO] Cleaning up Socket.io connection
+
+stdout | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > handles debug iteration events
+[useSocketIO] Connecting to project: test-project
+[Socket.io] Connecting to: http://localhost:8000 for project: test-project
+
+stderr | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > handles debug iteration events
+An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stdout | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > handles debug iteration events
+[Socket.io] Disconnecting from project: test-project
+[useSocketIO] Connection state changed: disconnected
+
+stdout | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > handles debug iteration events
+[useSocketIO] Cleaning up Socket.io connection
+
+stdout | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > logs all messages with session_id
+[useSocketIO] Connecting to project: test-project
+[Socket.io] Connecting to: http://localhost:8000 for project: test-project
+
+stderr | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > logs all messages with session_id
+An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stdout | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > logs all messages with session_id
+[Socket.io] Disconnecting from project: test-project
+[useSocketIO] Connection state changed: disconnected
+
+stdout | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > logs all messages with session_id
+[useSocketIO] Cleaning up Socket.io connection
+
+stdout | tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > disconnects on cleanup
+[useSocketIO] Connecting to project: test-project
+[Socket.io] Connecting to: http://localhost:8000 for project: test-project
+[useSocketIO] Cleaning up Socket.io connection
+[Socket.io] Disconnecting from project: test-project
+
+ ❯ tests/integration/phase004-socketio.test.tsx (7 tests | 2 failed) 142ms
+   ✓ Phase 004: Socket.io Setup > connects to Socket.io server for project 44ms
+   ✓ Phase 004: Socket.io Setup > handles conversation message events 13ms
+   ✓ Phase 004: Socket.io Setup > handles diff created events 10ms
+   × Phase 004: Socket.io Setup > handles connection state changes 22ms
+     → expected 'connecting' to be 'disconnected' // Object.is equality
+   ✓ Phase 004: Socket.io Setup > handles debug iteration events 11ms
+   × Phase 004: Socket.io Setup > logs all messages with session_id 22ms
+     → expected "log" to be called with arguments: [ …(4) ][90m
+
+Received: 
+
+[1m  1st log call:
+
+[22m[2m  [[22m
+[32m-   "[Socket.io] Conversation message:",[90m
+[32m-   {[90m
+[32m-     "agent_type": "evaluator",[90m
+[32m-     "content": {[90m
+[32m-       "approved": true,[90m
+[32m-     },[90m
+[32m-     "iteration": 1,[90m
+[32m-     "session_id": "session-456",[90m
+[32m-     "timestamp": "2025-08-26T02:52:44.109Z",[90m
+[32m-   },[90m
+[32m-   "session_id:",[90m
+[32m-   "session-456",[90m
+[31m+   "[useSocketIO] Connecting to project:",[90m
+[31m+   "test-project",[90m
+[2m  ][22m
+
+[1m  2nd log call:
+
+[22m[2m  [[22m
+[32m-   "[Socket.io] Conversation message:",[90m
+[32m-   {[90m
+[32m-     "agent_type": "evaluator",[90m
+[32m-     "content": {[90m
+[32m-       "approved": true,[90m
+[32m-     },[90m
+[32m-     "iteration": 1,[90m
+[32m-     "session_id": "session-456",[90m
+[32m-     "timestamp": "2025-08-26T02:52:44.109Z",[90m
+[32m-   },[90m
+[32m-   "session_id:",[90m
+[32m-   "session-456",[90m
+[31m+   "[Socket.io] Connecting to:",[90m
+[31m+   "http://localhost:8000",[90m
+[31m+   "for project:",[90m
+[31m+   "test-project",[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m2[22m
+[39m
+   ✓ Phase 004: Socket.io Setup > disconnects on cleanup 14ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > handles connection state changes
+AssertionError: expected 'connecting' to be 'disconnected' // Object.is equality
+
+Expected: [32m"[7mdis[27mconnect[7med[27m"[39m
+Received: [31m"connect[7ming[27m"[39m
+
+ ❯ tests/integration/phase004-socketio.test.tsx:106:44
+    104|     
+    105|     // Initial state
+    106|     expect(result.current.connectionState).toBe('disconnected')
+       |                                            ^
+    107|     expect(result.current.isConnected).toBe(false)
+    108|     
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/integration/phase004-socketio.test.tsx > Phase 004: Socket.io Setup > logs all messages with session_id
+AssertionError: expected "log" to be called with arguments: [ …(4) ][90m
+
+Received: 
+
+[1m  1st log call:
+
+[22m[2m  [[22m
+[32m-   "[Socket.io] Conversation message:",[90m
+[32m-   {[90m
+[32m-     "agent_type": "evaluator",[90m
+[32m-     "content": {[90m
+[32m-       "approved": true,[90m
+[32m-     },[90m
+[32m-     "iteration": 1,[90m
+[32m-     "session_id": "session-456",[90m
+[32m-     "timestamp": "2025-08-26T02:52:44.109Z",[90m
+[32m-   },[90m
+[32m-   "session_id:",[90m
+[32m-   "session-456",[90m
+[31m+   "[useSocketIO] Connecting to project:",[90m
+[31m+   "test-project",[90m
+[2m  ][22m
+
+[1m  2nd log call:
+
+[22m[2m  [[22m
+[32m-   "[Socket.io] Conversation message:",[90m
+[32m-   {[90m
+[32m-     "agent_type": "evaluator",[90m
+[32m-     "content": {[90m
+[32m-       "approved": true,[90m
+[32m-     },[90m
+[32m-     "iteration": 1,[90m
+[32m-     "session_id": "session-456",[90m
+[32m-     "timestamp": "2025-08-26T02:52:44.109Z",[90m
+[32m-   },[90m
+[32m-   "session_id:",[90m
+[32m-   "session-456",[90m
+[31m+   "[Socket.io] Connecting to:",[90m
+[31m+   "http://localhost:8000",[90m
+[31m+   "for project:",[90m
+[31m+   "test-project",[90m
+[2m  ][22m
+[39m[90m
+
+Number of calls: [1m2[22m
+[39m
+ ❯ tests/integration/phase004-socketio.test.tsx:173:24
+    171|     })
+    172|     
+    173|     expect(consoleSpy).toHaveBeenCalledWith(
+       |                        ^
+    174|       '[Socket.io] Conversation message:',
+    175|       testMessage,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 5 passed (7)
+   Start at  02:52:41
+   Duration  2.30s (transform 240ms, setup 179ms, collect 282ms, tests 142ms, environment 799ms, prepare 381ms)
+

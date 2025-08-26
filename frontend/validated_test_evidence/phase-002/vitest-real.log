@@ -1,0 +1,52 @@
+
+> frontend@0.0.0 test
+> vitest --run tests/integration/phase002-persistence-real.test.tsx
+
+
+ RUN  v3.2.4 /home/kuitang/git/vibegrapher/frontend
+
+stdout | tests/integration/phase002-persistence-real.test.tsx
+State rehydrated from localStorage
+
+stdout | tests/integration/phase002-persistence-real.test.tsx > Phase 002: Local State Persistence (Real localStorage) > rehydrates from real localStorage on store creation
+State rehydrated from localStorage
+
+stdout | tests/integration/phase002-persistence-real.test.tsx > Phase 002: Local State Persistence (Real localStorage) > clears stale state older than 24 hours
+State rehydrated from localStorage
+Clearing stale state (>24 hours old)
+
+ ❯ tests/integration/phase002-persistence-real.test.tsx (5 tests | 1 failed) 69ms
+   ✓ Phase 002: Local State Persistence (Real localStorage) > persists and retrieves state from real localStorage 33ms
+   × Phase 002: Local State Persistence (Real localStorage) > rehydrates from real localStorage on store creation 15ms
+     → expected undefined to be 'hydrate-test' // Object.is equality
+   ✓ Phase 002: Local State Persistence (Real localStorage) > clearPersistedState removes data from localStorage 8ms
+   ✓ Phase 002: Local State Persistence (Real localStorage) > does not persist non-persisted fields 7ms
+   ✓ Phase 002: Local State Persistence (Real localStorage) > clears stale state older than 24 hours 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/phase002-persistence-real.test.tsx > Phase 002: Local State Persistence (Real localStorage) > rehydrates from real localStorage on store creation
+AssertionError: expected undefined to be 'hydrate-test' // Object.is equality
+
+[32m- Expected:[39m 
+"hydrate-test"
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ tests/integration/phase002-persistence-real.test.tsx:87:38
+     85|     // Check the state was restored
+     86|     const state = useAppStore.getState()
+     87|     expect(state.currentSession?.id).toBe('hydrate-test')
+       |                                      ^
+     88|     expect(state.draftMessage).toBe('Hydrated message')
+     89|     expect(state.approvalMode).toBe('auto')
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 4 passed (5)
+   Start at  02:10:25
+   Duration  2.07s (transform 168ms, setup 172ms, collect 246ms, tests 69ms, environment 804ms, prepare 207ms)
+

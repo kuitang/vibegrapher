@@ -1,0 +1,246 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.2, pytest-8.3.4, pluggy-1.6.0 -- /home/kuitang/git/vibegrapher/backend/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/kuitang/git/vibegrapher/backend
+configfile: pyproject.toml
+plugins: cov-6.0.0, asyncio-0.25.2, anyio-4.10.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function
+collecting ... collected 1 item
+
+tests/integration/test_phase_004_agents.py::test_vibecode_patch_submission Starting isolated test server:
+  Database: /tmp/test_vibegrapher_53ef673e.db
+  Port: 33477
+  Media: /tmp/test_media_53ef673e
+
+-------------------------------- live log setup --------------------------------
+INFO     app.services.git_service:git_service.py:40 Created git repository at media/projects/agent-triage-system
+INFO     app.services.git_service:git_service.py:141 Created commit 3d3c461e0578b4ccd8318c66988dca3e2e61d698 for project agent-triage-system
+Database reset and seeded successfully at: sqlite:////tmp/test_vibegrapher_53ef673e.db
+Created project 'Agent Triage System' with git repository
+Repository path: media/projects/agent-triage-system
+Initial commit: 3d3c461e0578b4ccd8318c66988dca3e2e61d698
+Created 2 test cases (1 regular, 1 quick test)
+INFO     app.main:main.py:36 Database initialized
+INFO     app.services.socketio_service:socketio_service.py:161 Heartbeat task started
+INFO     app.main:main.py:39 Socket.io heartbeat started
+INFO     httpx:_client.py:1025 HTTP Request: GET http://127.0.0.1:33477/health "HTTP/1.1 200 OK"
+INFO     app.services.git_service:git_service.py:40 Created git repository at /tmp/test_media_53ef673e/projects/test-agent-project
+Test server ready at http://127.0.0.1:33477
+-------------------------------- live log call ---------------------------------
+INFO     httpx:_client.py:1740 HTTP Request: POST http://127.0.0.1:33477/projects "HTTP/1.1 201 Created"
+INFO     app.api.sessions:sessions.py:57 Created session c3b5d03d-62d7-4c31-8a1e-5c026a8558c8 for project 99bb1469-2dee-4968-8cbe-14b46f4aa3da
+INFO     httpx:_client.py:1740 HTTP Request: POST http://127.0.0.1:33477/projects/99bb1469-2dee-4968-8cbe-14b46f4aa3da/sessions "HTTP/1.1 201 Created"
+INFO     app.api.sessions:sessions.py:98 Running vibecode for session c3b5d03d-62d7-4c31-8a1e-5c026a8558c8 with prompt: Add a comment at the top saying '# Modified by AI'
+INFO     app.services.vibecode_service:vibecode_service.py:86 Running VibeCoder iteration 1
+INFO     httpx:_client.py:1025 HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+INFO     httpx:_client.py:1740 HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 OK"
+INFO     app.agents.all_agents:all_agents.py:140 submit_patch called with description: Create script.py and add the comment '# Modified by AI' as the first line.
+INFO     httpx:_client.py:1740 HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 OK"
+INFO     app.services.vibecode_service:vibecode_service.py:118 VibeCoder response: RunResult:
+- Last agent: Agent(name="Vibecoder", ...)
+- Final output (str):
+    The patch has been submitted to create script.py with the requested comment at the top.
+- 4 new item(s)
+- 2 raw response(s)
+- 0 input guardrail result(s)
+- 0 output guardrail result(s)
+(See `RunResult` for more details)
+INFO     app.services.socketio_service:socketio_service.py:75 Emitted conversation_message to project room 99bb1469-2dee-4968-8cbe-14b46f4aa3da
+INFO     app.services.vibecode_service:vibecode_service.py:359 Streamed vibecoder response for iteration 0
+INFO     app.services.vibecode_service:vibecode_service.py:135 Found 4 new items
+INFO     app.services.vibecode_service:vibecode_service.py:140 Found tool call output: {'status': 'patch_submitted', 'patch': 'diff --git a/script.py b/script.py\nnew file mode 100644\nindex 0000000..1234567\n--- /dev/null\n+++ script.py\n@@ -0,0 +1,1 @@\n+# Modified by AI', 'description': "Create script.py and add the comment '# Modified by AI' as the first line."}
+INFO     app.services.vibecode_service:vibecode_service.py:146 Found patch submission: Create script.py and add the comment '# Modified by AI' as the first line.
+INFO     app.services.git_service:git_service.py:206 Created new file /tmp/test_media_53ef673e/projects/test-agent-project/script.py with diff content
+WARNING  app.services.git_service:git_service.py:49 Code file not found at /tmp/test_media_53ef673e/projects/test-agent-project/agents.py
+INFO     app.services.vibecode_service:vibecode_service.py:182 Running Evaluator for iteration 1
+INFO     app.services.vibecode_service:vibecode_service.py:183 Patch to evaluate: diff --git a/script.py b/script.py
+new file mode 100644
+index 0000000..1234567
+--- /dev/null
++++ script.py
+@@ -0,0 +1,1 @@
++# Modified by AI...
+ERROR    app.services.vibecode_service:vibecode_service.py:389 Error saving conversation message: Object of type RunResult is not JSON serializable
+INFO     httpx:_client.py:1025 HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+INFO     httpx:_client.py:1740 HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 OK"
+INFO     app.services.vibecode_service:vibecode_service.py:241 Evaluator response: approved=False, reasoning=No evaluation result
+INFO     app.services.socketio_service:socketio_service.py:75 Emitted conversation_message to project room 99bb1469-2dee-4968-8cbe-14b46f4aa3da
+INFO     app.services.vibecode_service:vibecode_service.py:359 Streamed evaluator response for iteration 0
+INFO     app.services.vibecode_service:vibecode_service.py:311 Patch rejected, iterating with feedback
+INFO     app.services.vibecode_service:vibecode_service.py:86 Running VibeCoder iteration 2
+INFO     httpx:_client.py:1025 HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+INFO     httpx:_client.py:1740 HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 OK"
+INFO     app.agents.all_agents:all_agents.py:140 submit_patch called with description: Create script.py and add the comment '# Modified by AI' as the first line.
+INFO     app.services.socketio_service:socketio_service.py:158 Heartbeat sent: 0 connections
+INFO     httpx:_client.py:1025 HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+INFO     httpx:_client.py:1740 HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 OK"
+INFO     app.services.vibecode_service:vibecode_service.py:118 VibeCoder response: RunResult:
+- Last agent: Agent(name="Vibecoder", ...)
+- Final output (str):
+    The patch has been submitted to create script.py with the requested comment at the top.
+- 4 new item(s)
+- 2 raw response(s)
+- 0 input guardrail result(s)
+- 0 output guardrail result(s)
+(See `RunResult` for more details)
+INFO     app.services.socketio_service:socketio_service.py:75 Emitted conversation_message to project room 99bb1469-2dee-4968-8cbe-14b46f4aa3da
+INFO     app.services.vibecode_service:vibecode_service.py:359 Streamed vibecoder response for iteration 1
+INFO     app.services.vibecode_service:vibecode_service.py:135 Found 4 new items
+INFO     app.services.vibecode_service:vibecode_service.py:140 Found tool call output: {'status': 'patch_submitted', 'patch': 'diff --git a/script.py b/script.py\nnew file mode 100644\nindex 0000000..1234567\n--- /dev/null\n+++ script.py\n@@ -0,0 +1,1 @@\n+# Modified by AI', 'description': "Create script.py and add the comment '# Modified by AI' as the first line."}
+INFO     app.services.vibecode_service:vibecode_service.py:146 Found patch submission: Create script.py and add the comment '# Modified by AI' as the first line.
+INFO     app.services.git_service:git_service.py:206 Created new file /tmp/test_media_53ef673e/projects/test-agent-project/script.py with diff content
+WARNING  app.services.git_service:git_service.py:49 Code file not found at /tmp/test_media_53ef673e/projects/test-agent-project/agents.py
+INFO     app.services.vibecode_service:vibecode_service.py:182 Running Evaluator for iteration 2
+INFO     app.services.vibecode_service:vibecode_service.py:183 Patch to evaluate: diff --git a/script.py b/script.py
+new file mode 100644
+index 0000000..1234567
+--- /dev/null
++++ script.py
+@@ -0,0 +1,1 @@
++# Modified by AI...
+ERROR    app.services.vibecode_service:vibecode_service.py:389 Error saving conversation message: Object of type RunResult is not JSON serializable
+INFO     httpx:_client.py:1740 HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 OK"
+INFO     app.services.vibecode_service:vibecode_service.py:241 Evaluator response: approved=False, reasoning=No evaluation result
+INFO     app.services.socketio_service:socketio_service.py:75 Emitted conversation_message to project room 99bb1469-2dee-4968-8cbe-14b46f4aa3da
+INFO     app.services.vibecode_service:vibecode_service.py:359 Streamed evaluator response for iteration 1
+INFO     app.services.vibecode_service:vibecode_service.py:311 Patch rejected, iterating with feedback
+INFO     app.services.vibecode_service:vibecode_service.py:86 Running VibeCoder iteration 3
+INFO     httpx:_client.py:1025 HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+INFO     httpx:_client.py:1025 HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+INFO     httpx:_client.py:1740 HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 OK"
+INFO     app.agents.all_agents:all_agents.py:140 submit_patch called with description: Create script.py and add the comment '# Modified by AI' as the first line, following the specified unified diff format.
+INFO     httpx:_client.py:1025 HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+INFO     httpx:_client.py:1740 HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 OK"
+INFO     app.services.vibecode_service:vibecode_service.py:118 VibeCoder response: RunResult:
+- Last agent: Agent(name="Vibecoder", ...)
+- Final output (str):
+    The patch has been submitted to create script.py with the requested comment at the top.
+- 4 new item(s)
+- 2 raw response(s)
+- 0 input guardrail result(s)
+- 0 output guardrail result(s)
+(See `RunResult` for more details)
+INFO     app.services.socketio_service:socketio_service.py:75 Emitted conversation_message to project room 99bb1469-2dee-4968-8cbe-14b46f4aa3da
+INFO     app.services.vibecode_service:vibecode_service.py:359 Streamed vibecoder response for iteration 2
+INFO     app.services.vibecode_service:vibecode_service.py:135 Found 4 new items
+INFO     app.services.vibecode_service:vibecode_service.py:140 Found tool call output: {'status': 'patch_submitted', 'patch': 'diff --git a/script.py b/script.py\nnew file mode 100644\nindex 0000000..1234567\n--- /dev/null\n+++ script.py\n@@ -0,0 +1,1 @@\n+# Modified by AI', 'description': "Create script.py and add the comment '# Modified by AI' as the first line, following the specified unified diff format."}
+INFO     app.services.vibecode_service:vibecode_service.py:146 Found patch submission: Create script.py and add the comment '# Modified by AI' as the first line, following the specified unified diff format.
+INFO     app.services.git_service:git_service.py:206 Created new file /tmp/test_media_53ef673e/projects/test-agent-project/script.py with diff content
+WARNING  app.services.git_service:git_service.py:49 Code file not found at /tmp/test_media_53ef673e/projects/test-agent-project/agents.py
+INFO     app.services.vibecode_service:vibecode_service.py:182 Running Evaluator for iteration 3
+INFO     app.services.vibecode_service:vibecode_service.py:183 Patch to evaluate: diff --git a/script.py b/script.py
+new file mode 100644
+index 0000000..1234567
+--- /dev/null
++++ script.py
+@@ -0,0 +1,1 @@
++# Modified by AI...
+ERROR    app.services.vibecode_service:vibecode_service.py:389 Error saving conversation message: Object of type RunResult is not JSON serializable
+INFO     httpx:_client.py:1740 HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 OK"
+INFO     app.services.vibecode_service:vibecode_service.py:241 Evaluator response: approved=False, reasoning=No evaluation result
+INFO     app.services.socketio_service:socketio_service.py:75 Emitted conversation_message to project room 99bb1469-2dee-4968-8cbe-14b46f4aa3da
+INFO     app.services.vibecode_service:vibecode_service.py:359 Streamed evaluator response for iteration 2
+INFO     app.services.vibecode_service:vibecode_service.py:311 Patch rejected, iterating with feedback
+WARNING  app.services.vibecode_service:vibecode_service.py:321 Max iterations reached without patch approval
+INFO     httpx:_client.py:1740 HTTP Request: POST http://127.0.0.1:33477/sessions/c3b5d03d-62d7-4c31-8a1e-5c026a8558c8/messages "HTTP/1.1 200 OK"
+Running: vibecode with patch prompt
+Result: patch=False, diff_id=None
+Token usage: {'total_tokens': 0}
+Expected: patch should be created
+FAILEDINFO     app.services.socketio_service:socketio_service.py:172 Heartbeat task stopped
+INFO     app.main:main.py:45 Socket.io heartbeat stopped
+Cleaning up test server...
+
+
+=================================== FAILURES ===================================
+________________________ test_vibecode_patch_submission ________________________
+
+test_server = {'media_path': '/tmp/test_media_53ef673e', 'test_id': '53ef673e', 'url': 'http://127.0.0.1:33477'}
+caplog = <_pytest.logging.LogCaptureFixture object at 0xffff89886710>
+
+    @pytest.mark.integration
+    @pytest.mark.asyncio
+    async def test_vibecode_patch_submission(test_server: dict, caplog: Any) -> None:
+        """Test vibecode with patch submission using REAL OpenAI API"""
+    
+        # Set API key for test
+        os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
+        if not os.environ["OPENAI_API_KEY"]:
+            pytest.skip("OPENAI_API_KEY not set")
+    
+        caplog.set_level(logging.INFO)
+    
+        async with httpx.AsyncClient(base_url=test_server["url"], timeout=120.0) as client:
+            # Create project
+            project_resp = await client.post("/projects", json={"name": "Test Agent Project"})
+            assert project_resp.status_code == 201
+            project = project_resp.json()
+    
+            # Create session
+            session_resp = await client.post(f"/projects/{project['id']}/sessions")
+            assert session_resp.status_code == 201
+            session = session_resp.json()
+    
+            # Send vibecode request - simple patch that should succeed
+            message_resp = await client.post(
+                f"/sessions/{session['id']}/messages",
+                json={"prompt": "Add a comment at the top saying '# Modified by AI'"}
+            )
+            assert message_resp.status_code == 200
+            result = message_resp.json()
+    
+            print(f"Running: vibecode with patch prompt")
+            print(f"Result: patch={bool(result.get('patch'))}, diff_id={result.get('diff_id')}")
+            print(f"Token usage: {result.get('token_usage', {})}")
+            print(f"Expected: patch should be created")
+    
+            # Verify response
+>           assert result.get("error") is None, f"Error: {result.get('error')}"
+E           AssertionError: Error: Max iterations reached without approval
+E           assert 'Max iterations reached without approval' is None
+E            +  where 'Max iterations reached without approval' = <built-in method get of dict object at 0xffff896b6c40>('error')
+E            +    where <built-in method get of dict object at 0xffff896b6c40> = {'content': None, 'diff_id': None, 'error': 'Max iterations reached without approval', 'patch': None, ...}.get
+
+tests/integration/test_phase_004_agents.py:74: AssertionError
+------------------------------ Captured log setup ------------------------------
+INFO     app.services.git_service:git_service.py:40 Created git repository at media/projects/agent-triage-system
+INFO     app.services.git_service:git_service.py:141 Created commit 3d3c461e0578b4ccd8318c66988dca3e2e61d698 for project agent-triage-system
+INFO     httpx:_client.py:1025 HTTP Request: GET http://127.0.0.1:33477/health "HTTP/1.1 200 OK"
+------------------------------ Captured log call -------------------------------
+INFO     httpx:_client.py:1740 HTTP Request: POST http://127.0.0.1:33477/projects "HTTP/1.1 201 Created"
+INFO     httpx:_client.py:1740 HTTP Request: POST http://127.0.0.1:33477/projects/99bb1469-2dee-4968-8cbe-14b46f4aa3da/sessions "HTTP/1.1 201 Created"
+INFO     httpx:_client.py:1740 HTTP Request: POST http://127.0.0.1:33477/sessions/c3b5d03d-62d7-4c31-8a1e-5c026a8558c8/messages "HTTP/1.1 200 OK"
+=============================== warnings summary ===============================
+.venv/lib/python3.11/site-packages/pydantic/_internal/_config.py:323
+  /home/kuitang/git/vibegrapher/backend/.venv/lib/python3.11/site-packages/pydantic/_internal/_config.py:323: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+tests/integration/test_phase_004_agents.py:37
+  /home/kuitang/git/vibegrapher/backend/tests/integration/test_phase_004_agents.py:37: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests/integration/test_phase_004_agents.py:94
+  /home/kuitang/git/vibegrapher/backend/tests/integration/test_phase_004_agents.py:94: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests/integration/test_phase_004_agents.py:132
+  /home/kuitang/git/vibegrapher/backend/tests/integration/test_phase_004_agents.py:132: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests/integration/test_phase_004_agents.py:175
+  /home/kuitang/git/vibegrapher/backend/tests/integration/test_phase_004_agents.py:175: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests/integration/test_phase_004_agents.py:234
+  /home/kuitang/git/vibegrapher/backend/tests/integration/test_phase_004_agents.py:234: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests/integration/test_phase_004_agents.py:247
+  /home/kuitang/git/vibegrapher/backend/tests/integration/test_phase_004_agents.py:247: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_phase_004_agents.py::test_vibecode_patch_submission
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+======================== 1 failed, 7 warnings in 54.78s ========================

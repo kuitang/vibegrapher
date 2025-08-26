@@ -1,0 +1,31 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.2, pytest-8.3.4, pluggy-1.6.0 -- /home/kuitang/git/vibegrapher/backend/venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/kuitang/git/vibegrapher/backend
+configfile: pyproject.toml
+plugins: cov-6.0.0, asyncio-0.25.2, anyio-4.10.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function
+collecting ... collected 5 items / 1 deselected / 4 selected
+
+tests/integration/test_phase002_socketio.py::test_socketio_connection PASSED [ 25%]
+tests/integration/test_phase002_socketio.py::test_subscribe_to_project PASSED [ 50%]
+tests/integration/test_phase002_socketio.py::test_multiple_clients_in_room PASSED [ 75%]
+tests/integration/test_phase002_socketio.py::test_disconnection_cleanup PASSED [100%]
+
+=============================== warnings summary ===============================
+venv/lib/python3.11/site-packages/pydantic/_internal/_config.py:295
+  /home/kuitang/git/vibegrapher/backend/venv/lib/python3.11/site-packages/pydantic/_internal/_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+tests/integration/test_phase002_socketio.py::test_socketio_connection
+tests/integration/test_phase002_socketio.py::test_subscribe_to_project
+tests/integration/test_phase002_socketio.py::test_multiple_clients_in_room
+tests/integration/test_phase002_socketio.py::test_multiple_clients_in_room
+tests/integration/test_phase002_socketio.py::test_disconnection_cleanup
+tests/integration/test_phase002_socketio.py::test_disconnection_cleanup
+tests/integration/test_phase002_socketio.py::test_disconnection_cleanup
+  /home/kuitang/git/vibegrapher/backend/venv/lib/python3.11/site-packages/engineio/async_client.py:339: DeprecationWarning: parameter 'timeout' of type 'float' is deprecated, please use 'timeout=ClientWSTimeout(ws_close=...)'
+    ws = await self.http.ws_connect(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================= 4 passed, 1 deselected, 8 warnings in 8.95s ==================

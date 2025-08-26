@@ -1,0 +1,16 @@
+
+> frontend@0.0.0 test
+> vitest tests/integration/phase001-layout-real.test.tsx --run
+
+
+ RUN  v3.2.4 /home/kuitang/git/vibegrapher/frontend
+
+ ✓ tests/integration/phase001-layout-real.test.tsx (6 tests) 1031ms
+   ✓ Phase 001: Layout with Real Backend > HomePage with Real Backend > should fetch and display real projects from backend  412ms
+   ✓ Phase 001: Layout with Real Backend > HomePage with Real Backend > should create a real project via backend API  352ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  01:30:39
+   Duration  2.98s (transform 273ms, setup 141ms, collect 555ms, tests 1.03s, environment 724ms, prepare 122ms)
+

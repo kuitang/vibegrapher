@@ -1,3 +1,5 @@
+# DONE as of commit 7ce5d10
+
 # Frontend Phase 001: Core Layout with shadcn
 
 ## ⚠️ BACKEND DEPENDENCY CHECK

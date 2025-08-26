@@ -1,0 +1,18 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.2, pytest-8.3.4, pluggy-1.6.0 -- /home/kuitang/git/vibegrapher/backend/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/kuitang/git/vibegrapher/backend
+configfile: pyproject.toml
+plugins: cov-6.0.0, asyncio-0.25.2, anyio-4.10.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function
+collecting ... collected 6 items
+
+tests/integration/test_phase_004_agents.py::test_vibecode_patch_submission Starting isolated test server:
+  Database: /tmp/test_vibegrapher_a61391d4.db
+  Port: 59171
+  Media: /tmp/test_media_a61391d4
+Database reset and seeded successfully at: sqlite:////tmp/test_vibegrapher_a61391d4.db
+Created project 'Agent Triage System' with git repository
+Repository path: media/projects/agent-triage-system
+Initial commit: 75a23c7b45e488932ba5d09a8acae0c1148093de
+Created 2 test cases (1 regular, 1 quick test)

@@ -1,3 +1,9 @@
 .venv/*
 openai-agents-python/*
 openai-agents-python/
+backend/media/projects/
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.db
+*.pyc
