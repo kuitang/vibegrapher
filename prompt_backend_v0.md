@@ -67,9 +67,22 @@ backend/
 - If you are unsure about a model or API definition, read `spec_datamodel_v0.md`
 
 ### Testing Strategy (pytest + httpx)
+
+**CRITICAL: Isolated Test Environment**
+```python
+# backend/tests/conftest.py - Each test suite gets isolated server
+@pytest.fixture
+async def test_server():
+    db_file = tempfile.NamedTemporaryFile(suffix='.db', delete=False)
+    server = await start_test_server(db_file.name, port=0)  # Random port
+    await run_management_command('reset_db', db_file.name)
+    yield server.url
+    await server.stop()
+    Path(db_file.name).unlink()
+```
 - **PRIMARY**: Integration tests using httpx AsyncClient
-- **Test Database**: Use separate `test_vibegrapher.db` for tests
-- **Setup**: Run database reset command before each test suite
+- **Test Database**: Use tempfile for isolated database per test suite
+- **Setup**: Start NEW backend server instance (not the dev server)
 - **MINIMAL**: Unit tests only for:
   - Git operations (pygit2)
   - Sandbox isolation
@@ -132,8 +145,9 @@ See `plans/backend-phase-*.md` for detailed requirements:
 
 ## Quality Checklist
 
-Before EVERY commit:
+Before EVERY commit (run in this exact order):
 - [ ] Working from project root directory (check with `pwd`)
+- [ ] Code formatting: `isort backend/ --float-to-top && black backend/ && flake8 backend/`
 - [ ] Type checking passes (`mypy backend/app/`)
 - [ ] Tests pass with logs visible (`pytest backend/tests -s --log-cli-level=INFO`)
 - [ ] OpenAI token usage visible in test output

@@ -14,7 +14,7 @@ Build sandboxed test execution with resource limits.
 - ✅ Malicious code cannot escape sandbox
 - ✅ Resource limits enforced (timeout, memory)
 - ✅ Test results include stdout, stderr, exit code
-- ✅ trace_id returned for test runs
+- ✅ test_id returned for test runs
 
 ## Integration Test Script (httpx)
 ```python
@@ -85,7 +85,7 @@ async def test_successful_test_run():
         
         result = await client.post(f"/tests/{test.json()['id']}/run")
         assert result.json()["status"] == "passed"
-        assert result.json()["trace_id"] is not None
+        assert result.json()["test_id"] is not None
 ```
 
 ## Unit Tests (minimal, focused)

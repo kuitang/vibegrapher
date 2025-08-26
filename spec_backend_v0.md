@@ -103,6 +103,29 @@ async def run_vibecode_process(session_id, project_id, prompt, current_code, nod
 ```
 
 
+## Code Style Guidelines
+```bash
+# CRITICAL: Run before EVERY commit (in this exact order):
+isort backend/ --float-to-top  # Sort imports, float all to top of file
+black backend/                   # Format code
+flake8 backend/                  # Check style violations
+
+# Configure in pyproject.toml:
+[tool.isort]
+profile = "black"
+line_length = 88
+float_to_top = true
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+
+# Configure in .flake8:
+[flake8]
+max-line-length = 88
+extend-ignore = E203, W503
+```
+
 ## Configuration
 ```python
 # Settings loaded from .env:
@@ -150,6 +173,16 @@ except SpecificError as e:
 ```
 
 ## Testing
+
+### Server Integration Test Framework
+**CRITICAL: Tests MUST use isolated environment to avoid interfering with development server:**
+1. **Isolated Server**: Start NEW backend instance for each test suite (not the dev server)
+2. **Temp Database**: Use `tempfile.NamedTemporaryFile(suffix='.db')` for test database
+3. **Clean State**: Run `reset_db` management command before tests
+4. **Random Port**: Use `port=0` to get random available port
+5. **Cleanup**: Stop server and delete temp database after tests
+
+### Test Requirements
 - Integration tests: vibecode flow with real OpenAI calls
 - Test output style: minimal, factual (no emojis/checkmarks)
 - Print: command run, actual result, expected result

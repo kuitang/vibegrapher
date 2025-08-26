@@ -80,14 +80,19 @@ interface CodeViewerProps {
 ```typescript
 // Zustand store with localStorage persistence
 interface AppState {
-  // ALL STATE PERSISTED to localStorage for complete recovery
-  project: Project | null;
-  currentSession: VibecodeSession | null;
-  messages: ConversationMessage[];
-  pendingDiffs: Diff[];
-  currentReviewDiff: Diff | null;
-  draftMessage: string;
-  lastActiveTime: number;
+  // CRITICAL: Selective persistence to avoid stale data issues
+  // Persisted fields (survive page refresh):
+  currentSession: VibecodeSession | null;  // Session metadata only
+  currentReviewDiff: Diff | null;          // For modal recovery
+  pendingDiffIds: string[];                // IDs only, refetch data
+  draftMessage: string;                    // Prevent data loss
+  lastActiveTime: number;                  // For stale detection
+  approvalMode: 'auto' | 'manual';        // User preference
+  
+  // Non-persisted fields (refetch from server):
+  project: Project | null;                 // Always fresh from server
+  messages: ConversationMessage[];         // From SQLiteSession on backend
+  pendingDiffs: Diff[];                    // Full objects fetched via IDs
   
   actions: {
     // Standard actions...
@@ -95,7 +100,7 @@ interface AppState {
 }
 
 // Uses Zustand persist middleware with:
-// - ALL state persisted for complete page refresh recovery
+// - Selective persistence via partialize function
 // - 24-hour stale state cleanup
 // - version: 1 for future migrations
 // - Synchronous localStorage (instant recovery)
@@ -182,14 +187,21 @@ class WebSocketService {
 
 **CRITICAL: Understand the Vibecoder Workflow (see spec_datamodel_v0.md section "Vibecoder Interactive Workflow")**
 
+**REAL-TIME MESSAGE STREAMING (Priority #1):**
+- Backend streams EVERY AI response immediately via `conversation_message` Socket.io events
+- Frontend displays each message as soon as received (no batching)
+- Shows: VibeCoder attempts, Evaluator feedback, iteration count, token usage
+- Database saves happen asynchronously in background (don't block streaming)
+
 1. User opens project → Check for pending diffs
 2. User clicks "Start Session" (or "Start Node Session")
 3. Frontend calls POST /projects/{id}/sessions
 4. Store session ID in state
-5. User sends messages via POST /sessions/{id}/messages
+5. User sends messages via POST /sessions/{id}/messages (returns immediately)
 6. VibeCoder → Evaluator loop runs (backend, max 3 iterations)
-   - Listen for "evaluator_feedback" Socket.io events during iterations
-   - Display feedback to user in real-time
+   - Listen for `conversation_message` events for ALL agent responses
+   - Display each response immediately as received
+   - Show agent type (VibeCoder/Evaluator) and iteration number
 7. If max iterations reached:
    - Display error with evaluator's final feedback
    - User can send new message to continue (VibeCoder maintains context)
@@ -246,8 +258,17 @@ class WebSocketService {
 
 ## Testing
 
+### Test Framework Requirements
+**CRITICAL: Tests MUST use real backend (NO mocking):**
+1. **Backend Required**: Backend must be running before tests start
+2. **Health Check**: Tests should verify backend connectivity first
+3. **Test Isolation**: Each test suite should use unique project IDs
+4. **Cleanup**: Delete test projects after completion
+5. **Real OpenAI**: Tests will trigger real OpenAI API calls
+
+### Test Strategy
 - **MCP Manual Testing First**: See `prompt_frontend_v0.md` for required Playwright MCP exploration workflow
-- Playwright for E2E (must hit real backend)
+- Playwright for E2E (must hit real backend, HEADLESS mode)
 - Component tests with React Testing Library (real backend)
-- Backend must be running or tests fail immediately
+- MSW only for mocking Socket.io events in integration tests
 - Validated test evidence after each phase

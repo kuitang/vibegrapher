@@ -15,7 +15,7 @@ Implement diff viewer with shadcn components for patch review.
 2. Tabs for unified/split view
 3. Button variants (success/destructive) for Accept/Reject
 4. AlertDialog for confirmation
-5. Tooltip showing trace_id
+5. Tooltip showing session info
 
 ## Acceptance Criteria
 - ✅ Diff viewer appears when patch received
@@ -23,7 +23,7 @@ Implement diff viewer with shadcn components for patch review.
 - ✅ Accept Button (green) applies changes
 - ✅ Reject Button (red) dismisses diff
 - ✅ AlertDialog confirms before accepting
-- ✅ Tooltip shows trace_id on hover
+- ✅ Tooltip shows session_id on hover
 - ✅ Code view updates after accept
 
 ## Integration Tests (Vitest + MSW)
@@ -44,7 +44,7 @@ describe('Phase 007: Diff Viewer', () => {
         original="old code"
         proposed="new code"
         patch="--- old\n+++ new"
-        traceId="trace-123"
+        sessionId="session-123"
         onAccept={onAccept}
         onReject={onReject}
       />
@@ -73,11 +73,11 @@ describe('Phase 007: Diff Viewer', () => {
     await user.click(confirmBtn)
     expect(onAccept).toHaveBeenCalled()
     
-    // Test trace_id tooltip
-    const traceInfo = screen.getByTestId('trace-info')
-    await user.hover(traceInfo)
+    // Test session_id tooltip
+    const sessionInfo = screen.getByTestId('session-info')
+    await user.hover(sessionInfo)
     await waitFor(() => {
-      expect(screen.getByText('trace-123')).toBeVisible()
+      expect(screen.getByText('session-123')).toBeVisible()
     })
   })
 })
@@ -98,7 +98,7 @@ test.describe('Phase 007: Diff Viewer E2E', () => {
         detail: {
           type: 'vibecode_response',
           patch: '--- old\n+++ new\n@@ -1 +1 @@\n-old code\n+new code',
-          trace_id: 'trace-123'
+          session_id: 'session-123'
         }
       }))
     })

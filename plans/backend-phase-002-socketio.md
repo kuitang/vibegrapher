@@ -22,7 +22,7 @@ Provide early so frontend can connect and develop in parallel.
 
 ## Integration Test Script (httpx + python-socketio client)
 ```python
-# tests/integration/test_phase_006_socketio.py
+# backend/tests/integration/test_phase_002_socketio.py
 import httpx
 import socketio
 import json
@@ -60,7 +60,7 @@ async def test_socketio_broadcast():
         
         assert msg1["type"] == "vibecode_response"
         assert msg1["patch"] is not None
-        assert msg1["trace_id"] == response.json()["trace_id"]
+        assert msg1["session_id"] == session_id
         assert msg1["token_usage"] is not None  # Verify REAL usage data
         
         assert msg2 == msg1  # Both clients get same message
@@ -74,7 +74,7 @@ async def test_test_result_streaming():
     # Connect Socket.io client
     # Start test run async
     # Collect streaming messages until test_completed
-    # Verify got test_started and test_completed events with trace_id
+    # Verify got test_started and test_completed events
 
 async def test_disconnection_handling():
     """Test that disconnected clients are cleaned up"""
@@ -94,5 +94,5 @@ async def test_disconnection_handling():
 ## Deliverables
 - [ ] SocketIOManager in app/services/socketio_service.py
 - [ ] Socket.io event handlers in app/api/socketio_events.py
-- [ ] Integration tests in tests/integration/test_phase_002_socketio.py
+- [ ] Integration tests in backend/tests/integration/test_phase_002_socketio.py
 - [ ] Validation evidence in backend/validated_test_evidence/phase-002/
