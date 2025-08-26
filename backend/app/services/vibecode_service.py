@@ -6,7 +6,6 @@ import asyncio
 import json
 import logging
 import uuid
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -67,17 +66,42 @@ class VibecodeService:
                 "error": None
             }
             
-            # If we have a diff, create it in the database
-            if result.diff_id and result.content:  # content contains commit message
+            # If we have a diff_id marker, create the actual diff in the database
+            if result.diff_id == "generated-diff-id":
+                # Extract patch and commit message from the openai response
+                patch_content = ""
+                commit_message = "Auto-generated commit"
+                evaluator_reasoning = "Approved by evaluator"
+                
+                # Look for the evaluation result in the response
+                if hasattr(result, 'openai_response') and hasattr(result.openai_response, 'new_items'):
+                    for item in result.openai_response.new_items:
+                        # Find the tool call with the patch
+                        if hasattr(item, 'raw_item') and hasattr(item.raw_item, 'arguments'):
+                            import json
+                            try:
+                                args = json.loads(item.raw_item.arguments)
+                                if 'patch' in args:
+                                    patch_content = args['patch']
+                            except:
+                                pass
+                        # Find the evaluation result
+                        if hasattr(item, 'output') and hasattr(item.output, 'commit_message'):
+                            commit_message = item.output.commit_message
+                            evaluator_reasoning = item.output.reasoning
+                
+                # Create the diff
                 diff = Diff(
                     id=str(uuid.uuid4()),
                     project_id=project_id,
                     session_id=session_id,
-                    patch_content="",  # Will be filled from actual patch
-                    commit_message=result.content or "Auto-generated commit",
+                    diff_content=patch_content,  # Note: field is diff_content not patch_content
+                    commit_message=commit_message,
                     status="evaluator_approved",
-                    evaluator_reasoning="Approved by evaluator",
-                    created_at=datetime.utcnow()
+                    evaluator_reasoning=evaluator_reasoning,
+                    base_commit="HEAD",  # Required field
+                    target_branch="main",  # Required field
+                    vibecoder_prompt=prompt  # Required field - the original user prompt
                 )
                 db.add(diff)
                 db.commit()
@@ -85,7 +109,14 @@ class VibecodeService:
             
             # Extract token usage if available
             if hasattr(result, 'openai_response') and result.openai_response:
-                if hasattr(result.openai_response, 'usage'):
+                if hasattr(result.openai_response, 'context_wrapper'):
+                    usage = result.openai_response.context_wrapper.usage
+                    response["token_usage"] = {
+                        "total_tokens": usage.total_tokens if hasattr(usage, 'total_tokens') else 0,
+                        "prompt_tokens": usage.input_tokens if hasattr(usage, 'input_tokens') else 0,
+                        "completion_tokens": usage.output_tokens if hasattr(usage, 'output_tokens') else 0
+                    }
+                elif hasattr(result.openai_response, 'usage'):
                     usage = result.openai_response.usage
                     response["token_usage"] = {
                         "total_tokens": usage.total_tokens if hasattr(usage, 'total_tokens') else 0,

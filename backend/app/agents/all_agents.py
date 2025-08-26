@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 # Model configurations - use gpt-5 series
 MODEL_CONFIGS = {
-    "THINKING_MODEL": "gpt-5-thinking",  # REAL MODEL - DO NOT USE gpt-4o!
-    "SMALL_MODEL": "gpt-5-mini"  # REAL MODEL - DO NOT USE gpt-4o!
+    "THINKING_MODEL": "gpt-5",  # REAL MODEL - DO NOT USE gpt-4o!
+    "SMALL_MODEL": "gpt-5"  # REAL MODEL - DO NOT USE gpt-4o!
 }
 
 
@@ -52,99 +52,6 @@ def validate_patch(original: str, patch: str) -> dict:
         # 3. Return VERBATIM error if invalid
         return {"valid": False, "error": f"SyntaxError: {e.msg} at line {e.lineno}"}
 
-
-# Store evaluator session in a global context for the submit_patch tool
-evaluator_session_storage = {}
-
-
-@function_tool
-async def submit_patch(ctx, patch: str, description: str) -> EvaluationResult:
-    """Submit a patch for evaluation"""
-    # 1. Get current_code from ctx.state
-    current_code = ctx.state.get("current_code", "")
-    
-    # 2. Run validate_patch() - single step validation
-    validation = validate_patch(current_code, patch)
-    
-    # 3. If invalid, return verbatim error to user
-    if not validation["valid"]:
-        return EvaluationResult(
-            approved=False,
-            reasoning=f"Patch validation failed: {validation['error']}",
-            commit_message=""
-        )
-    
-    # 4. If valid, call the evaluator
-    evaluator_session = evaluator_session_storage.get(ctx.state.get("session_key"))
-    if not evaluator_session:
-        return EvaluationResult(
-            approved=False,
-            reasoning="Evaluator session not found",
-            commit_message=""
-        )
-    
-    # Prepare evaluation prompt
-    eval_prompt = f"""Please review this patch:
-
-{patch}
-
-Description: {description}
-
-Original code:
-```python
-{current_code}
-```
-
-Patched code:
-```python
-{validation['patched_code']}
-```
-"""
-    
-    # Run evaluator agent
-    result = await Runner.run(
-        evaluator_agent, 
-        eval_prompt, 
-        session=evaluator_session
-    )
-    
-    # 5. Return with the evaluator's decision
-    return result.final_output
-
-
-# Vibecoder agent
-vibecoder_agent = Agent(
-    name="Vibecoder",
-    model=MODEL_CONFIGS["THINKING_MODEL"],
-    instructions="""You are VibeCoder, an expert Python developer who helps modify code.
-
-You have TWO response modes:
-
-1. PATCH MODE: When the user asks to modify, add, or change code, use the submit_patch tool.
-   - Generate a unified diff patch in proper format
-   - Include a clear description of changes
-   - The patch should be in unified diff format like:
-     ```
-     @@ -line,count +line,count @@
-     -removed line
-     +added line
-      context line
-     ```
-   
-2. TEXT MODE: When the user asks questions about code or needs explanations, respond with text.
-   - Explain code functionality
-   - Answer questions
-   - Provide guidance
-
-Current code is provided in the user message.
-
-IMPORTANT: 
-- When generating patches, use proper unified diff format
-- Include context lines for clarity
-- Make minimal, focused changes
-- Ensure the patched code is syntactically valid""",
-    tools=[submit_patch]
-)
 
 # Evaluator agent
 evaluator_agent = Agent(
@@ -217,8 +124,88 @@ class VibecodeService:
         evaluator_session_key = session_key + "_evaluator"
         evaluator_session = SQLiteSession(evaluator_session_key, db_path)
         
-        # Store evaluator session for submit_patch to access
-        evaluator_session_storage[session_key] = evaluator_session
+        # Define submit_patch as a nested function to capture current_code and evaluator_session
+        @function_tool
+        async def submit_patch(patch: str, description: str) -> EvaluationResult:
+            """Submit a patch for evaluation.
+            
+            Args:
+                patch: The unified diff patch to apply
+                description: Description of the changes made
+            """
+            # 1. Use current_code from closure
+            # 2. Run validate_patch() - single step validation
+            validation = validate_patch(current_code, patch)
+            
+            # 3. If invalid, return verbatim error to user
+            if not validation["valid"]:
+                return EvaluationResult(
+                    approved=False,
+                    reasoning=f"Patch validation failed: {validation['error']}",
+                    commit_message=""
+                )
+            
+            # 4. If valid, call the evaluator using evaluator_session from closure
+            eval_prompt = f"""Please review this patch:
+
+{patch}
+
+Description: {description}
+
+Original code:
+```python
+{current_code}
+```
+
+Patched code:
+```python
+{validation['patched_code']}
+```
+"""
+            
+            # Run evaluator agent
+            result = await Runner.run(
+                evaluator_agent, 
+                eval_prompt, 
+                session=evaluator_session
+            )
+            
+            # 5. Return with the evaluator's decision
+            return result.final_output
+        
+        # Create VibeCoder agent with the submit_patch tool
+        vibecoder_agent = Agent(
+            name="Vibecoder",
+            model=MODEL_CONFIGS["THINKING_MODEL"],
+            instructions="""You are VibeCoder, an expert Python developer who helps modify code.
+
+You have TWO response modes:
+
+1. PATCH MODE: When the user asks to modify, add, or change code, use the submit_patch tool.
+   - Generate a unified diff patch in proper format
+   - Include a clear description of changes
+   - The patch should be in unified diff format like:
+     ```
+     @@ -line,count +line,count @@
+     -removed line
+     +added line
+      context line
+     ```
+   
+2. TEXT MODE: When the user asks questions about code or needs explanations, respond with text.
+   - Explain code functionality
+   - Answer questions
+   - Provide guidance
+
+Current code is provided in the user message.
+
+IMPORTANT: 
+- When generating patches, use proper unified diff format
+- Include context lines for clarity
+- Make minimal, focused changes
+- Ensure the patched code is syntactically valid""",
+            tools=[submit_patch]
+        )
         
         try:
             for iteration in range(3):  # MAX 3 iterations
@@ -228,12 +215,9 @@ class VibecodeService:
                 user_prompt = f"Current code:\n```python\n{current_code}\n```\n\nUser request: {prompt}"
                 
                 # Run VibeCoder with context
-                # Pass current_code in the context state
-                context = {"current_code": current_code, "session_key": session_key}
                 vibecoder_response = await Runner.run(
                     vibecoder_agent, 
                     user_prompt,
-                    context=context,
                     session=session
                 )
                 
@@ -242,11 +226,17 @@ class VibecodeService:
                     vibecoder_response, 'vibecoder', iteration, session_id, socketio_manager
                 )
                 
-                # Check if patch submitted
-                if hasattr(vibecoder_response, 'final_output') and isinstance(vibecoder_response.final_output, EvaluationResult):
+                # Check if patch was submitted by looking at the tool call outputs
+                evaluation = None
+                if hasattr(vibecoder_response, 'new_items'):
+                    for item in vibecoder_response.new_items:
+                        # Look for tool call output items
+                        if hasattr(item, 'output') and isinstance(item.output, EvaluationResult):
+                            evaluation = item.output
+                            break
+                
+                if evaluation:
                     # Evaluator was called via submit_patch
-                    evaluation = vibecoder_response.final_output
-                    
                     # CRITICAL: Immediately stream Evaluator response to frontend
                     await self._stream_agent_response(
                         evaluation, 'evaluator', iteration, session_id, socketio_manager
@@ -276,10 +266,9 @@ class VibecodeService:
                 openai_response=None
             )
             
-        finally:
-            # Clean up evaluator session storage
-            if session_key in evaluator_session_storage:
-                del evaluator_session_storage[session_key]
+        except Exception as e:
+            logger.error(f"Error in vibecode: {e}", exc_info=True)
+            raise
     
     async def _stream_agent_response(self, response, agent_type: str, iteration: int, session_id: str, socketio_manager):
         """Stream agent response to frontend via Socket.io"""
