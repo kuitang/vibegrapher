@@ -208,14 +208,14 @@ const useAppStore = create<AppState>()(
           
           rejectDiff: async (diffId, reason) => {
             const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
-            const response = await fetch(`${apiUrl}/diffs/${diffId}/reject`, {
+            const response = await fetch(`${apiUrl}/diffs/${diffId}/review`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({
-                feedback: reason,
-                message_type: 'human_rejection'
+                approved: false,
+                feedback: reason
               })
             })
             
