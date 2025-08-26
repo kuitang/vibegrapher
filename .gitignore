@@ -13,3 +13,5 @@ backend.log frontend.log
 *.log
 *openai_key*
 *.db
+*.db
+vibegrapher.db

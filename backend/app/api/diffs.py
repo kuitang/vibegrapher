@@ -138,11 +138,19 @@ def review_diff(
     diff_id: str, request: ReviewRequest, db: Session = Depends(get_db)
 ) -> Diff:
     """Human approve or reject a diff with feedback"""
+    logger.info(f"Review request for diff {diff_id}: approved={request.approved}")
+    
     diff = db.query(Diff).filter(Diff.id == diff_id).first()
     if not diff:
+        logger.warning(f"Diff {diff_id} not found in database")
         raise HTTPException(status_code=404, detail="Diff not found")
 
     if diff.status != "evaluator_approved":
+        logger.warning(
+            f"Attempted to review diff {diff_id} in wrong status: {diff.status}\n"
+            f"Expected: evaluator_approved\n"
+            f"This usually means the diff was already reviewed"
+        )
         raise HTTPException(
             status_code=400,
             detail=f"Diff is not pending review (status: {diff.status})",
@@ -159,7 +167,8 @@ def review_diff(
 
     db.commit()
     db.refresh(diff)
-
+    
+    logger.debug(f"Diff {diff_id} review complete, new status: {diff.status}")
     return diff
 
 
@@ -195,6 +204,14 @@ async def commit_diff(
     # Verify base commit matches
     current_commit = git_service.get_head_commit(project.slug)
     if current_commit != diff.base_commit:
+        logger.error(
+            f"Base commit mismatch for diff {diff_id}\n"
+            f"Diff expects: {diff.base_commit}\n"
+            f"Project has: {current_commit}\n"
+            f"Project: {project.slug} (ID: {project.id})\n"
+            f"Diff status: {diff.status}\n"
+            f"Diff created: {diff.created_at}"
+        )
         raise HTTPException(
             status_code=409,
             detail=f"Base commit mismatch. Expected: {diff.base_commit}, Current: {current_commit}",
