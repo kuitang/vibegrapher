@@ -8,6 +8,7 @@ from ..database import get_db
 from ..models import Project, TestCase
 from ..schemas import ProjectCreate, ProjectResponse, TestCaseResponse
 from ..services.git_service import git_service
+from .dependencies import DatabaseSession, ValidProject
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -78,11 +79,7 @@ if __name__ == "__main__":
 
 
 @router.get("/{project_id}", response_model=ProjectResponse)
-def get_project(project_id: str, db: Session = Depends(get_db)) -> Project:
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-
+def get_project(project: ValidProject, db: DatabaseSession) -> Project:
     # Update current code and commit from git
     project.current_code = git_service.get_current_code(project.slug)
     project.current_commit = git_service.get_head_commit(project.slug)
@@ -95,11 +92,7 @@ def get_project(project_id: str, db: Session = Depends(get_db)) -> Project:
 
 
 @router.delete("/{project_id}", status_code=204)
-def delete_project(project_id: str, db: Session = Depends(get_db)) -> None:
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-
+def delete_project(project: ValidProject, db: DatabaseSession) -> None:
     # Delete git repository
     git_service.delete_repository(project.slug)
 
@@ -108,35 +101,23 @@ def delete_project(project_id: str, db: Session = Depends(get_db)) -> None:
 
 
 @router.get("/{project_id}/tests", response_model=list[TestCaseResponse])
-def get_project_tests(project_id: str, db: Session = Depends(get_db)) -> list[TestCase]:
+def get_project_tests(project: ValidProject, db: DatabaseSession) -> list[TestCase]:
     """Get all test cases for a project"""
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-
-    tests = db.query(TestCase).filter(TestCase.project_id == project_id).all()
+    tests = db.query(TestCase).filter(TestCase.project_id == project.id).all()
     return tests
 
 
 @router.get("/{project_id}/files")
-def get_project_files(project_id: str, db: Session = Depends(get_db)):
+def get_project_files(project: ValidProject):
     """Get list of files in a project repository"""
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-
     # For now, return a simple structure indicating main.py exists
     # In a real implementation, this would list actual git repository files
     return [{"name": "main.py", "path": "main.py", "type": "file"}]
 
 
 @router.get("/{project_id}/files/{file_path:path}")
-def get_project_file(project_id: str, file_path: str, db: Session = Depends(get_db)):
+def get_project_file(project: ValidProject, file_path: str):
     """Get content of a specific file in a project"""
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-
     # For main.py, return the current code
     if file_path == "main.py":
         return {"content": project.current_code, "path": file_path}

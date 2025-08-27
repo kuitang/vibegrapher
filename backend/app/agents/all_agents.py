@@ -4,22 +4,35 @@ VibeCoder and Evaluator agents with patch submission workflow
 """
 
 import ast
-import asyncio
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from agents import Agent, Runner, SQLiteSession, function_tool
+from agents.items import (
+    HandoffOutputItem,
+    ItemHelpers,
+    MessageOutputItem,
+    ToolCallItem,
+    ToolCallOutputItem,
+)
+from agents.stream_events import (
+    AgentUpdatedStreamEvent,
+    RawResponsesStreamEvent,
+    RunItemStreamEvent,
+    StreamEvent,
+)
 from pydantic import BaseModel
 
 from ..utils.diff_parser import diff_parser
 
 logger = logging.getLogger(__name__)
 
-# Model configurations - use gpt-5 series
+# Model configurations - use real OpenAI models for testing
 MODEL_CONFIGS = {
-    "THINKING_MODEL": "gpt-5",  # REAL MODEL - DO NOT USE gpt-4o!
-    "SMALL_MODEL": "gpt-5",  # REAL MODEL - DO NOT USE gpt-4o!
+    "THINKING_MODEL": "gpt-4o-mini",  # Fast and cheap model for testing
+    "SMALL_MODEL": "gpt-4o-mini",  # Fast and cheap model for testing
 }
 
 
@@ -82,6 +95,7 @@ class VibecodeResult(BaseModel):
     content: str | None = None  # if we fail
     diff_id: str | None = None  # if we succeed
     openai_response: Any  # Full OpenAI response object
+    messages: list[dict] = []  # All stream event messages
 
 
 class VibecodeService:
@@ -100,13 +114,7 @@ class VibecodeService:
         session_id: str | None = None,
         socketio_manager=None,
     ) -> VibecodeResult:
-        """Main vibecode workflow with agent interaction"""
-        # CRITICAL REQUIREMENT: Real-time AI Response Streaming
-        # Every time we get a response from VibeCoder or Evaluator:
-        # 1. Emit Socket.io 'conversation_message' event immediately (priority #1)
-        # 2. Asynchronously save ConversationMessage to database (background task)
-        # 3. Frontend displays message in real-time
-        # DO NOT wait for database save - stream first, save second
+        """Main vibecode workflow with streaming agent interaction"""
 
         # Create session key with correct format (uses project.slug for consistency)
         session_key = (
@@ -123,9 +131,6 @@ class VibecodeService:
 
         # MUST use file persistence, not in-memory
         session = SQLiteSession(session_key, db_path)
-        # <todo>
-        # TODO: IMPORTANT: Must start a NEW session each iteration!
-        # </todo>
         evaluator_session_key = session_key + "_evaluator"
         evaluator_session = SQLiteSession(evaluator_session_key, db_path)
 
@@ -215,56 +220,73 @@ IMPORTANT:
         )
 
         try:
+            collected_messages = []
+
             for iteration in range(3):  # MAX 3 iterations
                 self.last_iteration_count = iteration + 1
 
                 # Build user prompt with current code
                 user_prompt = f"Current code:\n```python\n{current_code}\n```\n\nUser request: {prompt}"
 
-                # Run VibeCoder with context
-                vibecoder_response = await Runner.run(
+                # Run VibeCoder with streaming (run_streamed returns RunResultStreaming, not a coroutine)
+                vibecoder_response = Runner.run_streamed(
                     vibecoder_agent, user_prompt, session=session
                 )
 
-                # CRITICAL: Immediately stream VibeCoder response to frontend
-                await self._stream_agent_response(
-                    vibecoder_response,
-                    "vibecoder",
-                    iteration,
-                    session_id,
-                    project_id,
-                    socketio_manager,
-                )
-
-                # Check if patch was submitted by looking at the tool call outputs
+                # Process stream events
+                sequence_counter = 0
+                last_sequence = -1
                 evaluation = None
-                if hasattr(vibecoder_response, "new_items"):
-                    for item in vibecoder_response.new_items:
-                        # Look for tool call output items
-                        if hasattr(item, "output") and isinstance(
-                            item.output, EvaluationResult
+
+                async for event in vibecoder_response.stream_events():
+                    sequence_counter += 1
+
+                    # Check for sequence gaps
+                    if last_sequence >= 0 and sequence_counter != last_sequence + 1:
+                        logger.error(
+                            f"❌ EVENT SEQUENCE GAP: Expected {last_sequence + 1}, got {sequence_counter}"
+                        )
+                    last_sequence = sequence_counter
+
+                    # Create message from event
+                    message = await self._create_message_from_event(
+                        event, session_id, sequence_counter, iteration
+                    )
+
+                    collected_messages.append(message)
+
+                    # Save to database immediately
+                    await self._save_conversation_message_async(message)
+
+                    # Emit via Socket.io immediately (no batching)
+                    if socketio_manager and session_id and project_id:
+                        await socketio_manager.emit_conversation_message(
+                            session_id=session_id,
+                            project_id=project_id,
+                            message_id=message["id"],
+                            role=message["role"],
+                            agent=message.get("agent_type", "vibecoder"),
+                            content=message.get("content", ""),
+                            patch_preview=None,
+                            iteration=iteration,
+                            token_usage=message.get("token_usage"),
+                        )
+
+                    # Check if we got an evaluation result
+                    if isinstance(event, RunItemStreamEvent):
+                        if hasattr(event.item, "output") and isinstance(
+                            event.item.output, EvaluationResult
                         ):
-                            evaluation = item.output
-                            break
+                            evaluation = event.item.output
 
                 if evaluation:
                     # Evaluator was called via submit_patch
-                    # CRITICAL: Immediately stream Evaluator response to frontend
-                    await self._stream_agent_response(
-                        evaluation,
-                        "evaluator",
-                        iteration,
-                        session_id,
-                        project_id,
-                        socketio_manager,
-                    )
-
                     if evaluation.approved:
                         # Create Diff record with status='evaluator_approved'
-                        # This will be handled by the API layer
                         return VibecodeResult(
                             diff_id="generated-diff-id",  # Will be replaced by actual diff creation
                             openai_response=vibecoder_response,
+                            messages=collected_messages,
                         )
                     else:
                         # If rejected, loop with feedback
@@ -279,104 +301,123 @@ IMPORTANT:
                             else str(vibecoder_response)
                         ),
                         openai_response=vibecoder_response,
+                        messages=collected_messages,
                     )
 
             # Max iterations reached
             return VibecodeResult(
                 content="Maximum iteration limit reached without approval",
                 openai_response=None,
+                messages=collected_messages,
             )
 
         except Exception as e:
             logger.error(f"Error in vibecode: {e}", exc_info=True)
             raise
 
-    async def _stream_agent_response(
-        self,
-        response,
-        agent_type: str,
-        iteration: int,
-        session_id: str,
-        project_id: str,
-        socketio_manager,
-    ):
-        """Stream agent response to frontend via Socket.io"""
-        # 1. IMMEDIATELY emit Socket.io 'conversation_message' event (no delay)
-        # 2. Fire-and-forget background task to save ConversationMessage to database
-        # 3. Include agent type, iteration, and token usage in Socket.io event
+    async def _create_message_from_event(
+        self, event: StreamEvent, session_id: str, sequence: int, iteration: int
+    ) -> dict:
+        """Create a ConversationMessage dict from a stream event"""
 
-        try:
-            # Extract content from response
-            content = ""
-            if hasattr(response, "final_output"):
-                if isinstance(response.final_output, EvaluationResult):
-                    content = f"Approved: {response.final_output.approved}\nReasoning: {response.final_output.reasoning}\nCommit Message: {response.final_output.commit_message}"
-                else:
-                    content = str(response.final_output)
-            else:
-                content = str(response)
+        timestamp = datetime.now().isoformat()
+        message = {
+            "id": f"{session_id}_event_{sequence}",
+            "session_id": session_id,
+            "role": "assistant",
+            "message_type": "stream_event",
+            "stream_event_type": event.type,
+            "stream_sequence": sequence,
+            "iteration": iteration,
+            "created_at": timestamp,
+            "updated_at": timestamp,
+            "event_data": {},  # Will populate below
+            "content": None,
+            "tool_calls": None,
+            "tool_outputs": None,
+            "handoffs": None,
+            "agent_type": None,
+            "token_usage": None,
+        }
 
-            # Extract token usage if available
-            token_usage = {}
-            if hasattr(response, "usage"):
-                token_usage = {
-                    "total_tokens": (
-                        response.usage.total_tokens
-                        if hasattr(response.usage, "total_tokens")
-                        else 0
-                    ),
-                    "prompt_tokens": (
-                        response.usage.prompt_tokens
-                        if hasattr(response.usage, "prompt_tokens")
-                        else 0
-                    ),
-                    "completion_tokens": (
-                        response.usage.completion_tokens
-                        if hasattr(response.usage, "completion_tokens")
-                        else 0
-                    ),
+        # Extract data based on event type
+        if isinstance(event, RunItemStreamEvent):
+            item = event.item
+            message["event_data"] = {
+                "name": event.name,
+                "item_type": item.__class__.__name__,
+            }
+
+            # Extract tool calls
+            if isinstance(item, ToolCallItem):
+                message["tool_calls"] = [
+                    {
+                        "type": item.raw_item.__class__.__name__,
+                        "id": getattr(item.raw_item, "id", None),
+                        "function": getattr(item.raw_item, "function", None),
+                        "arguments": getattr(item.raw_item, "arguments", None),
+                    }
+                ]
+
+            # Extract tool outputs
+            elif isinstance(item, ToolCallOutputItem):
+                message["tool_outputs"] = [
+                    {
+                        "tool_call_id": getattr(item.raw_item, "tool_call_id", None),
+                        "output": str(item.output) if item.output else None,
+                        "raw_output": str(item.raw_item),
+                    }
+                ]
+
+            # Extract handoffs
+            elif isinstance(item, HandoffOutputItem):
+                message["handoffs"] = [
+                    {
+                        "source_agent": item.source_agent.name,
+                        "target_agent": item.target_agent.name,
+                    }
+                ]
+
+            # Extract message output
+            elif isinstance(item, MessageOutputItem):
+                try:
+                    message["content"] = ItemHelpers.text_message_output(item.raw_item)
+                except:
+                    message["content"] = str(item.raw_item)
+
+        # Extract token usage from raw responses
+        elif isinstance(event, RawResponsesStreamEvent):
+            message["event_data"] = {"type": "raw_response"}
+            if hasattr(event.data, "usage"):
+                usage = event.data.usage
+                message["token_usage"] = {
+                    "input_tokens": getattr(usage, "input_tokens", 0),
+                    "output_tokens": getattr(usage, "output_tokens", 0),
+                    "total_tokens": getattr(usage, "total_tokens", 0),
                 }
 
-                # Log token usage
-                logger.info(
-                    f"💵 OPENAI TOKENS: prompt={token_usage.get('prompt_tokens', 0)}, completion={token_usage.get('completion_tokens', 0)}, total={token_usage.get('total_tokens', 0)}"
-                )
+                # Extract detailed token info if available
+                if hasattr(usage, "input_tokens_details"):
+                    message["usage_cached_tokens"] = getattr(
+                        usage.input_tokens_details, "cached_tokens", 0
+                    )
+                if hasattr(usage, "output_tokens_details"):
+                    message["usage_reasoning_tokens"] = getattr(
+                        usage.output_tokens_details, "reasoning_tokens", 0
+                    )
 
-            # Generate deterministic message ID
-            message_id = f"{session_id}_{agent_type}_{iteration}"
+        # Handle agent updates
+        elif isinstance(event, AgentUpdatedStreamEvent):
+            message["event_data"] = {
+                "type": "agent_updated",
+                "new_agent": event.new_agent.name,
+            }
+            message["last_agent"] = event.new_agent.name
+            message["agent_type"] = event.new_agent.name.lower()
 
-            # Emit first (priority #1 - user sees response immediately)
-            if socketio_manager and session_id and project_id:
-                await socketio_manager.emit_conversation_message(
-                    session_id=session_id,
-                    project_id=project_id,
-                    message_id=message_id,
-                    role="assistant",
-                    agent=agent_type,
-                    content=content,
-                    patch_preview=None,
-                    iteration=iteration,
-                    token_usage=token_usage if token_usage else None,
-                )
+        return message
 
-            # Database save in background (priority #2)
-            _ = asyncio.create_task(
-                self._save_conversation_message_async(
-                    response, agent_type, iteration, session_id, project_id
-                )
-            )
-
-        except Exception as e:
-            logger.error(f"Error streaming agent response: {e}")
-
-    async def _save_conversation_message_async(
-        self,
-        response,
-        agent_type: str,
-        iteration: int,
-        session_id: str,
-        project_id: str,
-    ):
+    async def _save_conversation_message_async(self, message_data: dict):
         """Save conversation message to database asynchronously"""
         try:
             # Import here to avoid circular dependency
@@ -387,71 +428,60 @@ IMPORTANT:
             # Create a new database session for async operation
             db = next(get_db())
 
-            # Extract content from response
-            content = ""
-            if hasattr(response, "final_output"):
-                if isinstance(response.final_output, EvaluationResult):
-                    content = f"Approved: {response.final_output.approved}\nReasoning: {response.final_output.reasoning}\nCommit Message: {response.final_output.commit_message}"
-                else:
-                    content = str(response.final_output)
-            else:
-                content = str(response)
-
-            # Extract token usage if available
-            token_usage = None
-            openai_response = None
-
-            if hasattr(response, "usage"):
-                token_usage = {
-                    "total_tokens": getattr(response.usage, "total_tokens", 0),
-                    "prompt_tokens": getattr(response.usage, "prompt_tokens", 0),
-                    "completion_tokens": getattr(
-                        response.usage, "completion_tokens", 0
-                    ),
-                }
-
-            # Store the full response if available
-            if hasattr(response, "__dict__"):
-                try:
-                    # Try to serialize the response
-                    import json
-
-                    openai_response = json.loads(
-                        json.dumps(response.__dict__, default=str)
-                    )
-                except Exception:
-                    openai_response = str(response)
-
-            # Generate a deterministic message ID based on session and iteration
-            # This prevents duplicates if the same message is saved twice
-            message_id = f"{session_id}_{agent_type}_{iteration}"
-
-            # Check if message already exists
+            # Check if message already exists (prevent duplicates)
             existing = (
                 db.query(ConversationMessage)
-                .filter(ConversationMessage.id == message_id)
+                .filter(ConversationMessage.id == message_data["id"])
                 .first()
             )
 
             if not existing:
                 # Create and save the message
                 message = ConversationMessage(
-                    id=message_id,
-                    session_id=session_id,
-                    role="assistant",
-                    content=content,
-                    iteration=iteration,
-                    openai_response=openai_response,
-                    token_usage=token_usage,
+                    id=message_data["id"],
+                    session_id=message_data["session_id"],
+                    role=message_data["role"],
+                    message_type=message_data.get("message_type", "stream_event"),
+                    content=message_data.get("content"),
+                    iteration=message_data.get("iteration"),
+                    stream_event_type=message_data.get("stream_event_type"),
+                    stream_sequence=message_data.get("stream_sequence"),
+                    event_data=message_data.get("event_data"),
+                    tool_calls=message_data.get("tool_calls"),
+                    tool_outputs=message_data.get("tool_outputs"),
+                    handoffs=message_data.get("handoffs"),
+                    last_agent=message_data.get("last_agent"),
+                    usage_input_tokens=(
+                        message_data.get("token_usage", {}).get("input_tokens")
+                        if message_data.get("token_usage")
+                        else None
+                    ),
+                    usage_output_tokens=(
+                        message_data.get("token_usage", {}).get("output_tokens")
+                        if message_data.get("token_usage")
+                        else None
+                    ),
+                    usage_total_tokens=(
+                        message_data.get("token_usage", {}).get("total_tokens")
+                        if message_data.get("token_usage")
+                        else None
+                    ),
+                    usage_cached_tokens=message_data.get("usage_cached_tokens"),
+                    usage_reasoning_tokens=message_data.get("usage_reasoning_tokens"),
+                    # Legacy fields
+                    token_usage=message_data.get("token_usage"),
+                    openai_response={},  # Store minimal data for now
                 )
 
                 db.add(message)
                 db.commit()
                 logger.info(
-                    f"Saved conversation message {message_id} for session {session_id}, iteration {iteration}"
+                    f"Saved conversation message {message_data['id']} for session {message_data['session_id']}, sequence {message_data.get('stream_sequence')}"
                 )
             else:
-                logger.info(f"Message {message_id} already exists, skipping save")
+                logger.info(
+                    f"Message {message_data['id']} already exists, skipping save"
+                )
 
             db.close()
 

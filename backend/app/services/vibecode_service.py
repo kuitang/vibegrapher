@@ -83,12 +83,9 @@ class VibecodeService:
                         ):
                             import json
 
-                            try:
-                                args = json.loads(item.raw_item.arguments)
-                                if "patch" in args:
-                                    patch_content = args["patch"]
-                            except Exception:
-                                pass
+                            args = json.loads(item.raw_item.arguments)
+                            if "patch" in args:
+                                patch_content = args["patch"]
                         # Find the evaluation result
                         if hasattr(item, "output") and hasattr(
                             item.output, "commit_message"

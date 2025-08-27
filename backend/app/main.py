@@ -5,9 +5,10 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .api import diffs, health, projects, sessions, tests
+from .api import diffs, health, projects, sessions
 from .config import settings
 from .database import init_db
+from .middleware.error_handler import setup_error_handlers
 from .services.socketio_service import socketio_manager
 from .version import __version__
 
@@ -21,6 +22,9 @@ logger = logging.getLogger(__name__)
 # Create FastAPI app
 fastapi_app = FastAPI(title="Vibegrapher Backend", version=__version__)
 
+# Setup error handling middleware
+setup_error_handlers(fastapi_app)
+
 fastapi_app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.get_cors_origins(),
@@ -31,7 +35,6 @@ fastapi_app.add_middleware(
 
 fastapi_app.include_router(health.router)
 fastapi_app.include_router(projects.router)
-fastapi_app.include_router(tests.router)
 fastapi_app.include_router(sessions.router)
 fastapi_app.include_router(diffs.router)
 

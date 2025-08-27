@@ -29,5 +29,9 @@ class Settings(BaseSettings):
     def is_preview(self) -> bool:
         return self.environment == "preview"
 
+    @property
+    def debug(self) -> bool:
+        return self.environment == "development"
+
 
 settings = Settings()

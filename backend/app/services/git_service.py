@@ -46,21 +46,13 @@ class GitService:
         # First try agents.py (default)
         code_file = repo_path / "agents.py"
         if code_file.exists():
-            try:
-                return code_file.read_text()
-            except Exception as e:
-                logger.error(f"Error reading code file: {e}")
-                return None
+            return code_file.read_text()
 
         # If agents.py doesn't exist, find any .py file
         py_files = list(repo_path.glob("*.py"))
         if py_files:
             # Return the first Python file found
-            try:
-                return py_files[0].read_text()
-            except Exception as e:
-                logger.error(f"Error reading Python file: {e}")
-                return None
+            return py_files[0].read_text()
 
         logger.warning(f"No Python files found in {repo_path}")
         return None
@@ -74,8 +66,8 @@ class GitService:
             if repo.is_empty:
                 return None
             return str(repo.head.target)
-        except Exception as e:
-            logger.error(f"Error getting HEAD commit: {e}")
+        except (pygit2.GitError, OSError):
+            # Repository might not exist yet, which is ok
             return None
 
     def get_current_branch(self, project_slug: str) -> str:
@@ -93,8 +85,8 @@ class GitService:
 
             branch = repo.branches.get(repo.head.shorthand)
             return branch.branch_name if branch else "main"
-        except Exception as e:
-            logger.error(f"Error getting current branch: {e}")
+        except (pygit2.GitError, OSError):
+            # Repository might not exist yet, default to main
             return "main"
 
     def commit_changes(
@@ -102,48 +94,52 @@ class GitService:
     ) -> str | None:
         """Create commit with changes"""
         repo_path = self._get_repo_path(project_slug)
+
+        # Check if repository exists first
+        if not repo_path.exists():
+            logger.warning(f"Repository path does not exist: {repo_path}")
+            return None
+
         code_file = repo_path / filename
 
-        try:
-            # Write content to file
-            code_file.write_text(content)
+        # Write content to file
+        code_file.write_text(content)
 
-            # Open repository
-            repo = pygit2.Repository(str(repo_path))
+        # Open repository
+        repo = pygit2.Repository(str(repo_path))
 
-            # Add file to index
-            repo.index.add(filename)
-            repo.index.write()
+        # Add file to index
+        repo.index.add(filename)
+        repo.index.write()
 
-            # Create tree from index
-            tree = repo.index.write_tree()
+        # Create tree from index
+        tree = repo.index.write_tree()
 
-            # Get author and committer
-            author = pygit2.Signature("Vibegrapher", "vibegrapher@example.com")
+        # Get author and committer
+        author = pygit2.Signature("Vibegrapher", "vibegrapher@example.com")
 
-            # Create commit
-            if repo.is_empty:
-                # First commit
-                commit_id = repo.create_commit(
-                    "HEAD", author, author, message, tree, []
-                )
-            else:
-                # Subsequent commits
-                parent = repo.head.target
-                commit_id = repo.create_commit(
-                    "HEAD", author, author, message, tree, [parent]
-                )
+        # Create commit
+        if repo.is_empty:
+            # First commit
+            commit_id = repo.create_commit("HEAD", author, author, message, tree, [])
+        else:
+            # Subsequent commits
+            parent = repo.head.target
+            commit_id = repo.create_commit(
+                "HEAD", author, author, message, tree, [parent]
+            )
 
-            logger.info(f"Created commit {commit_id} for project {project_slug}")
-            return str(commit_id)
-
-        except Exception as e:
-            logger.error(f"Error committing changes: {e}")
-            return None
+        logger.info(f"Created commit {commit_id} for project {project_slug}")
+        return str(commit_id)
 
     def apply_diff(self, project_slug: str, diff_content: str) -> bool:
         """Apply a diff/patch to the repository"""
         repo_path = self._get_repo_path(project_slug)
+
+        # Check if repository exists first
+        if not repo_path.exists():
+            logger.warning(f"Repository path does not exist: {repo_path}")
+            return False
 
         try:
             # First try pygit2's native diff parsing
@@ -221,30 +217,21 @@ class GitService:
         """Get diff of uncommitted changes"""
         repo_path = self._get_repo_path(project_slug)
 
-        try:
-            repo = pygit2.Repository(str(repo_path))
+        repo = pygit2.Repository(str(repo_path))
 
-            # Get diff between index and working directory
-            diff = repo.diff_index_to_workdir()
+        # Get diff between index and working directory
+        diff = repo.diff_index_to_workdir()
 
-            return diff.patch if diff.patch else None
-
-        except Exception as e:
-            logger.error(f"Error getting diff: {e}")
-            return None
+        return diff.patch if diff.patch else None
 
     def delete_repository(self, project_slug: str) -> bool:
         """Remove git repository"""
         repo_path = self._get_repo_path(project_slug)
 
-        try:
-            if repo_path.exists():
-                shutil.rmtree(repo_path)
-                logger.info(f"Deleted repository at {repo_path}")
-            return True
-        except Exception as e:
-            logger.error(f"Error deleting repository: {e}")
-            return False
+        if repo_path.exists():
+            shutil.rmtree(repo_path)
+            logger.info(f"Deleted repository at {repo_path}")
+        return True
 
     def repository_exists(self, project_slug: str) -> bool:
         """Check if repository exists"""
