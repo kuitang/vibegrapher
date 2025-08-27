@@ -9,6 +9,7 @@ from pathlib import Path
 import httpx
 import pytest
 import uvicorn
+
 from app.management.reset_db import reset_and_seed_database
 
 sys.path.insert(0, str(Path(__file__).parent.parent))

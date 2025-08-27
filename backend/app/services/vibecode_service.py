@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from ..agents.all_agents import vibecode_service as agent_vibecode_service
 from ..models import Diff, Project
 from ..services.socketio_service import socketio_manager
-from ..utils.error_handling import emit_error_to_client, log_and_format_error
+from ..utils.error_handling import log_and_format_error
 
 logger = logging.getLogger(__name__)
 
@@ -154,14 +154,22 @@ class VibecodeService:
                             usage.total_tokens if hasattr(usage, "total_tokens") else 0
                         ),
                         "prompt_tokens": (
-                            usage.prompt_tokens
-                            if hasattr(usage, "prompt_tokens")
-                            else 0
+                            usage.input_tokens
+                            if hasattr(usage, "input_tokens")
+                            else (
+                                usage.prompt_tokens
+                                if hasattr(usage, "prompt_tokens")
+                                else 0
+                            )
                         ),
                         "completion_tokens": (
-                            usage.completion_tokens
-                            if hasattr(usage, "completion_tokens")
-                            else 0
+                            usage.output_tokens
+                            if hasattr(usage, "output_tokens")
+                            else (
+                                usage.completion_tokens
+                                if hasattr(usage, "completion_tokens")
+                                else 0
+                            )
                         ),
                     }
 
@@ -173,15 +181,55 @@ class VibecodeService:
                 error=e, context="vibecode operation", logger_instance=logger
             )
 
-            # Emit error to client with full stack trace via Socket.io
-            if socketio_manager:
-                await emit_error_to_client(
-                    socketio_manager=socketio_manager,
-                    project_id=project_id,
-                    error=e,
-                    event_name="vibecode_failed",
-                    context=f"Session {session_id}",
-                    include_stack_trace=True,
+            # Import here to avoid circular dependency
+            import traceback
+            from datetime import datetime
+
+            from ..models import ConversationMessage
+
+            # Format error message with stack trace for display
+            error_text = f"ERROR: {e!s}\n\n"
+            error_text += f"Type: {e.__class__.__name__}\n\n"
+            error_text += "Stack Trace:\n"
+            error_text += "=" * 60 + "\n"
+            error_text += traceback.format_exc()
+            error_text += "=" * 60
+
+            # Create error message in database
+            error_message = ConversationMessage(
+                id=f"{session_id}_error_{uuid.uuid4().hex[:8]}",
+                session_id=session_id,
+                role="system",  # Use system role for errors
+                message_type="error",
+                content=error_text,  # Full error + stack trace as visible text
+                event_data={
+                    "error": str(e),
+                    "error_type": e.__class__.__name__,
+                    "stack_trace": traceback.format_exc(),
+                    "context": f"vibecode operation - Session {session_id}",
+                },
+                stream_sequence=99999,  # High sequence to appear at end
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+            )
+
+            db.add(error_message)
+            db.commit()
+
+            # Emit error as conversation_message so it appears in UI
+            if socketio_manager and socketio_manager.sio:
+                await socketio_manager.sio.emit(
+                    "conversation_message",
+                    {
+                        "message_id": error_message.id,
+                        "session_id": session_id,
+                        "role": "system",
+                        "message_type": "error",
+                        "content": error_text,
+                        "created_at": error_message.created_at.isoformat(),
+                        "stream_sequence": 99999,
+                    },
+                    room=f"project_{project_id}",
                 )
 
             return error_data

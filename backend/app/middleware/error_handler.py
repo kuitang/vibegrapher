@@ -18,7 +18,6 @@ from pydantic import ValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from ..config import settings
-from ..services.socketio_service import socketio_manager
 from ..utils.error_handling import format_error_for_client
 
 logger = logging.getLogger(__name__)
@@ -72,7 +71,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
             )
 
             # Format error with full stack trace
-            error_data = format_error_for_client(
+            format_error_for_client(
                 error=e,
                 include_stack_trace=True,
                 context=f"{request.method} {request.url.path}",
@@ -82,15 +81,8 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
             if settings.debug:
                 # Emit to all connected clients for visibility
                 try:
-                    await socketio_manager.emit_to_all(
-                        event="dev_error",
-                        data={
-                            **error_data,
-                            "request_path": request.url.path,
-                            "request_method": request.method,
-                            "request_headers": dict(request.headers),
-                        },
-                    )
+                    # Note: emit_to_all doesn't exist, skip Socket.io error emission for now
+                    pass
                 except Exception as emit_error:
                     logger.error(f"Failed to emit error via Socket.io: {emit_error}")
 

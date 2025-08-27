@@ -12,8 +12,6 @@ class SessionCreate(BaseModel):
 class SessionResponse(BaseModel):
     id: str
     project_id: str
-    initial_prompt: str | None = None
-    current_code: str | None = None
     openai_session_key: str | None = None
     conversations_db_path: str | None = None
     session_type: str | None = None

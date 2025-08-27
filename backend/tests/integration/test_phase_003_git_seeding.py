@@ -137,39 +137,9 @@ def test_git_service_error_handling(test_server: dict) -> None:
     assert git_service.delete_repository("nonexistent-project") is True
 
 
-@pytest.mark.integration
-def test_seeded_test_cases_execute(test_server: dict) -> None:
-    """Test that seeded test cases can be executed"""
-    # The test server fixture already runs reset_and_seed_database
-    # We just need to verify the seeded test cases exist and can run
-
-    with httpx.Client(base_url=test_server["url"], timeout=30.0) as client:
-        # Get the seeded project
-        response = client.get("/projects")
-        assert response.status_code == 200
-        projects = response.json()
-        project = projects[0]
-
-        # Get test cases for the project
-        response = client.get(f"/projects/{project['id']}/tests")
-        assert response.status_code == 200
-        tests = response.json()
-        assert len(tests) == 2
-
-        # Find the quick test
-        quick_test = next(t for t in tests if t["quick_test"])
-        assert quick_test["name"] == "Test quick response"
-
-        # Run the quick test (should complete within 5 seconds)
-        import time
-
-        start_time = time.time()
-
-        response = client.post(f"/tests/{quick_test['id']}/run")
-        assert response.status_code in [200, 201]
-
-        elapsed = time.time() - start_time
-        assert elapsed < 10  # Should complete quickly
+# NOTE: test_seeded_test_cases_execute was deleted because the /tests/{id}/run endpoints
+# were removed. These were mock endpoints that didn't actually execute tests - they always
+# returned fake success responses. Real test execution was never implemented.
 
 
 @pytest.mark.integration

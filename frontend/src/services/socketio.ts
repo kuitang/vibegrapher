@@ -84,7 +84,7 @@ class SocketIOService {
     }
 
     this.projectId = projectId
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
+    const apiUrl = import.meta.env.VITE_API_URL
     
     console.log('[Socket.io] Connecting to:', apiUrl, 'for project:', projectId)
     

@@ -39,14 +39,31 @@ class MessageResponse(BaseModel):
     "/projects/{project_id}/sessions", response_model=SessionResponse, status_code=201
 )
 def create_session(project: ValidProject, db: DatabaseSession) -> VibecodeSession:
-    """Create a new vibecode session for a project"""
+    """Create a new vibecode session for a project (or return existing)"""
 
-    # Create session
+    # Check if session already exists for this project
+    session_key = f"project_{project.slug}"
+    existing_session = (
+        db.query(VibecodeSession)
+        .filter(VibecodeSession.openai_session_key == session_key)
+        .first()
+    )
+
+    if existing_session:
+        logger.info(
+            f"Returning existing session {existing_session.id} for project {project.id}"
+        )
+        return existing_session
+
+    # Create new session (following spec - generate required fields)
+    conversations_path = f"media/projects/{project.slug}_conversations.db"
+
     session = VibecodeSession(
         id=str(uuid.uuid4()),
         project_id=project.id,
-        initial_prompt="",
-        current_code=project.current_code or "",
+        openai_session_key=session_key,
+        conversations_db_path=conversations_path,
+        session_type="vibecode",
     )
 
     db.add(session)
@@ -75,13 +92,8 @@ async def send_message(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    # Update session prompt if this is the first message
-    if not session.initial_prompt:
-        session.initial_prompt = request.prompt
-        db.commit()
-
-    # Get current code
-    current_code = session.current_code or project.current_code or ""
+    # Get current code from project (following spec - no session storage of conversation data)
+    current_code = project.current_code or ""
 
     # Check if message already exists (deduplication)
     message_id = request.message_id or str(uuid.uuid4())

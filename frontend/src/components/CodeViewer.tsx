@@ -3,7 +3,7 @@
  * Monaco editor with real-time WebSocket updates
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import Editor from '@monaco-editor/react'
 import { CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -66,15 +66,18 @@ export function CodeViewer({ projectId }: CodeViewerProps) {
     }
   }, [])
 
+  // Memoize code update callback
+  const handleCodeUpdate = useCallback((data: { content: string; filename?: string }) => {
+    console.log('[CodeViewer] Received code update:', data)
+    setCode(data.content)
+    if (data.filename) {
+      setFileName(data.filename)
+    }
+  }, [])
+
   // Socket.io connection for real-time updates
   const { isConnected } = useSocketIO(projectId, {
-    onCodeUpdate: (data: { content: string; filename?: string }) => {
-      console.log('[CodeViewer] Received code update:', data)
-      setCode(data.content)
-      if (data.filename) {
-        setFileName(data.filename)
-      }
-    }
+    onCodeUpdate: handleCodeUpdate
   })
 
   // Load initial code when component mounts
@@ -88,7 +91,7 @@ export function CodeViewer({ projectId }: CodeViewerProps) {
           setIsLoading(false)
         } else if (project) {
           // Fetch current code from backend
-          const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
+          const apiUrl = import.meta.env.VITE_API_URL
           try {
             const response = await fetch(`${apiUrl}/projects/${projectId}`)
             if (response.ok) {
@@ -149,7 +152,7 @@ export function CodeViewer({ projectId }: CodeViewerProps) {
   const handleRefresh = async () => {
     setIsLoading(true)
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
+      const apiUrl = import.meta.env.VITE_API_URL
       const response = await fetch(`${apiUrl}/projects/${projectId}`)
       if (response.ok) {
         const projectData = await response.json()

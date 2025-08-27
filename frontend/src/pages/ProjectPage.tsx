@@ -87,7 +87,7 @@ export function ProjectPage() {
   }
   
   const handleCommit = async (diffId: string, message: string) => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
+    const apiUrl = import.meta.env.VITE_API_URL
     const response = await fetch(`${apiUrl}/diffs/${diffId}/commit`, {
       method: 'POST',
       headers: {
@@ -120,7 +120,7 @@ export function ProjectPage() {
   }
   
   const handleRefineMessage = async (diffId: string, currentMessage: string): Promise<string> => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
+    const apiUrl = import.meta.env.VITE_API_URL
     const response = await fetch(`${apiUrl}/diffs/${diffId}/refine-message`, {
       method: 'POST',
       headers: {

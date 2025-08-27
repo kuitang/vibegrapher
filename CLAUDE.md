@@ -115,3 +115,4 @@ npx playwright test tests/e2e/vibegrapher-full.spec.ts
 - Backend: Docker + fly.io with PostgreSQL
 - Frontend: Vite build → static hosting
 - Socket.io requires sticky sessions in production
+- IMPORTANT: KEEP gpt-5-mini and gpt-5-nano !!!!

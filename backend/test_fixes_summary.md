@@ -15,10 +15,13 @@
   - Methods now check if repo path exists before attempting operations
   - Returns `None` or `False` appropriately for non-existent repos
 
-### 3. ⚠️ Test Endpoint Removed
+### 3. ✅ Test Endpoint Removed
 - **Issue**: `test_seeded_test_cases_execute` fails with 404
 - **Cause**: We deleted the mock `/tests` endpoints as dead code
-- **Resolution**: This is expected - the test needs to be removed or skipped
+- **Resolution**: Added `@pytest.mark.skip` with explanation
+  - These were mock endpoints that always returned fake success
+  - Real test execution was never implemented
+  - No frontend code uses these endpoints
 
 ## Test Results
 

@@ -46,8 +46,8 @@ def sample_session(db: Session, sample_project):
     session = VibecodeSession(
         id=str(uuid.uuid4()),
         project_id=sample_project.id,
-        initial_prompt="Test deduplication",
-        current_code=sample_project.current_code,
+        openai_session_key=f"test_session_{uuid.uuid4().hex[:8]}",
+        conversations_db_path=f"test_conversations_{uuid.uuid4().hex[:8]}.db",
     )
     db.add(session)
     db.commit()
@@ -191,14 +191,14 @@ class TestMessageDeduplication:
         assert messages[0].id != messages[1].id
 
     @patch("app.agents.all_agents.VibecodeService._save_conversation_message_async")
-    @patch("app.agents.all_agents.VibecodeService._stream_agent_response")
+    @patch("app.agents.all_agents.VibecodeService._create_message_from_event")
     def test_agent_message_deduplication_in_service(
-        self, mock_stream, mock_save, db: Session, sample_project
+        self, mock_create, mock_save, db: Session, sample_project
     ):
         """Test that agent messages are deduplicated in VibecodeService"""
 
         # Mock the async methods
-        mock_stream.return_value = None
+        mock_create.return_value = {"id": "mock_message"}
         mock_save.return_value = None
 
         session_id = str(uuid.uuid4())

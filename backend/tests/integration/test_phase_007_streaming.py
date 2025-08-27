@@ -9,11 +9,12 @@ import uuid
 from pathlib import Path
 
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
 from app.agents.all_agents import vibecode_service
 from app.models import ConversationMessage, Project, VibecodeSession
 from app.models.base import Base
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 
 # Ensure we have OpenAI API key

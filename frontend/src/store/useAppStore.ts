@@ -219,7 +219,7 @@ const useAppStore = create<AppState>()(
           setShowCommitMessageModal: (show) => set({ showCommitMessageModal: show }),
           
           approveDiff: async (diffId) => {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
+            const apiUrl = import.meta.env.VITE_API_URL
             const response = await fetch(`${apiUrl}/diffs/${diffId}/review`, {
               method: 'POST',
               headers: {
@@ -242,7 +242,7 @@ const useAppStore = create<AppState>()(
           },
           
           rejectDiff: async (diffId, reason) => {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
+            const apiUrl = import.meta.env.VITE_API_URL
             const response = await fetch(`${apiUrl}/diffs/${diffId}/review`, {
               method: 'POST',
               headers: {
@@ -265,7 +265,7 @@ const useAppStore = create<AppState>()(
           },
           
           loadPendingDiffs: async (projectId) => {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
+            const apiUrl = import.meta.env.VITE_API_URL
             const response = await fetch(`${apiUrl}/projects/${projectId}/diffs?status=evaluator_approved`)
             
             if (response.ok) {

@@ -13,8 +13,10 @@ class SocketIOManager:
         self.sio = socketio.AsyncServer(
             async_mode="asgi",
             cors_allowed_origins="*",
-            logger=False,
-            engineio_logger=False,
+            logger=True,
+            engineio_logger=True,
+            ping_timeout=60,
+            ping_interval=25,
         )
         self.app: socketio.ASGIApp | None = None
         self.connections: int = 0
@@ -61,7 +63,7 @@ class SocketIOManager:
                 return
 
             # Add to project room
-            self.sio.enter_room(sid, f"project_{project_id}")
+            await self.sio.enter_room(sid, f"project_{project_id}")
 
             # Track in our rooms dict
             if project_id not in self.project_rooms:
@@ -115,30 +117,25 @@ class SocketIOManager:
             "role": role,
             "message_type": message_type,
             "content": content,
-            
             # Streaming metadata
             "stream_event_type": stream_event_type,
             "stream_sequence": stream_sequence,
             "event_data": event_data,
-            
             # Tool tracking
             "tool_calls": tool_calls,
             "tool_outputs": tool_outputs,
             "handoffs": handoffs,
-            
             # Token usage (typed)
             "usage_input_tokens": usage_input_tokens,
             "usage_output_tokens": usage_output_tokens,
             "usage_total_tokens": usage_total_tokens,
             "usage_cached_tokens": usage_cached_tokens,
             "usage_reasoning_tokens": usage_reasoning_tokens,
-            
             # Legacy fields for backward compatibility
             "agent": agent,
             "iteration": iteration,
             "token_usage": token_usage,
             "patch_preview": patch_preview,
-            
             # Timestamp
             "created_at": datetime.now().isoformat(),
         }

@@ -3,7 +3,7 @@
  * Main chat interface for vibecode sessions with full message flow
  */
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -40,44 +40,47 @@ export function VibecodePanel({ projectId }: VibecodePanelProps) {
     restoreSession 
   } = useSessionStore()
 
-  // Socket.io connection
-  const { connectionState, isConnected } = useSocketIO(projectId, {
-    onConversationMessage: (message: ConversationMessageEvent) => {
-      console.log('[VibecodePanel] Received streaming message:', message)
-      addMessage({
-        id: message.message_id,
-        role: message.role,
-        content: message.content || '',
-        // New streaming fields
-        message_type: message.message_type,
-        stream_event_type: message.stream_event_type,
-        stream_sequence: message.stream_sequence,
-        event_data: message.event_data,
-        tool_calls: message.tool_calls,
-        tool_outputs: message.tool_outputs,
-        handoffs: message.handoffs,
-        // Token usage (typed)
-        usage_input_tokens: message.usage_input_tokens,
-        usage_output_tokens: message.usage_output_tokens,
-        usage_total_tokens: message.usage_total_tokens,
-        usage_cached_tokens: message.usage_cached_tokens,
-        usage_reasoning_tokens: message.usage_reasoning_tokens,
-        // Legacy fields
-        agent_type: message.agent || 'unknown',
-        iteration: message.iteration,
-        session_id: message.session_id,
-        timestamp: message.created_at,
-        token_usage: message.token_usage
-      })
-      
-      // Auto-scroll to bottom
-      if (scrollAreaRef.current) {
-        const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
-        if (scrollElement) {
-          scrollElement.scrollTop = scrollElement.scrollHeight
-        }
+  // Memoize conversation message callback
+  const handleConversationMessage = useCallback((message: ConversationMessageEvent) => {
+    console.log('[VibecodePanel] Received streaming message:', message)
+    addMessage({
+      id: message.message_id,
+      role: message.role,
+      content: message.content || '',
+      // New streaming fields
+      message_type: message.message_type,
+      stream_event_type: message.stream_event_type,
+      stream_sequence: message.stream_sequence,
+      event_data: message.event_data,
+      tool_calls: message.tool_calls,
+      tool_outputs: message.tool_outputs,
+      handoffs: message.handoffs,
+      // Token usage (typed)
+      usage_input_tokens: message.usage_input_tokens,
+      usage_output_tokens: message.usage_output_tokens,
+      usage_total_tokens: message.usage_total_tokens,
+      usage_cached_tokens: message.usage_cached_tokens,
+      usage_reasoning_tokens: message.usage_reasoning_tokens,
+      // Legacy fields
+      agent_type: message.agent || 'unknown',
+      iteration: message.iteration,
+      session_id: message.session_id,
+      timestamp: message.created_at,
+      token_usage: message.token_usage
+    })
+    
+    // Auto-scroll to bottom
+    if (scrollAreaRef.current) {
+      const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
+      if (scrollElement) {
+        scrollElement.scrollTop = scrollElement.scrollHeight
       }
     }
+  }, [addMessage])
+
+  // Socket.io connection
+  const { connectionState, isConnected } = useSocketIO(projectId, {
+    onConversationMessage: handleConversationMessage
   })
 
   // Restore session on mount and auto-create if needed
@@ -242,11 +245,19 @@ export function VibecodePanel({ projectId }: VibecodePanelProps) {
                           </span>
                         </div>
                         <div className="text-sm text-foreground/90">
-                          {typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}
+                          {typeof msg.content === 'string' ? msg.content : 
+                           msg.content && typeof msg.content === 'object' ? JSON.stringify(msg.content) :
+                           msg.content || ''}
                         </div>
                         {msg.token_usage && (
                           <div className="text-xs text-blue-500">
-                            💵 Tokens: {msg.token_usage.total_tokens || msg.token_usage}
+                            💵 Tokens: {
+                              typeof msg.token_usage === 'object' && msg.token_usage.total_tokens 
+                                ? msg.token_usage.total_tokens
+                                : typeof msg.token_usage === 'number' 
+                                ? msg.token_usage
+                                : 'N/A'
+                            }
                           </div>
                         )}
                       </div>

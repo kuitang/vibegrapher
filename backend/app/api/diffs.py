@@ -122,10 +122,12 @@ def get_diff_preview(diff_id: str, db: Session = Depends(get_db)) -> dict:
 
     # Apply patch to get preview
     current_code = project.current_code or ""
-    preview = diff_parser.apply_patch(current_code, diff.diff_content)
-
-    if preview is None:
-        raise HTTPException(status_code=400, detail="Failed to apply patch")
+    try:
+        preview = diff_parser.apply_patch(current_code, diff.diff_content)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400, detail=f"Failed to apply patch: {e}"
+        ) from e
 
     return {
         "diff_id": diff_id,
@@ -196,10 +198,12 @@ async def commit_diff(
 
     # Apply the diff
     current_code = project.current_code or ""
-    new_code = diff_parser.apply_patch(current_code, diff.diff_content)
-
-    if new_code is None:
-        raise HTTPException(status_code=400, detail="Failed to apply patch")
+    try:
+        new_code = diff_parser.apply_patch(current_code, diff.diff_content)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400, detail=f"Failed to apply patch: {e}"
+        ) from e
 
     # Commit to git
     git_service = GitService()

@@ -95,8 +95,9 @@ class DiffParser:
             return "".join(result_lines)
 
         except Exception as e:
-            logger.error(f"Error applying patch: {e}")
-            return None
+            # Let the error propagate with context
+            logger.error(f"Failed to apply patch: {e}", exc_info=True)
+            raise ValueError(f"Failed to apply patch: {e}") from e
 
     @staticmethod
     def create_unified_diff(

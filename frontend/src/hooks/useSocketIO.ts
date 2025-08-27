@@ -3,7 +3,7 @@
  * React hook for using Socket.io connection
  */
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import socketIOService from '@/services/socketio'
 import type { 
   ConnectionState, 
@@ -23,6 +23,10 @@ interface UseSocketIOOptions {
 export function useSocketIO(projectId: string | undefined, options: UseSocketIOOptions = {}) {
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected')
   const [isConnected, setIsConnected] = useState(false)
+  
+  // Store callbacks in refs to avoid reconnections when they change
+  const callbacksRef = useRef(options)
+  callbacksRef.current = options
 
   useEffect(() => {
     if (!projectId) {
@@ -47,36 +51,46 @@ export function useSocketIO(projectId: string | undefined, options: UseSocketIOO
       })
     )
 
-    // Business event listeners
-    if (options.onConversationMessage) {
-      unsubscribers.push(
-        socketIOService.on('conversation_message', options.onConversationMessage)
-      )
-    }
+    // Business event listeners - use refs to get latest callbacks without reconnecting
+    unsubscribers.push(
+      socketIOService.on('conversation_message', (data: ConversationMessageEvent) => {
+        if (callbacksRef.current.onConversationMessage) {
+          callbacksRef.current.onConversationMessage(data)
+        }
+      })
+    )
 
-    if (options.onDiffCreated) {
-      unsubscribers.push(
-        socketIOService.on('diff_created', options.onDiffCreated)
-      )
-    }
+    unsubscribers.push(
+      socketIOService.on('diff_created', (data: DiffCreatedEvent) => {
+        if (callbacksRef.current.onDiffCreated) {
+          callbacksRef.current.onDiffCreated(data)
+        }
+      })
+    )
 
-    if (options.onDebugIteration) {
-      unsubscribers.push(
-        socketIOService.on('debug_iteration', options.onDebugIteration)
-      )
-    }
+    unsubscribers.push(
+      socketIOService.on('debug_iteration', (data: DebugIterationEvent) => {
+        if (callbacksRef.current.onDebugIteration) {
+          callbacksRef.current.onDebugIteration(data)
+        }
+      })
+    )
 
-    if (options.onCodeUpdate) {
-      unsubscribers.push(
-        socketIOService.on('code_update', options.onCodeUpdate)
-      )
-    }
+    unsubscribers.push(
+      socketIOService.on('code_update', (data: { content: string; filename?: string }) => {
+        if (callbacksRef.current.onCodeUpdate) {
+          callbacksRef.current.onCodeUpdate(data)
+        }
+      })
+    )
 
-    if (options.onError) {
-      unsubscribers.push(
-        socketIOService.on('error', options.onError)
-      )
-    }
+    unsubscribers.push(
+      socketIOService.on('error', (error: unknown) => {
+        if (callbacksRef.current.onError) {
+          callbacksRef.current.onError(error)
+        }
+      })
+    )
 
     // Update initial state
     setConnectionState(socketIOService.getConnectionState())
@@ -92,7 +106,7 @@ export function useSocketIO(projectId: string | undefined, options: UseSocketIOO
       // Disconnect socket
       socketIOService.disconnect()
     }
-  }, [projectId, options.onConversationMessage, options.onDiffCreated, options.onDebugIteration, options.onCodeUpdate, options.onError]) // Only reconnect if projectId changes
+  }, [projectId]) // Only reconnect when projectId changes
 
   // Send message function
   const sendMessage = useCallback((event: string, data: unknown) => {

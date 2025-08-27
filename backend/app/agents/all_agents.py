@@ -1,18 +1,26 @@
 """
 All OpenAI Agents for Vibegrapher
 VibeCoder and Evaluator agents with patch submission workflow
+
+# IMPORTANT: KEEP ALL OPENAI LOGGING
+This file contains comprehensive OpenAI API interaction logging to openai_api_samples.log
+which captures complete request/response cycles for mock generation and debugging.
+DO NOT remove the api_logger or safe_serialize_openai_object functionality.
 """
 
 import ast
+import json
 import logging
+
+# Import Runner with mock support - done after other imports to avoid circular dependency
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from agents import Agent, Runner, SQLiteSession, function_tool
+from agents import Agent, SQLiteSession, function_tool
 from agents.items import (
     HandoffOutputItem,
-    ItemHelpers,
     MessageOutputItem,
     ToolCallItem,
     ToolCallOutputItem,
@@ -27,12 +35,44 @@ from pydantic import BaseModel
 
 from ..utils.diff_parser import diff_parser
 
+if os.getenv("USE_OPENAI_MOCKS", "false").lower() == "true":
+    from ..mocks.openai_agents_sdk import MockRunner as Runner
+else:
+    from agents import Runner
+
+
 logger = logging.getLogger(__name__)
 
-# Model configurations - use real OpenAI models for testing
+# OpenAI API logging setup
+api_logger = logging.getLogger("openai_api_samples")
+api_logger.setLevel(logging.INFO)
+api_handler = logging.FileHandler("openai_api_samples.log")
+api_handler.setFormatter(logging.Formatter("%(asctime)s - %(message)s"))
+api_logger.addHandler(api_handler)
+
+
+def safe_serialize_openai_object(obj) -> str:
+    """Convert OpenAI objects to JSON string using native JSON serialization"""
+
+    def json_serializer(o):
+        """Custom JSON serializer for non-serializable objects"""
+        if hasattr(o, "model_dump"):
+            return o.model_dump(mode="json")
+        elif hasattr(o, "dict"):
+            return o.dict()
+        return str(o)
+
+    try:
+        return json.dumps(obj, default=json_serializer, ensure_ascii=False)
+    except Exception as e:
+        logger.exception(f"Failed to serialize OpenAI object of type {type(obj)}")
+        return json.dumps({"_error": str(e), "_type": str(type(obj))})
+
+
+# CRITICAL!!!: DO NOT CHANGE!!!
 MODEL_CONFIGS = {
-    "THINKING_MODEL": "gpt-4o-mini",  # Fast and cheap model for testing
-    "SMALL_MODEL": "gpt-4o-mini",  # Fast and cheap model for testing
+    "THINKING_MODEL": "gpt-5-mini",  # CRITICAL: DO NOT CHANGE!
+    "SMALL_MODEL": "gpt-5-nano",  # CRITICAL: DO NOT CHANGE!
 }
 
 
@@ -50,10 +90,10 @@ def validate_patch(original: str, patch: str) -> dict:
     Returns validation result with VERBATIM error if invalid
     """
     # 1. Apply patch to temp copy
-    patched_code = diff_parser.apply_patch(original, patch)
-
-    if patched_code is None:
-        return {"valid": False, "error": "Failed to apply patch: malformed diff format"}
+    try:
+        patched_code = diff_parser.apply_patch(original, patch)
+    except ValueError as e:
+        return {"valid": False, "error": f"Failed to apply patch: {e}"}
 
     # 2. Run Python syntax check on result
     try:
@@ -67,7 +107,7 @@ def validate_patch(original: str, patch: str) -> dict:
 # Evaluator agent
 evaluator_agent = Agent(
     name="Evaluator",
-    model=MODEL_CONFIGS["THINKING_MODEL"],
+    model=MODEL_CONFIGS["SMALL_MODEL"],
     instructions="""You are an expert code reviewer who evaluates patches for quality and correctness.
 
 Review the submitted patch and:
@@ -225,8 +265,20 @@ IMPORTANT:
             for iteration in range(3):  # MAX 3 iterations
                 self.last_iteration_count = iteration + 1
 
+                # Log iteration for integration tests
+                logger.info(f"Running VibeCoder iteration {iteration + 1}")
+
                 # Build user prompt with current code
                 user_prompt = f"Current code:\n```python\n{current_code}\n```\n\nUser request: {prompt}"
+
+                # Log OpenAI API interaction
+                api_logger.info(
+                    f"=== OPENAI API CALL START (Iteration {iteration + 1}) ==="
+                )
+                api_logger.info(f"Agent: {vibecoder_agent.name}")
+                api_logger.info(f"Model: {vibecoder_agent.model}")
+                api_logger.info(f"Prompt: {user_prompt}")
+                api_logger.info(f"Session: {session_key}")
 
                 # Run VibeCoder with streaming (run_streamed returns RunResultStreaming, not a coroutine)
                 vibecoder_response = Runner.run_streamed(
@@ -239,6 +291,17 @@ IMPORTANT:
                 evaluation = None
 
                 async for event in vibecoder_response.stream_events():
+                    # Log every stream event for mock generation
+                    api_logger.info(f"Stream Event: {event.type}")
+                    api_logger.info(
+                        f"Event Data: {safe_serialize_openai_object(event)}"
+                    )
+
+                    # Skip RawResponsesStreamEvent noise - don't create messages for these
+                    if isinstance(event, RawResponsesStreamEvent):
+                        api_logger.info("Skipping RawResponsesStreamEvent (noise)")
+                        continue
+
                     sequence_counter += 1
 
                     # Check for sequence gaps
@@ -248,7 +311,7 @@ IMPORTANT:
                         )
                     last_sequence = sequence_counter
 
-                    # Create message from event
+                    # Create message from meaningful event only
                     message = await self._create_message_from_event(
                         event, session_id, sequence_counter, iteration
                     )
@@ -258,45 +321,71 @@ IMPORTANT:
                     # Save to database immediately
                     await self._save_conversation_message_async(message)
 
-                    # Emit via Socket.io immediately (no batching)
+                    # Emit via Socket.io directly (no wrapper)
                     if socketio_manager and session_id and project_id:
-                        await socketio_manager.emit_conversation_message(
-                            session_id=session_id,
-                            project_id=project_id,
-                            message_id=message["id"],
-                            role=message["role"],
-                            message_type=message.get("message_type", "stream_event"),
-                            content=message.get("content"),
-                            
-                            # Streaming metadata
-                            stream_event_type=message.get("stream_event_type"),
-                            stream_sequence=message.get("stream_sequence"),
-                            event_data=message.get("event_data"),
-                            
-                            # Tool tracking
-                            tool_calls=message.get("tool_calls"),
-                            tool_outputs=message.get("tool_outputs"),
-                            handoffs=message.get("handoffs"),
-                            
-                            # Token usage (typed)
-                            usage_input_tokens=message.get("token_usage", {}).get("input_tokens") if message.get("token_usage") else None,
-                            usage_output_tokens=message.get("token_usage", {}).get("output_tokens") if message.get("token_usage") else None,
-                            usage_total_tokens=message.get("token_usage", {}).get("total_tokens") if message.get("token_usage") else None,
-                            usage_cached_tokens=message.get("usage_cached_tokens"),
-                            usage_reasoning_tokens=message.get("usage_reasoning_tokens"),
-                            
-                            # Legacy fields
-                            agent=message.get("agent_type", "vibecoder"),
-                            iteration=iteration,
-                            token_usage=message.get("token_usage"),
+                        logger.info(
+                            f"🔥 DIRECT Socket.io emission: {message['id']} to project {project_id}"
                         )
 
+                        # Create message data (bypass wrapper)
+                        data = {
+                            "message_id": message["id"],
+                            "session_id": session_id,
+                            "role": message["role"],
+                            "message_type": message.get("message_type", "stream_event"),
+                            "content": message.get("content"),
+                            "stream_event_type": message.get("stream_event_type"),
+                            "stream_sequence": message.get("stream_sequence"),
+                            "event_data": message.get("event_data"),
+                            "tool_calls": message.get("tool_calls"),
+                            "tool_outputs": message.get("tool_outputs"),
+                            "handoffs": message.get("handoffs"),
+                            "agent": message.get("agent_type", "vibecoder"),
+                            "iteration": iteration,
+                            "created_at": datetime.now().isoformat(),
+                        }
+
+                        try:
+                            # Direct emission without wrapper overhead
+                            await socketio_manager.sio.emit(
+                                "conversation_message",
+                                data,
+                                room=f"project_{project_id}",
+                            )
+                            logger.info(
+                                f"✅ Emitted seq:{message.get('stream_sequence')} to project_{project_id}"
+                            )
+                        except Exception as e:
+                            logger.error(f"❌ Socket.io emission error: {e}")
+
+                        # Skip the original wrapper call
+                        pass
+
                     # Check if we got an evaluation result
-                    if isinstance(event, RunItemStreamEvent):
-                        if hasattr(event.item, "output") and isinstance(
-                            event.item.output, EvaluationResult
+                    if (
+                        isinstance(event, RunItemStreamEvent)
+                        and hasattr(event.item, "output")
+                        and hasattr(event.item.output, "approved")
+                    ):
+                        # Check if it looks like an EvaluationResult (has required fields)
+                        output = event.item.output
+                        if hasattr(output, "reasoning") and hasattr(
+                            output, "commit_message"
                         ):
-                            evaluation = event.item.output
+                            evaluation = output
+
+                # Log final API response
+                api_logger.info(
+                    f"=== OPENAI API CALL END (Iteration {iteration + 1}) ==="
+                )
+                api_logger.info(
+                    f"Final Response: {safe_serialize_openai_object(vibecoder_response)}"
+                )
+                api_logger.info(f"Evaluation Found: {evaluation is not None}")
+                if evaluation:
+                    api_logger.info(
+                        f"Evaluation Result: {safe_serialize_openai_object(evaluation)}"
+                    )
 
                 if evaluation:
                     # Evaluator was called via submit_patch
@@ -317,7 +406,7 @@ IMPORTANT:
                         content=(
                             vibecoder_response.final_output
                             if hasattr(vibecoder_response, "final_output")
-                            else str(vibecoder_response)
+                            else ""  # Return empty string instead of str() representation
                         ),
                         openai_response=vibecoder_response,
                         messages=collected_messages,
@@ -351,7 +440,7 @@ IMPORTANT:
             "created_at": timestamp,
             "updated_at": timestamp,
             "event_data": {},  # Will populate below
-            "content": None,
+            "content": "",
             "tool_calls": None,
             "tool_outputs": None,
             "handoffs": None,
@@ -359,80 +448,68 @@ IMPORTANT:
             "token_usage": None,
         }
 
-        # Extract data based on event type
+        # Store complete event data as JSON (preserve all OpenAI data)
+        message["event_data"] = safe_serialize_openai_object(event)
+
+        # Process meaningful events only
         if isinstance(event, RunItemStreamEvent):
             item = event.item
-            message["event_data"] = {
-                "name": event.name,
-                "item_type": item.__class__.__name__,
-            }
 
-            # Extract tool calls
+            # Store complete item data based on type
             if isinstance(item, ToolCallItem):
-                message["tool_calls"] = [
-                    {
-                        "type": item.raw_item.__class__.__name__,
-                        "id": getattr(item.raw_item, "id", None),
-                        "function": getattr(item.raw_item, "function", None),
-                        "arguments": getattr(item.raw_item, "arguments", None),
-                    }
-                ]
+                message["tool_calls"] = [safe_serialize_openai_object(item.raw_item)]
 
-            # Extract tool outputs
             elif isinstance(item, ToolCallOutputItem):
-                message["tool_outputs"] = [
-                    {
-                        "tool_call_id": getattr(item.raw_item, "tool_call_id", None),
-                        "output": str(item.output) if item.output else None,
-                        "raw_output": str(item.raw_item),
-                    }
-                ]
+                message["tool_outputs"] = [safe_serialize_openai_object(item.raw_item)]
 
-            # Extract handoffs
             elif isinstance(item, HandoffOutputItem):
                 message["handoffs"] = [
                     {
                         "source_agent": item.source_agent.name,
                         "target_agent": item.target_agent.name,
+                        "full_handoff": safe_serialize_openai_object(item),
                     }
                 ]
 
-            # Extract message output
             elif isinstance(item, MessageOutputItem):
                 try:
-                    message["content"] = ItemHelpers.text_message_output(item.raw_item)
-                except:
-                    message["content"] = str(item.raw_item)
-
-        # Extract token usage from raw responses
-        elif isinstance(event, RawResponsesStreamEvent):
-            message["event_data"] = {"type": "raw_response"}
-            if hasattr(event.data, "usage"):
-                usage = event.data.usage
-                message["token_usage"] = {
-                    "input_tokens": getattr(usage, "input_tokens", 0),
-                    "output_tokens": getattr(usage, "output_tokens", 0),
-                    "total_tokens": getattr(usage, "total_tokens", 0),
-                }
-
-                # Extract detailed token info if available
-                if hasattr(usage, "input_tokens_details"):
-                    message["usage_cached_tokens"] = getattr(
-                        usage.input_tokens_details, "cached_tokens", 0
+                    # Extract text content from the MessageOutputItem
+                    text = ""
+                    if hasattr(item.raw_item, "content"):
+                        for content_item in item.raw_item.content:
+                            if hasattr(content_item, "text"):
+                                text += content_item.text
+                    message["content"] = text
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to extract text from MessageOutputItem: {e}"
                     )
-                if hasattr(usage, "output_tokens_details"):
-                    message["usage_reasoning_tokens"] = getattr(
-                        usage.output_tokens_details, "reasoning_tokens", 0
-                    )
+                    # Fallback: try to extract text from raw_item attributes
+                    try:
+                        if hasattr(item.raw_item, "content") and item.raw_item.content:
+                            message["content"] = str(
+                                item.raw_item.content[0].text
+                                if hasattr(item.raw_item.content[0], "text")
+                                else ""
+                            )
+                        else:
+                            message["content"] = ""
+                    except Exception:
+                        logger.exception(
+                            "Failed to extract text from raw_item fallback"
+                        )
+                        message["content"] = ""
+                # Also store the complete message item
+                message["message_item_data"] = safe_serialize_openai_object(item)
 
-        # Handle agent updates
+        # Skip RawResponsesStreamEvent - these create noise (62 empty events)
+        # Token usage will be captured from meaningful events instead
+
+        # Handle agent updates (store complete agent data)
         elif isinstance(event, AgentUpdatedStreamEvent):
-            message["event_data"] = {
-                "type": "agent_updated",
-                "new_agent": event.new_agent.name,
-            }
             message["last_agent"] = event.new_agent.name
             message["agent_type"] = event.new_agent.name.lower()
+            # Complete agent data is already stored in event_data above
 
         return message
 
