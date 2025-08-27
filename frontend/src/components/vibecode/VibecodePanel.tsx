@@ -43,16 +43,31 @@ export function VibecodePanel({ projectId }: VibecodePanelProps) {
   // Socket.io connection
   const { connectionState, isConnected } = useSocketIO(projectId, {
     onConversationMessage: (message: ConversationMessageEvent) => {
-      console.log('[VibecodePanel] Received message:', message)
+      console.log('[VibecodePanel] Received streaming message:', message)
       addMessage({
-        id: `msg-${Date.now()}-${Math.random()}`,
-        role: message.agent_type === 'vibecoder' ? 'assistant' : 'system',
-        content: message.content,
-        agent_type: message.agent_type,
+        id: message.message_id,
+        role: message.role,
+        content: message.content || '',
+        // New streaming fields
+        message_type: message.message_type,
+        stream_event_type: message.stream_event_type,
+        stream_sequence: message.stream_sequence,
+        event_data: message.event_data,
+        tool_calls: message.tool_calls,
+        tool_outputs: message.tool_outputs,
+        handoffs: message.handoffs,
+        // Token usage (typed)
+        usage_input_tokens: message.usage_input_tokens,
+        usage_output_tokens: message.usage_output_tokens,
+        usage_total_tokens: message.usage_total_tokens,
+        usage_cached_tokens: message.usage_cached_tokens,
+        usage_reasoning_tokens: message.usage_reasoning_tokens,
+        // Legacy fields
+        agent_type: message.agent || 'unknown',
         iteration: message.iteration,
         session_id: message.session_id,
-        timestamp: message.timestamp,
-        token_usage: message.content?.token_usage
+        timestamp: message.created_at,
+        token_usage: message.token_usage
       })
       
       // Auto-scroll to bottom

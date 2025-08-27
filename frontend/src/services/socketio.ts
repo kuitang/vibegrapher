@@ -5,13 +5,40 @@
 
 import { io, Socket } from 'socket.io-client'
 
-// Socket.io event types
+// Socket.io event types - Updated for Phase 2 streaming
 export interface ConversationMessageEvent {
-  agent_type: 'vibecoder' | 'evaluator'
-  iteration: number
+  // Core fields
+  message_id: string
   session_id: string
-  timestamp: string
-  content: unknown
+  role: string
+  message_type: string
+  content?: string | null
+  
+  // Streaming metadata
+  stream_event_type?: string | null
+  stream_sequence?: number | null
+  event_data?: Record<string, unknown> | null
+  
+  // Tool tracking
+  tool_calls?: Array<Record<string, unknown>> | null
+  tool_outputs?: Array<Record<string, unknown>> | null
+  handoffs?: Array<Record<string, unknown>> | null
+  
+  // Token usage (typed)
+  usage_input_tokens?: number | null
+  usage_output_tokens?: number | null
+  usage_total_tokens?: number | null
+  usage_cached_tokens?: number | null
+  usage_reasoning_tokens?: number | null
+  
+  // Legacy fields (for backward compatibility)
+  agent?: string | null
+  iteration?: number | null
+  token_usage?: Record<string, unknown> | null
+  patch_preview?: string | null
+  
+  // Timestamp
+  created_at: string
 }
 
 export interface DiffCreatedEvent {
@@ -87,9 +114,9 @@ class SocketIOService {
       console.log('[Socket.io] Connected, joining project room:', this.projectId)
       this.updateConnectionState('connected')
       
-      // Join project room
+      // Subscribe to project room (backend uses 'subscribe' event)
       if (this.projectId) {
-        this.socket!.emit('join_project', { project_id: this.projectId })
+        this.socket!.emit('subscribe', { project_id: this.projectId })
       }
     })
 

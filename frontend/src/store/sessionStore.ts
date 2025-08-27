@@ -7,10 +7,31 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 export interface Message {
+  // Core fields
   id: string
   role: 'user' | 'assistant' | 'system'
   content: string | Record<string, unknown>
-  agent_type?: 'vibecoder' | 'evaluator'
+  
+  // Streaming fields (Phase 2)
+  message_type?: string
+  stream_event_type?: string | null
+  stream_sequence?: number | null
+  event_data?: Record<string, unknown> | null
+  
+  // Tool tracking
+  tool_calls?: Array<Record<string, unknown>> | null
+  tool_outputs?: Array<Record<string, unknown>> | null
+  handoffs?: Array<Record<string, unknown>> | null
+  
+  // Token usage (typed)
+  usage_input_tokens?: number | null
+  usage_output_tokens?: number | null
+  usage_total_tokens?: number | null
+  usage_cached_tokens?: number | null
+  usage_reasoning_tokens?: number | null
+  
+  // Legacy fields
+  agent_type?: string
   iteration?: number
   session_id?: string
   timestamp: string

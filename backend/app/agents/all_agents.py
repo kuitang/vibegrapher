@@ -265,9 +265,28 @@ IMPORTANT:
                             project_id=project_id,
                             message_id=message["id"],
                             role=message["role"],
+                            message_type=message.get("message_type", "stream_event"),
+                            content=message.get("content"),
+                            
+                            # Streaming metadata
+                            stream_event_type=message.get("stream_event_type"),
+                            stream_sequence=message.get("stream_sequence"),
+                            event_data=message.get("event_data"),
+                            
+                            # Tool tracking
+                            tool_calls=message.get("tool_calls"),
+                            tool_outputs=message.get("tool_outputs"),
+                            handoffs=message.get("handoffs"),
+                            
+                            # Token usage (typed)
+                            usage_input_tokens=message.get("token_usage", {}).get("input_tokens") if message.get("token_usage") else None,
+                            usage_output_tokens=message.get("token_usage", {}).get("output_tokens") if message.get("token_usage") else None,
+                            usage_total_tokens=message.get("token_usage", {}).get("total_tokens") if message.get("token_usage") else None,
+                            usage_cached_tokens=message.get("usage_cached_tokens"),
+                            usage_reasoning_tokens=message.get("usage_reasoning_tokens"),
+                            
+                            # Legacy fields
                             agent=message.get("agent_type", "vibecoder"),
-                            content=message.get("content", ""),
-                            patch_preview=None,
                             iteration=iteration,
                             token_usage=message.get("token_usage"),
                         )

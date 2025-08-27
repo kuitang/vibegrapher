@@ -85,22 +85,61 @@ class SocketIOManager:
         project_id: str,
         message_id: str,
         role: str,
-        agent: str | None,
-        content: str,
-        patch_preview: str | None,
-        iteration: int,
-        token_usage: dict | None,
+        message_type: str = "stream_event",
+        content: str | None = None,
+        # Streaming fields
+        stream_event_type: str | None = None,
+        stream_sequence: int | None = None,
+        event_data: dict | None = None,
+        # Tool tracking
+        tool_calls: list[dict] | None = None,
+        tool_outputs: list[dict] | None = None,
+        handoffs: list[dict] | None = None,
+        # Token usage (typed)
+        usage_input_tokens: int | None = None,
+        usage_output_tokens: int | None = None,
+        usage_total_tokens: int | None = None,
+        usage_cached_tokens: int | None = None,
+        usage_reasoning_tokens: int | None = None,
+        # Legacy fields
+        agent: str | None = None,
+        iteration: int | None = None,
+        token_usage: dict | None = None,
+        patch_preview: str | None = None,
     ) -> None:
-        """Emit conversation message event"""
+        """Emit comprehensive conversation message event with all ConversationMessage fields"""
         data = {
+            # Core fields
             "message_id": message_id,
             "session_id": session_id,
             "role": role,
-            "agent": agent,
+            "message_type": message_type,
             "content": content,
-            "patch_preview": patch_preview,
+            
+            # Streaming metadata
+            "stream_event_type": stream_event_type,
+            "stream_sequence": stream_sequence,
+            "event_data": event_data,
+            
+            # Tool tracking
+            "tool_calls": tool_calls,
+            "tool_outputs": tool_outputs,
+            "handoffs": handoffs,
+            
+            # Token usage (typed)
+            "usage_input_tokens": usage_input_tokens,
+            "usage_output_tokens": usage_output_tokens,
+            "usage_total_tokens": usage_total_tokens,
+            "usage_cached_tokens": usage_cached_tokens,
+            "usage_reasoning_tokens": usage_reasoning_tokens,
+            
+            # Legacy fields for backward compatibility
+            "agent": agent,
             "iteration": iteration,
             "token_usage": token_usage,
+            "patch_preview": patch_preview,
+            
+            # Timestamp
             "created_at": datetime.now().isoformat(),
         }
         await self.emit_to_project(project_id, "conversation_message", data)
