@@ -30,6 +30,23 @@ export function ProjectPage() {
   // Use diff recovery hook
   useDiffRecovery(id)
 
+  // Clear project state when project ID changes
+  useEffect(() => {
+    const currentProject = useAppStore.getState().project
+    if (id && currentProject && currentProject.id !== id) {
+      console.log('[ProjectPage] Clearing project state, switching from', currentProject.id, 'to', id)
+      actions.clearProjectState()
+    }
+  }, [id, actions])
+  
+  // Clear project state when component unmounts (browser back or < button)
+  useEffect(() => {
+    return () => {
+      console.log('[ProjectPage] Component unmounting, clearing project state')
+      actions.clearProjectState()
+    }
+  }, [actions])
+
   useEffect(() => {
     if (project) {
       actions.setProject(project)
@@ -70,7 +87,7 @@ export function ProjectPage() {
   }
   
   const handleCommit = async (diffId: string, message: string) => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
+    const apiUrl = import.meta.env.VITE_API_URL
     const response = await fetch(`${apiUrl}/diffs/${diffId}/commit`, {
       method: 'POST',
       headers: {
@@ -85,16 +102,25 @@ export function ProjectPage() {
       throw new Error('Failed to commit diff')
     }
     
-    // Refresh project code
+    // Refresh project code after successful commit
     if (id) {
-      actions.updateCode('# Code updated - refresh to see latest')
+      // Fetch the updated code from backend
+      const projectResponse = await fetch(`${apiUrl}/projects/${id}`)
+      if (projectResponse.ok) {
+        const projectData = await projectResponse.json()
+        if (projectData.current_code) {
+          actions.updateCode(projectData.current_code, 'main.py')
+          console.log('[ProjectPage] Code updated after commit')
+        }
+      }
+      
       actions.setShowCommitMessageModal(false)
       actions.setCurrentReviewDiff(null)
     }
   }
   
   const handleRefineMessage = async (diffId: string, currentMessage: string): Promise<string> => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
+    const apiUrl = import.meta.env.VITE_API_URL
     const response = await fetch(`${apiUrl}/diffs/${diffId}/refine-message`, {
       method: 'POST',
       headers: {
@@ -226,15 +252,15 @@ function OldCodePanel() {
 
 function TestPanel() {
   return (
-    <>
-      <CardHeader>
+    <div className="h-full flex flex-col border rounded-lg bg-card">
+      <CardHeader className="flex-shrink-0 border-b">
         <CardTitle>Test Results</CardTitle>
       </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground">
+      <CardContent className="flex-1 flex items-center justify-center">
+        <p className="text-muted-foreground text-center">
           Test runner will be integrated with diff review in Phase 008
         </p>
       </CardContent>
-    </>
+    </div>
   )
 }

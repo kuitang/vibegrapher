@@ -39,6 +39,7 @@ interface AppState {
     setApprovalMode: (mode: 'auto' | 'manual') => void
     updateLastActiveTime: () => void
     clearStaleState: () => void
+    clearProjectState: () => void
     clearPersistedState: () => void
     setHasHydrated: (hydrated: boolean) => void
     updateCode: (code: string, fileName?: string) => void
@@ -103,7 +104,25 @@ const useAppStore = create<AppState>()(
         showCommitMessageModal: false,
         
         actions: {
-          setProject: (project) => set({ project }),
+          setProject: (project) => {
+            const currentProject = get().project
+            
+            // If switching projects, clear project-specific state
+            if (currentProject && currentProject.id !== project?.id) {
+              set({
+                currentSession: null,
+                currentReviewDiff: null,
+                pendingDiffIds: [],
+                pendingDiffs: [],
+                messages: [],
+                draftMessage: '',
+                showDiffReviewModal: false,
+                showCommitMessageModal: false
+              })
+            }
+            
+            set({ project })
+          },
           
           setCurrentSession: (session) => set({ 
             currentSession: session,
@@ -157,6 +176,22 @@ const useAppStore = create<AppState>()(
             }
           },
           
+          clearProjectState: () => {
+            // Clear ALL project-specific state when switching projects
+            set({
+              currentSession: null,
+              currentReviewDiff: null,
+              pendingDiffIds: [],
+              pendingDiffs: [],
+              messages: [],
+              draftMessage: '',
+              currentCode: null,
+              currentFileName: null,
+              showDiffReviewModal: false,
+              showCommitMessageModal: false
+            })
+          },
+          
           clearPersistedState: () => {
             // Clear all persisted state (e.g., on logout)
             set({
@@ -184,7 +219,7 @@ const useAppStore = create<AppState>()(
           setShowCommitMessageModal: (show) => set({ showCommitMessageModal: show }),
           
           approveDiff: async (diffId) => {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
+            const apiUrl = import.meta.env.VITE_API_URL
             const response = await fetch(`${apiUrl}/diffs/${diffId}/review`, {
               method: 'POST',
               headers: {
@@ -207,7 +242,7 @@ const useAppStore = create<AppState>()(
           },
           
           rejectDiff: async (diffId, reason) => {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
+            const apiUrl = import.meta.env.VITE_API_URL
             const response = await fetch(`${apiUrl}/diffs/${diffId}/review`, {
               method: 'POST',
               headers: {
@@ -230,7 +265,7 @@ const useAppStore = create<AppState>()(
           },
           
           loadPendingDiffs: async (projectId) => {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://kui-vibes:8000'
+            const apiUrl = import.meta.env.VITE_API_URL
             const response = await fetch(`${apiUrl}/projects/${projectId}/diffs?status=evaluator_approved`)
             
             if (response.ok) {
@@ -250,6 +285,8 @@ const useAppStore = create<AppState>()(
       version: 1,
       storage: customStorage,
       partialize: (state) => ({
+        // Persist current project state for disconnect/reload resilience
+        // State is cleared when switching projects
         currentSession: state.currentSession,
         currentReviewDiff: state.currentReviewDiff,
         pendingDiffIds: state.pendingDiffIds,
@@ -275,5 +312,10 @@ export const useAppActions = () => useAppStore((state) => state.actions)
 
 // Export hook to check hydration status
 export const useHydration = () => useAppStore((state) => state.hasHydrated)
+
+// Expose store for debugging and testing
+if (typeof window !== 'undefined') {
+  (window as unknown as { __APP_STORE__: typeof useAppStore }).__APP_STORE__ = useAppStore
+}
 
 export default useAppStore

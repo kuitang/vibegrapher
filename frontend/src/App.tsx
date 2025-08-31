@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { HomePage } from '@/pages/HomePage'
 import { ProjectPage } from '@/pages/ProjectPage'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useEffect } from 'react'
 import { useAppActions } from '@/store/useAppStore'
 
@@ -27,8 +28,16 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Router>
         <Routes>
-          <Route path="/" element={<MainLayout><HomePage /></MainLayout>} />
-          <Route path="/project/:id" element={<ProjectPage />} />
+          <Route path="/" element={
+            <ErrorBoundary>
+              <MainLayout><HomePage /></MainLayout>
+            </ErrorBoundary>
+          } />
+          <Route path="/project/:id" element={
+            <ErrorBoundary>
+              <ProjectPage />
+            </ErrorBoundary>
+          } />
         </Routes>
       </Router>
     </QueryClientProvider>

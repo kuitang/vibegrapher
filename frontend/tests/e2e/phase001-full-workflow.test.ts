@@ -102,7 +102,7 @@ test.describe('Phase 001: Complete UI Workflow', () => {
       if (projectId) {
         const response = await request.get(`${API_URL}/projects`)
         const projects = await response.json()
-        const deletedProject = projects.find((p: any) => p.id === projectId)
+        const deletedProject = projects.find((p: { id: string }) => p.id === projectId)
         expect(deletedProject).toBeUndefined()
       }
     })

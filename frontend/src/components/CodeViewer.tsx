@@ -3,9 +3,9 @@
  * Monaco editor with real-time WebSocket updates
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import Editor from '@monaco-editor/react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { FileCode, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -22,18 +22,62 @@ export function CodeViewer({ projectId }: CodeViewerProps) {
   const [code, setCode] = useState<string>('# Loading...')
   const [fileName, setFileName] = useState<string>('main.py')
   const [isLoading, setIsLoading] = useState(true)
+  const [isMobile, setIsMobile] = useState(false)
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
-  const monacoRef = useRef<any>(null)
+  const monacoRef = useRef<typeof import('monaco-editor')>(null)
+  
+  // Check if mobile on mount
+  useEffect(() => {
+    setIsMobile(window.innerWidth <= 768)
+    
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768)
+      // Trigger Monaco layout when window resizes
+      if (editorRef.current) {
+        editorRef.current.layout()
+      }
+    }
+    
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+  
+  // Force Monaco to layout when component becomes visible or viewport changes
+  useEffect(() => {
+    const handleResize = () => {
+      if (editorRef.current) {
+        // Force Monaco to recalculate its layout
+        setTimeout(() => {
+          editorRef.current?.layout()
+        }, 100)
+      }
+    }
+    
+    // Listen for tab changes and resizes
+    document.addEventListener('click', handleResize)
+    window.addEventListener('resize', handleResize)
+    
+    // Initial layout
+    handleResize()
+    
+    return () => {
+      document.removeEventListener('click', handleResize)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
+
+  // Memoize code update callback
+  const handleCodeUpdate = useCallback((data: { content: string; filename?: string }) => {
+    console.log('[CodeViewer] Received code update:', data)
+    setCode(data.content)
+    if (data.filename) {
+      setFileName(data.filename)
+    }
+  }, [])
 
   // Socket.io connection for real-time updates
   const { isConnected } = useSocketIO(projectId, {
-    onCodeUpdate: (data: { content: string; filename?: string }) => {
-      console.log('[CodeViewer] Received code update:', data)
-      setCode(data.content)
-      if (data.filename) {
-        setFileName(data.filename)
-      }
-    }
+    onCodeUpdate: handleCodeUpdate
   })
 
   // Load initial code when component mounts
@@ -45,18 +89,26 @@ export function CodeViewer({ projectId }: CodeViewerProps) {
         if (currentCode) {
           setCode(currentCode)
           setIsLoading(false)
-        } else {
-          // Default Python code
-          setCode(`# Welcome to Vibegrapher
-# Project: ${project?.name || 'Loading...'}
-
-def main():
-    """Main entry point for the application."""
-    print("Ready for vibecoding!")
-    
-if __name__ == "__main__":
-    main()
-`)
+        } else if (project) {
+          // Fetch current code from backend
+          const apiUrl = import.meta.env.VITE_API_URL
+          try {
+            const response = await fetch(`${apiUrl}/projects/${projectId}`)
+            if (response.ok) {
+              const projectData = await response.json()
+              if (projectData.current_code) {
+                setCode(projectData.current_code)
+                useAppStore.getState().actions.updateCode(projectData.current_code, 'main.py')
+              } else {
+                setCode('# No code available')
+              }
+            } else {
+              setCode('# Failed to load code from server')
+            }
+          } catch (fetchError) {
+            console.error('[CodeViewer] Failed to fetch code from backend:', fetchError)
+            setCode('# Failed to load code')
+          }
           setIsLoading(false)
         }
       } catch (error) {
@@ -67,34 +119,56 @@ if __name__ == "__main__":
     }
 
     loadInitialCode()
-  }, [project])
+  }, [project, projectId])
 
   // Handle editor mount
-  const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor, monaco: any) => {
+  const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor, monaco: typeof import('monaco-editor')) => {
     editorRef.current = editor
     monacoRef.current = monaco
     
-    // Configure editor options
+    // Configure editor options based on viewport
+    const isMobileViewport = window.innerWidth <= 768
     editor.updateOptions({
       readOnly: true,
-      minimap: { enabled: true },
+      minimap: { enabled: !isMobileViewport },
       lineNumbers: 'on',
       renderWhitespace: 'selection',
       scrollBeyondLastLine: false,
       automaticLayout: true,
-      fontSize: 14,
+      fontSize: isMobileViewport ? 12 : 14,
       fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
-      fontLigatures: true
+      fontLigatures: true,
+      wordWrap: isMobileViewport ? 'on' : 'off',
+      wrappingIndent: 'same'
     })
+    
+    // Force layout update to ensure proper height
+    setTimeout(() => {
+      editor.layout()
+    }, 100)
   }
 
   // Handle manual refresh
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsLoading(true)
-    // Simulate refresh - in production, this would fetch latest from backend
-    setTimeout(() => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL
+      const response = await fetch(`${apiUrl}/projects/${projectId}`)
+      if (response.ok) {
+        const projectData = await response.json()
+        if (projectData.current_code) {
+          setCode(projectData.current_code)
+          useAppStore.getState().actions.updateCode(projectData.current_code, 'main.py')
+          console.log('[CodeViewer] Code refreshed from backend')
+        }
+      } else {
+        console.error('[CodeViewer] Failed to refresh code:', response.status)
+      }
+    } catch (error) {
+      console.error('[CodeViewer] Error refreshing code:', error)
+    } finally {
       setIsLoading(false)
-    }, 500)
+    }
   }
 
   // Get theme based on current app theme
@@ -105,8 +179,8 @@ if __name__ == "__main__":
   }
 
   return (
-    <Card className="h-full flex flex-col" data-testid="code-viewer">
-      <CardHeader className="flex-shrink-0">
+    <div className="h-full flex flex-col bg-card" data-testid="code-viewer">
+      <CardHeader className="flex-shrink-0 border-b">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileCode className="h-5 w-5" />
@@ -134,13 +208,7 @@ if __name__ == "__main__":
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 p-0 overflow-hidden">
-        <div 
-          className="h-full w-full" 
-          data-testid="monaco-container"
-          data-language="python"
-          data-readonly="true"
-        >
+      <div className="flex-1 p-0 overflow-hidden min-h-0" data-testid="monaco-container">
           <Editor
             height="100%"
             defaultLanguage="python"
@@ -149,24 +217,24 @@ if __name__ == "__main__":
             theme={getTheme()}
             onMount={handleEditorDidMount}
             loading={
-              <div className="flex items-center justify-center h-full">
+              <div className="flex items-center justify-center h-full min-h-[300px]">
                 <div className="text-muted-foreground">Loading editor...</div>
               </div>
             }
             options={{
               readOnly: true,
-              minimap: { enabled: true },
+              minimap: { enabled: !isMobile },
               lineNumbers: 'on',
               renderWhitespace: 'selection',
               scrollBeyondLastLine: false,
               automaticLayout: true,
-              fontSize: 14,
+              fontSize: isMobile ? 12 : 14,
               fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
-              fontLigatures: true
+              fontLigatures: true,
+              wordWrap: isMobile ? 'on' : 'off'
             }}
           />
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

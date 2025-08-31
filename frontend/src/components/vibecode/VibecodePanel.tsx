@@ -3,8 +3,8 @@
  * Main chat interface for vibecode sessions with full message flow
  */
 
-import { useState, useRef, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -15,7 +15,7 @@ import { Loader2, Send, RefreshCw, Bot, User, CheckCircle } from 'lucide-react'
 import { useSocketIO } from '@/hooks/useSocketIO'
 import { useSessionStore } from '@/store/sessionStore'
 import useAppStore from '@/store/useAppStore'
-import type { ConversationMessageEvent, ConnectionState } from '@/services/socketio'
+import type { ConversationMessageEvent } from '@/services/socketio'
 
 interface VibecodePanelProps {
   projectId: string
@@ -40,37 +40,77 @@ export function VibecodePanel({ projectId }: VibecodePanelProps) {
     restoreSession 
   } = useSessionStore()
 
-  // Socket.io connection
-  const { connectionState, isConnected } = useSocketIO(projectId, {
-    onConversationMessage: (message: ConversationMessageEvent) => {
-      console.log('[VibecodePanel] Received message:', message)
-      addMessage({
-        id: `msg-${Date.now()}-${Math.random()}`,
-        role: message.agent_type === 'vibecoder' ? 'assistant' : 'system',
-        content: message.content,
-        agent_type: message.agent_type,
-        iteration: message.iteration,
-        session_id: message.session_id,
-        timestamp: message.timestamp,
-        token_usage: message.content?.token_usage
-      })
-      
-      // Auto-scroll to bottom
-      if (scrollAreaRef.current) {
-        const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
-        if (scrollElement) {
-          scrollElement.scrollTop = scrollElement.scrollHeight
-        }
+  // Memoize conversation message callback
+  const handleConversationMessage = useCallback((message: ConversationMessageEvent) => {
+    console.log('[VibecodePanel] Received streaming message:', message)
+    addMessage({
+      id: message.message_id,
+      role: message.role,
+      content: message.content || '',
+      // New streaming fields
+      message_type: message.message_type,
+      stream_event_type: message.stream_event_type,
+      stream_sequence: message.stream_sequence,
+      event_data: message.event_data,
+      tool_calls: message.tool_calls,
+      tool_outputs: message.tool_outputs,
+      handoffs: message.handoffs,
+      // Token usage (typed)
+      usage_input_tokens: message.usage_input_tokens,
+      usage_output_tokens: message.usage_output_tokens,
+      usage_total_tokens: message.usage_total_tokens,
+      usage_cached_tokens: message.usage_cached_tokens,
+      usage_reasoning_tokens: message.usage_reasoning_tokens,
+      // Legacy fields
+      agent_type: message.agent || 'unknown',
+      iteration: message.iteration,
+      session_id: message.session_id,
+      timestamp: message.created_at,
+      token_usage: message.token_usage
+    })
+    
+    // Auto-scroll to bottom
+    if (scrollAreaRef.current) {
+      const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
+      if (scrollElement) {
+        scrollElement.scrollTop = scrollElement.scrollHeight
       }
     }
+  }, [addMessage])
+
+  // Socket.io connection
+  const { connectionState, isConnected } = useSocketIO(projectId, {
+    onConversationMessage: handleConversationMessage
   })
 
-  // Restore session on mount
+  // Restore session on mount and auto-create if needed
   useEffect(() => {
     if (projectId) {
       restoreSession(projectId)
     }
   }, [projectId, restoreSession])
+  
+  // Auto-create session when connected if no session exists
+  useEffect(() => {
+    const autoCreateSession = async () => {
+      if (isConnected && !session && !isLoading && projectId) {
+        console.log('[VibecodePanel] Auto-creating session for project:', projectId)
+        setIsLoading(true)
+        try {
+          await createSession(projectId)
+          console.log('[VibecodePanel] Session auto-created')
+        } catch (error) {
+          console.error('[VibecodePanel] Failed to auto-create session:', error)
+        } finally {
+          setIsLoading(false)
+        }
+      }
+    }
+    
+    // Small delay to ensure connection is stable
+    const timer = setTimeout(autoCreateSession, 500)
+    return () => clearTimeout(timer)
+  }, [isConnected, session, projectId, createSession, isLoading])
 
   // Auto-resize textarea
   useEffect(() => {
@@ -81,18 +121,6 @@ export function VibecodePanel({ projectId }: VibecodePanelProps) {
       textareaRef.current.style.height = `${newHeight}px`
     }
   }, [input])
-
-  const handleCreateSession = async () => {
-    setIsLoading(true)
-    try {
-      await createSession(projectId)
-      console.log('[VibecodePanel] Session created')
-    } catch (error) {
-      console.error('[VibecodePanel] Failed to create session:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   const handleSendMessage = async () => {
     if (!input.trim() || !session || isLoading) return
@@ -151,8 +179,8 @@ export function VibecodePanel({ projectId }: VibecodePanelProps) {
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="flex-shrink-0">
+    <div className="h-full flex flex-col">
+      <CardHeader className="flex-shrink-0 border-b">
         <div className="flex items-center justify-between">
           <CardTitle>Vibecode Panel</CardTitle>
           <div className="flex items-center gap-2">
@@ -170,23 +198,15 @@ export function VibecodePanel({ projectId }: VibecodePanelProps) {
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col overflow-hidden">
-        {/* Session controls */}
+        {/* Session auto-creates when connected */}
         {!session ? (
           <div className="flex items-center justify-center p-8">
-            <Button 
-              onClick={handleCreateSession}
-              disabled={isLoading || !isConnected}
-              size="lg"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating Session...
-                </>
-              ) : (
-                'Start Session'
-              )}
-            </Button>
+            <div className="text-center space-y-2">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                {isConnected ? 'Initializing session...' : 'Connecting...'}
+              </p>
+            </div>
           </div>
         ) : (
           <>
@@ -225,11 +245,19 @@ export function VibecodePanel({ projectId }: VibecodePanelProps) {
                           </span>
                         </div>
                         <div className="text-sm text-foreground/90">
-                          {typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}
+                          {typeof msg.content === 'string' ? msg.content : 
+                           msg.content && typeof msg.content === 'object' ? JSON.stringify(msg.content) :
+                           msg.content || ''}
                         </div>
                         {msg.token_usage && (
                           <div className="text-xs text-blue-500">
-                            💵 Tokens: {msg.token_usage.total_tokens || msg.token_usage}
+                            💵 Tokens: {
+                              typeof msg.token_usage === 'object' && msg.token_usage.total_tokens 
+                                ? msg.token_usage.total_tokens
+                                : typeof msg.token_usage === 'number' 
+                                ? msg.token_usage
+                                : 'N/A'
+                            }
                           </div>
                         )}
                       </div>
@@ -278,6 +306,6 @@ export function VibecodePanel({ projectId }: VibecodePanelProps) {
           </>
         )}
       </CardContent>
-    </Card>
+    </div>
   )
 }

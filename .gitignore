@@ -15,3 +15,5 @@ backend.log frontend.log
 *.db
 *.db
 vibegrapher.db
+validated_test_evidence/*
+test-results/*

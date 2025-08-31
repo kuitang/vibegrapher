@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -26,9 +25,9 @@ class TestCaseResponse(TestCaseBase):
 
 class TestResultBase(BaseModel):
     status: str  # "passed", "failed", "error"
-    output: Optional[str] = None
-    error: Optional[str] = None
-    execution_time_ms: Optional[int] = None
+    output: str | None = None
+    error: str | None = None
+    execution_time_ms: int | None = None
 
 
 class TestResultCreate(TestResultBase):

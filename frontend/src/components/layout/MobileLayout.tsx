@@ -1,16 +1,7 @@
 import { ReactNode, useState } from 'react'
-import { Card } from '@/components/ui/card'
+import { Link } from 'react-router-dom'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Button } from '@/components/ui/button'
-import { Menu, MoreVertical } from 'lucide-react'
+import { DarkModeToggle } from './MainLayout'
 
 interface MobileLayoutProps {
   vibecodePanel: ReactNode
@@ -24,107 +15,47 @@ export function MobileLayout({ vibecodePanel, codePanel, testPanel, projectName 
 
   return (
     <div className="h-full flex flex-col">
-      {/* Mobile Header with Navigation */}
-      <header className="border-b px-4 py-2 flex items-center justify-between">
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" data-testid="mobile-menu">
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-[250px]">
-            <nav className="flex flex-col gap-4">
-              <h2 className="text-lg font-semibold">Navigation</h2>
-              <a href="/" className="text-sm hover:underline">Home</a>
-              <a href="/projects" className="text-sm hover:underline">Projects</a>
-              <a href="/settings" className="text-sm hover:underline">Settings</a>
-            </nav>
-          </SheetContent>
-        </Sheet>
-
-        <span className="text-sm font-medium truncate flex-1 mx-2">
-          {projectName || 'Project'}
-        </span>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" data-testid="more-actions">
-              <MoreVertical className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>Save</DropdownMenuItem>
-            <DropdownMenuItem>Run Tests</DropdownMenuItem>
-            <DropdownMenuItem>Export</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      {/* Mobile Header - matching desktop style */}
+      <header className="border-b px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <Link to="/" className="text-xl text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
+            &lt;
+          </Link>
+          <h1 className="text-xl font-semibold truncate">{projectName || 'Project'}</h1>
+        </div>
+        <DarkModeToggle />
       </header>
 
       {/* Tabbed Content */}
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
-        className="flex-1 flex flex-col overflow-hidden"
+        className="flex-1 flex flex-col overflow-hidden min-h-0"
       >
-        <TabsList className="grid w-full grid-cols-3 rounded-none">
+        <TabsList className="grid w-full grid-cols-3 rounded-none flex-shrink-0">
           <TabsTrigger value="vibecode">Vibecode</TabsTrigger>
           <TabsTrigger value="code">Code</TabsTrigger>
           <TabsTrigger value="tests">Tests</TabsTrigger>
         </TabsList>
 
-        <div className="flex-1 overflow-auto">
-          <TabsContent value="vibecode" className="h-full mt-0">
-            <div className="h-full p-4">
-              <Card className="h-full">
-                {vibecodePanel}
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="code" className="h-full mt-0">
-            <div className="h-full p-4">
-              <Card className="h-full">
-                {codePanel}
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="tests" className="h-full mt-0">
-            <div className="h-full p-4">
-              <Card className="h-full">
-                {testPanel}
-              </Card>
-            </div>
-          </TabsContent>
-        </div>
-      </Tabs>
-
-      {/* Bottom Action Drawer */}
-      <Drawer>
-        <DrawerTrigger asChild>
-          <Button 
-            className="rounded-none"
-            variant="secondary"
-            size="lg"
-            data-testid="mobile-actions"
-          >
-            Actions
-          </Button>
-        </DrawerTrigger>
-        <DrawerContent>
-          <div className="p-4 space-y-4">
-            <Button className="w-full" variant="default">
-              Run Vibecode
-            </Button>
-            <Button className="w-full" variant="outline">
-              Clear Console
-            </Button>
-            <Button className="w-full" variant="outline">
-              View History
-            </Button>
+        <TabsContent value="vibecode" className="flex-1 mt-0 p-2 overflow-hidden data-[state=active]:flex data-[state=inactive]:hidden">
+          <div className="w-full h-full">
+            {vibecodePanel}
           </div>
-        </DrawerContent>
-      </Drawer>
+        </TabsContent>
+
+        <TabsContent value="code" className="flex-1 mt-0 p-2 overflow-hidden data-[state=active]:flex data-[state=inactive]:hidden">
+          <div className="w-full h-full">
+            {codePanel}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="tests" className="flex-1 mt-0 p-2 overflow-hidden data-[state=active]:flex data-[state=inactive]:hidden">
+          <div className="w-full h-full">
+            {testPanel}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

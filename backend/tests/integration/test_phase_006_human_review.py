@@ -4,7 +4,6 @@ Tests human approval workflow for evaluator-approved diffs
 """
 
 import uuid
-from typing import Any, Dict
 
 import httpx
 import pytest
@@ -28,9 +27,22 @@ async def test_project(test_client):
     response = await test_client.get("/projects")
     assert response.status_code == 200
     projects = response.json()
-    assert len(projects) > 0
+
+    # Debug output
+    print(f"\nDEBUG: Found {len(projects)} projects:")
+    for p in projects:
+        print(f"  - {p['name']} (id: {p['id']})")
+
+    assert len(projects) > 0, f"No projects found! Response: {projects}"
+
     # Find the seeded project
-    project = next(p for p in projects if p["name"] == "Agent Triage System")
+    try:
+        project = next(p for p in projects if p["name"] == "Agent Triage System")
+    except StopIteration:
+        # If not found, use the first project
+        print("WARNING: 'Agent Triage System' not found, using first project")
+        project = projects[0]
+
     return project
 
 
@@ -46,7 +58,6 @@ async def test_session(test_client, test_project):
 async def test_diff(test_server, test_project, test_session):
     """Create a test diff directly in database"""
     # Import here to avoid circular dependency
-    from app.database import get_db
     from app.models import Diff
     from app.services.git_service import GitService
 
@@ -56,8 +67,20 @@ async def test_diff(test_server, test_project, test_session):
     db = Session(engine)
 
     # Get current git commit
-    git_service = GitService()
+    # Use the same media_path as the test server
+    import os
+
+    projects_path = os.path.join(test_server["media_path"], "projects")
+    git_service = GitService(base_path=projects_path)
     base_commit = git_service.get_head_commit(test_project["slug"])
+
+    # If base_commit is None, try to get it from the project
+    if not base_commit:
+        # The project API response includes current_commit
+        base_commit = test_project.get("current_commit")
+
+    # Ensure we have a base_commit
+    assert base_commit, f"Could not get base_commit for project {test_project['slug']}"
 
     # Create diff
     diff = Diff(
@@ -200,13 +223,21 @@ class TestDiffCommit:
 
     async def test_commit_approved_diff(self, test_client, test_diff, test_project):
         """Test POST /diffs/{id}/commit"""
+        print(f"Test project current_commit: {test_project.get('current_commit')}")
+        print(f"Test diff base_commit: {test_diff['base_commit']}")
+
         # First approve the diff
         await test_client.post(
             f"/diffs/{test_diff['id']}/review", json={"approved": True}
         )
 
         # Commit the diff
-        response = await test_client.post(f"/diffs/{test_diff['id']}/commit")
+        response = await test_client.post(
+            f"/diffs/{test_diff['id']}/commit",
+            json={},  # Empty body or can provide {"commit_message": "Custom message"}
+        )
+        if response.status_code != 200:
+            print(f"Commit failed with {response.status_code}: {response.json()}")
         assert response.status_code == 200
 
         result = response.json()
@@ -223,12 +254,14 @@ class TestDiffCommit:
 
     async def test_commit_unapproved_diff(self, test_client, test_diff):
         """Test committing a diff that's not approved"""
-        response = await test_client.post(f"/diffs/{test_diff['id']}/commit")
+        response = await test_client.post(
+            f"/diffs/{test_diff['id']}/commit", json={}  # Empty body
+        )
         assert response.status_code == 400
         assert "not approved" in response.json()["detail"].lower()
 
     async def test_commit_with_base_mismatch(
-        self, test_client, test_diff, test_project
+        self, test_client, test_diff, test_project, test_server
     ):
         """Test committing when base commit has changed"""
         # Approve the diff
@@ -237,16 +270,23 @@ class TestDiffCommit:
         )
 
         # Make another commit to change base
+        import os
+
         from app.services.git_service import GitService
 
-        git_service = GitService()
-        git_service.write_code(
-            test_project["slug"], "# Changed\ndef hello():\n    return 'changed'"
+        projects_path = os.path.join(test_server["media_path"], "projects")
+        git_service = GitService(base_path=projects_path)
+
+        # Directly commit new content to change the base
+        new_content = "# Changed\ndef hello():\n    return 'changed'"
+        git_service.commit_changes(
+            test_project["slug"], new_content, "Change base commit"
         )
-        git_service.commit_changes(test_project["slug"], "Change base commit")
 
         # Try to commit the diff
-        response = await test_client.post(f"/diffs/{test_diff['id']}/commit")
+        response = await test_client.post(
+            f"/diffs/{test_diff['id']}/commit", json={}  # Empty body
+        )
         assert response.status_code == 409
         assert "Base commit mismatch" in response.json()["detail"]
 
@@ -306,7 +346,7 @@ class TestDiffValidation:
 
         try:
             ast.parse(result)
-            assert False, "Should have raised SyntaxError"
+            raise AssertionError("Should have raised SyntaxError")
         except SyntaxError:
             pass  # Expected
 

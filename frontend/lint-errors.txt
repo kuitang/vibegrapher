@@ -1,0 +1,128 @@
+
+> frontend@0.0.0 lint
+> eslint .
+
+
+/home/kuitang/git/vibegrapher/frontend/src/components/CodePanel.tsx
+  28:5  error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free             @typescript-eslint/ban-ts-comment
+  69:6  warning  React Hook useEffect has missing dependencies: 'parseDiff' and 'projectId'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  72:9  error    Unexpected empty object pattern                                                                                                 no-empty-pattern
+
+/home/kuitang/git/vibegrapher/frontend/src/components/DiffReviewModal.tsx
+  6:31  error  'useRef' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/kuitang/git/vibegrapher/frontend/src/components/DiffViewer.tsx
+  45:3  error  'patch' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/kuitang/git/vibegrapher/frontend/src/components/TestDiffButton.tsx
+  8:34  error  'projectId' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/kuitang/git/vibegrapher/frontend/src/components/layout/MainLayout.tsx
+  29:70  error  'projectName' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/kuitang/git/vibegrapher/frontend/src/components/ui/badge.tsx
+  36:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/kuitang/git/vibegrapher/frontend/src/components/ui/button.tsx
+  56:18  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/kuitang/git/vibegrapher/frontend/src/components/vibecode/VibecodePanel.tsx
+    7:10  error  'Card' is defined but never used                          @typescript-eslint/no-unused-vars
+   18:41  error  'ConnectionState' is defined but never used               @typescript-eslint/no-unused-vars
+  107:9   error  'handleCreateSession' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/kuitang/git/vibegrapher/frontend/src/hooks/use-toast.ts
+  18:7  error  'actionTypes' is assigned a value but only used as a type  @typescript-eslint/no-unused-vars
+
+/home/kuitang/git/vibegrapher/frontend/src/hooks/useDiffRecovery.ts
+  13:9  error    'showDiffReviewModal' is assigned a value but never used                                                                                                         @typescript-eslint/no-unused-vars
+  41:6  warning  React Hook useEffect has missing dependencies: 'actions', 'currentReviewDiff', and 'showCommitMessageModal'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/kuitang/git/vibegrapher/frontend/src/hooks/useSocketIO.ts
+  20:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                @typescript-eslint/no-explicit-any
+  39:26  error    The `Function` type accepts any function-like value.
+Prefer explicitly defining any function parameters and return type                                                                                                                 @typescript-eslint/no-unsafe-function-type
+  95:6   warning  React Hook useEffect has missing dependencies: 'options.onCodeUpdate', 'options.onConversationMessage', 'options.onDebugIteration', 'options.onDiffCreated', and 'options.onError'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  98:57  error    Unexpected any. Specify a different type                                                                                                                                                                                                @typescript-eslint/no-explicit-any
+
+/home/kuitang/git/vibegrapher/frontend/src/store/sessionStore.ts
+  12:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  17:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/kuitang/git/vibegrapher/frontend/src/store/types.ts
+  38:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/kuitang/git/vibegrapher/frontend/src/store/useAppStore.ts
+  318:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/kuitang/git/vibegrapher/frontend/src/utils/debounce.ts
+  6:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  6:56  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/kuitang/git/vibegrapher/frontend/tests/e2e/bug-human-approved-diff.spec.ts
+  23:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  27:54  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  68:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  73:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/kuitang/git/vibegrapher/frontend/tests/e2e/phase001-comprehensive.test.ts
+  12:62  error  'request' is defined but never used             @typescript-eslint/no-unused-vars
+  57:9   error  'projectId' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/kuitang/git/vibegrapher/frontend/tests/e2e/phase001-full-workflow.test.ts
+  105:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/kuitang/git/vibegrapher/frontend/tests/e2e/phase001-real-servers.test.ts
+   88:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  148:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/kuitang/git/vibegrapher/frontend/tests/e2e/test-diff-state-management.spec.ts
+   25:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   49:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  113:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  129:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  172:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/kuitang/git/vibegrapher/frontend/tests/e2e/vibegrapher-full.spec.ts
+    9:16  error  'uuidv4' is defined but never used               @typescript-eslint/no-unused-vars
+   14:7   error  'API_URL' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  340:11  error  'projectUrl' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  376:11  error  'projectUrl' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/kuitang/git/vibegrapher/frontend/tests/e2e/vibegrapher.test.ts
+   10:7   error  'API_URL' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  324:13  error  'refreshBtn' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  347:11  error  'initialCount' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  507:11  error  'projectUrl' is assigned a value but never used    @typescript-eslint/no-unused-vars
+
+/home/kuitang/git/vibegrapher/frontend/tests/integration/phase001-layout-real.test.tsx
+    5:25  error  'DarkModeToggle' is defined but never used    @typescript-eslint/no-unused-vars
+    7:10  error  'ProjectPage' is defined but never used       @typescript-eslint/no-unused-vars
+  127:48  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  136:13  error  'project' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  192:16  error  'error' is defined but never used             @typescript-eslint/no-unused-vars
+
+/home/kuitang/git/vibegrapher/frontend/tests/integration/phase002-persistence.test.tsx
+  3:23  error  'useAppActions' is defined but never used  @typescript-eslint/no-unused-vars
+  3:38  error  'useHydration' is defined but never used   @typescript-eslint/no-unused-vars
+
+/home/kuitang/git/vibegrapher/frontend/tests/integration/phase004-socketio.test.tsx
+   28:13  error  'result' is assigned a value but never used                                                                              @typescript-eslint/no-unused-vars
+   65:45  error  Unexpected any. Specify a different type                                                                                 @typescript-eslint/no-explicit-any
+   67:32  error  The `Function` type accepts any function-like value.
+Prefer explicitly defining any function parameters and return type  @typescript-eslint/no-unsafe-function-type
+   91:45  error  Unexpected any. Specify a different type                                                                                 @typescript-eslint/no-explicit-any
+   93:32  error  The `Function` type accepts any function-like value.
+Prefer explicitly defining any function parameters and return type  @typescript-eslint/no-unsafe-function-type
+  111:45  error  Unexpected any. Specify a different type                                                                                 @typescript-eslint/no-explicit-any
+  113:32  error  The `Function` type accepts any function-like value.
+Prefer explicitly defining any function parameters and return type  @typescript-eslint/no-unsafe-function-type
+  140:45  error  Unexpected any. Specify a different type                                                                                 @typescript-eslint/no-explicit-any
+  142:32  error  The `Function` type accepts any function-like value.
+Prefer explicitly defining any function parameters and return type  @typescript-eslint/no-unsafe-function-type
+  167:45  error  Unexpected any. Specify a different type                                                                                 @typescript-eslint/no-explicit-any
+  169:32  error  The `Function` type accepts any function-like value.
+Prefer explicitly defining any function parameters and return type  @typescript-eslint/no-unsafe-function-type
+
+✖ 65 problems (62 errors, 3 warnings)
+

@@ -2,19 +2,16 @@
 Vibecode Service - Orchestrates VibeCoder and Evaluator agents
 """
 
-import asyncio
-import json
 import logging
 import uuid
-from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 from sqlalchemy.orm import Session
 
 from ..agents.all_agents import vibecode_service as agent_vibecode_service
-from ..database import get_db
-from ..models import ConversationMessage, Diff, Project, VibecodeSession
+from ..models import Diff, Project
 from ..services.socketio_service import socketio_manager
+from ..utils.error_handling import log_and_format_error
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +29,8 @@ class VibecodeService:
         prompt: str,
         current_code: str,
         db: Session,
-        node_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        node_id: str | None = None,
+    ) -> dict[str, Any]:
         """
         Run vibecode operation with VibeCoder and Evaluator agents
 
@@ -86,12 +83,9 @@ class VibecodeService:
                         ):
                             import json
 
-                            try:
-                                args = json.loads(item.raw_item.arguments)
-                                if "patch" in args:
-                                    patch_content = args["patch"]
-                            except:
-                                pass
+                            args = json.loads(item.raw_item.arguments)
+                            if "patch" in args:
+                                patch_content = args["patch"]
                         # Find the evaluation result
                         if hasattr(item, "output") and hasattr(
                             item.output, "commit_message"
@@ -101,12 +95,12 @@ class VibecodeService:
 
                 # Get the actual HEAD commit from the project
                 from ..services.git_service import GitService
+
                 git_service = GitService()
-                
-                # Get project to find slug
-                from ..models import Project
+
+                # Get project to find slug (Project already imported at top)
                 project = db.query(Project).filter(Project.id == project_id).first()
-                
+
                 # Get actual HEAD commit SHA or use project's current_commit
                 base_commit = None
                 if project:
@@ -114,11 +108,11 @@ class VibecodeService:
                         base_commit = git_service.get_head_commit(project.slug)
                     if not base_commit:
                         base_commit = project.current_commit
-                
+
                 # If still no commit, use a placeholder (should not happen in production)
                 if not base_commit:
                     base_commit = "HEAD"
-                
+
                 # Create the diff
                 diff = Diff(
                     id=str(uuid.uuid4()),
@@ -160,22 +154,85 @@ class VibecodeService:
                             usage.total_tokens if hasattr(usage, "total_tokens") else 0
                         ),
                         "prompt_tokens": (
-                            usage.prompt_tokens
-                            if hasattr(usage, "prompt_tokens")
-                            else 0
+                            usage.input_tokens
+                            if hasattr(usage, "input_tokens")
+                            else (
+                                usage.prompt_tokens
+                                if hasattr(usage, "prompt_tokens")
+                                else 0
+                            )
                         ),
                         "completion_tokens": (
-                            usage.completion_tokens
-                            if hasattr(usage, "completion_tokens")
-                            else 0
+                            usage.output_tokens
+                            if hasattr(usage, "output_tokens")
+                            else (
+                                usage.completion_tokens
+                                if hasattr(usage, "completion_tokens")
+                                else 0
+                            )
                         ),
                     }
 
             return response
 
         except Exception as e:
-            logger.error(f"Vibecode error: {e}", exc_info=True)
-            return {"error": str(e)}
+            # Log error and get formatted error data with stack trace
+            error_data = log_and_format_error(
+                error=e, context="vibecode operation", logger_instance=logger
+            )
+
+            # Import here to avoid circular dependency
+            import traceback
+            from datetime import datetime
+
+            from ..models import ConversationMessage
+
+            # Format error message with stack trace for display
+            error_text = f"ERROR: {e!s}\n\n"
+            error_text += f"Type: {e.__class__.__name__}\n\n"
+            error_text += "Stack Trace:\n"
+            error_text += "=" * 60 + "\n"
+            error_text += traceback.format_exc()
+            error_text += "=" * 60
+
+            # Create error message in database
+            error_message = ConversationMessage(
+                id=f"{session_id}_error_{uuid.uuid4().hex[:8]}",
+                session_id=session_id,
+                role="system",  # Use system role for errors
+                message_type="error",
+                content=error_text,  # Full error + stack trace as visible text
+                event_data={
+                    "error": str(e),
+                    "error_type": e.__class__.__name__,
+                    "stack_trace": traceback.format_exc(),
+                    "context": f"vibecode operation - Session {session_id}",
+                },
+                stream_sequence=99999,  # High sequence to appear at end
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+            )
+
+            db.add(error_message)
+            db.commit()
+
+            # Emit error as conversation_message so it appears in UI
+            if socketio_manager and socketio_manager.sio:
+                await socketio_manager.sio.emit(
+                    "conversation_message",
+                    {
+                        "message_id": error_message.id,
+                        "session_id": session_id,
+                        "role": "system",
+                        "message_type": "error",
+                        "content": error_text,
+                        "created_at": error_message.created_at.isoformat(),
+                        "stream_sequence": 99999,
+                    },
+                    room=f"project_{project_id}",
+                )
+
+            return error_data
 
 
 # Global instance

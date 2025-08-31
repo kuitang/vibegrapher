@@ -3,7 +3,6 @@ Diff API endpoints for human review workflow
 """
 
 import logging
-from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -22,11 +21,11 @@ router = APIRouter(tags=["diffs"])
 
 class ReviewRequest(BaseModel):
     approved: bool
-    feedback: Optional[str] = None
+    feedback: str | None = None
 
 
 class CommitRequest(BaseModel):
-    commit_message: Optional[str] = None
+    commit_message: str | None = None
 
 
 class CommitResponse(BaseModel):
@@ -36,30 +35,34 @@ class CommitResponse(BaseModel):
 
 
 class RefineMessageRequest(BaseModel):
-    prompt: Optional[str] = None
+    prompt: str | None = None
 
 
-@router.get("/projects/{project_id}/diffs", response_model=List[DiffResponse])
-def get_project_diffs(project_id: str, db: Session = Depends(get_db)) -> List[Diff]:
-    """Get all diffs for a project"""
+@router.get("/projects/{project_id}/diffs", response_model=list[DiffResponse])
+def get_project_diffs(
+    project_id: str, status: str | None = None, db: Session = Depends(get_db)
+) -> list[Diff]:
+    """Get diffs for a project, optionally filtered by status"""
     # Verify project exists
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    # Get all diffs for project
-    diffs = (
-        db.query(Diff)
-        .filter(Diff.project_id == project_id)
-        .order_by(Diff.created_at.desc())
-        .all()
-    )
+    # Build query
+    query = db.query(Diff).filter(Diff.project_id == project_id)
+
+    # Apply status filter if provided
+    if status:
+        query = query.filter(Diff.status == status)
+
+    # Get diffs ordered by creation time
+    diffs = query.order_by(Diff.created_at.desc()).all()
 
     return diffs
 
 
-@router.get("/sessions/{session_id}/diffs", response_model=List[DiffResponse])
-def get_session_diffs(session_id: str, db: Session = Depends(get_db)) -> List[Diff]:
+@router.get("/sessions/{session_id}/diffs", response_model=list[DiffResponse])
+def get_session_diffs(session_id: str, db: Session = Depends(get_db)) -> list[Diff]:
     """Get all diffs for a session"""
     # Verify session exists
     session = db.query(VibecodeSession).filter(VibecodeSession.id == session_id).first()
@@ -77,8 +80,8 @@ def get_session_diffs(session_id: str, db: Session = Depends(get_db)) -> List[Di
     return diffs
 
 
-@router.get("/sessions/{session_id}/diffs/pending", response_model=List[DiffResponse])
-def get_pending_diffs(session_id: str, db: Session = Depends(get_db)) -> List[Diff]:
+@router.get("/sessions/{session_id}/diffs/pending", response_model=list[DiffResponse])
+def get_pending_diffs(session_id: str, db: Session = Depends(get_db)) -> list[Diff]:
     """Get pending (evaluator_approved) diffs for a session"""
     # Verify session exists
     session = db.query(VibecodeSession).filter(VibecodeSession.id == session_id).first()
@@ -119,10 +122,12 @@ def get_diff_preview(diff_id: str, db: Session = Depends(get_db)) -> dict:
 
     # Apply patch to get preview
     current_code = project.current_code or ""
-    preview = diff_parser.apply_patch(current_code, diff.diff_content)
-
-    if preview is None:
-        raise HTTPException(status_code=400, detail="Failed to apply patch")
+    try:
+        preview = diff_parser.apply_patch(current_code, diff.diff_content)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400, detail=f"Failed to apply patch: {e}"
+        ) from e
 
     return {
         "diff_id": diff_id,
@@ -139,7 +144,7 @@ def review_diff(
 ) -> Diff:
     """Human approve or reject a diff with feedback"""
     logger.info(f"Review request for diff {diff_id}: approved={request.approved}")
-    
+
     diff = db.query(Diff).filter(Diff.id == diff_id).first()
     if not diff:
         logger.warning(f"Diff {diff_id} not found in database")
@@ -167,7 +172,7 @@ def review_diff(
 
     db.commit()
     db.refresh(diff)
-    
+
     logger.debug(f"Diff {diff_id} review complete, new status: {diff.status}")
     return diff
 
@@ -193,10 +198,12 @@ async def commit_diff(
 
     # Apply the diff
     current_code = project.current_code or ""
-    new_code = diff_parser.apply_patch(current_code, diff.diff_content)
-
-    if new_code is None:
-        raise HTTPException(status_code=400, detail="Failed to apply patch")
+    try:
+        new_code = diff_parser.apply_patch(current_code, diff.diff_content)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400, detail=f"Failed to apply patch: {e}"
+        ) from e
 
     # Commit to git
     git_service = GitService()
@@ -219,10 +226,10 @@ async def commit_diff(
 
     # Write new code and commit
     commit_sha = git_service.commit_changes(
-        project.slug, 
-        new_code, 
+        project.slug,
+        new_code,
         request.commit_message or diff.commit_message,
-        filename="script.py"
+        filename="script.py",
     )
 
     # Update diff status

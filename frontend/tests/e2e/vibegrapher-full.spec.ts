@@ -6,12 +6,10 @@
  */
 
 import { test, expect, Page, BrowserContext } from '@playwright/test'
-import { v4 as uuidv4 } from 'uuid'
 import * as fs from 'fs'
 import * as path from 'path'
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:5173'
-const API_URL = process.env.API_URL || 'http://kui-vibes:8000'
 const EVIDENCE_DIR = '.playwright-test-evidence'
 
 // Ensure evidence directory exists
@@ -337,7 +335,6 @@ test.describe('Vibegrapher Complete Test Suite', () => {
     await page.click('button:has-text("Create")')
     
     await page.waitForURL(/\/project\/[a-f0-9-]+/)
-    const projectUrl = page.url()
     
     // Navigate back
     await page.goto(BASE_URL)
@@ -373,7 +370,6 @@ test.describe('Vibegrapher Complete Test Suite', () => {
     await page.click('button:has-text("Create")')
     
     await page.waitForURL(/\/project\/[a-f0-9-]+/)
-    const projectUrl = page.url()
     
     // Inject diff and show modal
     await injectTestDiff(page)

@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -9,19 +8,19 @@ class ProjectCreate(BaseModel):
 
 
 class ProjectUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1)
-    current_code: Optional[str] = None
-    current_commit: Optional[str] = None
-    current_branch: Optional[str] = None
+    name: str | None = Field(None, min_length=1)
+    current_code: str | None = None
+    current_commit: str | None = None
+    current_branch: str | None = None
 
 
 class ProjectResponse(BaseModel):
     id: str
     name: str
     slug: str
-    repository_path: Optional[str] = None
-    current_code: Optional[str] = None
-    current_commit: Optional[str] = None
+    repository_path: str | None = None
+    current_code: str | None = None
+    current_commit: str | None = None
     current_branch: str
     created_at: datetime
     updated_at: datetime

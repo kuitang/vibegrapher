@@ -42,7 +42,6 @@ interface DiffViewerProps {
 export function DiffViewer({
   original,
   proposed,
-  patch,
   sessionId,
   diffId,
   fileName = 'main.py',
@@ -58,18 +57,26 @@ export function DiffViewer({
   const handleEditorDidMount = (editor: editor.IStandaloneDiffEditor) => {
     diffEditorRef.current = editor
     
-    // Configure diff editor options
+    // Configure diff editor options based on viewport
+    const isMobileViewport = window.innerWidth <= 768
     editor.updateOptions({
       readOnly: true,
-      renderSideBySide: viewMode === 'split',
+      renderSideBySide: viewMode === 'split' && !isMobileViewport,
       renderOverviewRuler: true,
       minimap: { enabled: false },
       scrollBeyondLastLine: false,
       automaticLayout: true,
-      fontSize: 14,
+      fontSize: isMobileViewport ? 12 : 14,
       fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
-      fontLigatures: true
+      fontLigatures: true,
+      wordWrap: isMobileViewport ? 'on' : 'off',
+      wrappingIndent: 'same'
     })
+    
+    // Force layout update to ensure proper height
+    setTimeout(() => {
+      editor.layout()
+    }, 100)
   }
 
   // Update view mode when tabs change
@@ -187,7 +194,7 @@ export function DiffViewer({
 
             <TabsContent value={viewMode} className="flex-1 m-0">
               <div 
-                className="h-full w-full" 
+                className="h-full w-full min-h-[300px] md:min-h-[400px]" 
                 data-testid="monaco-diff"
                 data-view={viewMode}
               >

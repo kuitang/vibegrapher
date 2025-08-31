@@ -9,7 +9,7 @@ test.describe('Phase 001: Comprehensive UI Tests', () => {
     await page.waitForLoadState('networkidle')
   })
 
-  test('complete workflow with all features', async ({ page, request }) => {
+  test('complete workflow with all features', async ({ page }) => {
     // Generate unique project name with timestamp
     const timestamp = Date.now()
     const projectName = `Test Project ${timestamp}`
@@ -54,7 +54,6 @@ test.describe('Phase 001: Comprehensive UI Tests', () => {
     })
 
     // 3. NAVIGATE TO PROJECT
-    let projectId: string | undefined
     await test.step('Navigate to project page', async () => {
       // Click Open on the first project (most recent, skip create card)
       const projectCards = page.locator('.bg-card').filter({ hasNot: page.locator('input') })

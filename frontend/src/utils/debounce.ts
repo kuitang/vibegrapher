@@ -3,7 +3,7 @@
  * delay milliseconds have elapsed since the last time the debounced
  * function was invoked.
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   delay: number
 ): (...args: Parameters<T>) => void {

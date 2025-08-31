@@ -1,26 +1,29 @@
 import logging
 import traceback
-from typing import Any
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .api import diffs, health, projects, sessions, tests
+from .api import diffs, health, projects, sessions
 from .config import settings
 from .database import init_db
+from .middleware.error_handler import setup_error_handlers
 from .services.socketio_service import socketio_manager
 from .version import __version__
 
 # Configure detailed logging
 logging.basicConfig(
     level=logging.DEBUG if settings.environment == "development" else logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
+    format="%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
 # Create FastAPI app
 fastapi_app = FastAPI(title="Vibegrapher Backend", version=__version__)
+
+# Setup error handling middleware
+setup_error_handlers(fastapi_app)
 
 fastapi_app.add_middleware(
     CORSMiddleware,
@@ -32,7 +35,6 @@ fastapi_app.add_middleware(
 
 fastapi_app.include_router(health.router)
 fastapi_app.include_router(projects.router)
-fastapi_app.include_router(tests.router)
 fastapi_app.include_router(sessions.router)
 fastapi_app.include_router(diffs.router)
 
@@ -50,11 +52,9 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
         f"Client: {request.client}\n"
         f"Stack trace:\n{''.join(traceback.format_stack())}"
     )
-    
+
     return JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.detail},
-        headers=exc.headers
+        status_code=exc.status_code, content={"detail": exc.detail}, headers=exc.headers
     )
 
 
@@ -65,16 +65,13 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
     logger.exception(
         f"Unexpected error at {request.url.path}\n"
         f"Exception type: {type(exc).__name__}\n"
-        f"Exception: {str(exc)}\n"
+        f"Exception: {exc!s}\n"
         f"Request method: {request.method}\n"
         f"Client: {request.client}\n"
         f"Full stack trace:\n{traceback.format_exc()}"
     )
-    
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error"}
-    )
+
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
 @fastapi_app.on_event("startup")

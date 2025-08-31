@@ -3,11 +3,9 @@ Integration tests for Phase 004: OpenAI Agents
 Tests real OpenAI API integration with vibecode workflow
 """
 
-import asyncio
-import json
 import logging
 import os
-from typing import Any, Dict
+from typing import Any
 
 import httpx
 import pytest
@@ -25,7 +23,7 @@ Agent Triage System - Example OpenAI Agents implementation
 class TriageAgent:
     def __init__(self):
         self.name = "TriageAgent"
-    
+
     def process(self, message: str) -> str:
         if "billing" in message.lower():
             return "Routing to billing department..."
@@ -79,12 +77,12 @@ async def test_vibecode_patch_submission(test_server: dict, caplog: Any) -> None
         assert message_resp.status_code == 200
         result = message_resp.json()
 
-        print(f"Running: vibecode with patch prompt")
+        print("Running: vibecode with patch prompt")
         print(
             f"Result: patch={bool(result.get('patch'))}, diff_id={result.get('diff_id')}"
         )
         print(f"Token usage: {result.get('token_usage', {})}")
-        print(f"Expected: patch should be created")
+        print("Expected: patch should be created")
 
         # Verify response
         assert result.get("error") is None, f"Error: {result.get('error')}"
@@ -137,9 +135,9 @@ async def test_vibecode_text_response(test_server: dict) -> None:
         assert message_resp.status_code == 200
         result = message_resp.json()
 
-        print(f"Running: vibecode with question prompt")
+        print("Running: vibecode with question prompt")
         print(f"Result: content={bool(result.get('content'))}")
-        print(f"Expected: text response without patch")
+        print("Expected: text response without patch")
 
         # Verify text response
         assert result.get("content") is not None, "Should have text content"
@@ -184,7 +182,7 @@ async def test_evaluator_iteration(test_server: dict, caplog: Any) -> None:
         log_text = caplog.text
         iteration_count = log_text.count("Running VibeCoder iteration")
 
-        print(f"Running: complex vibecode request")
+        print("Running: complex vibecode request")
         print(f"Iterations: {iteration_count}")
         print(f"Result: success={not bool(result.get('error'))}")
 
@@ -253,7 +251,7 @@ async def test_diff_creation_flow(test_server: dict) -> None:
         diff_ids = [d["id"] for d in pending_diffs]
         assert result["diff_id"] in diff_ids
 
-        print(f"Diff creation test:")
+        print("Diff creation test:")
         print(f"  Created diff: {result['diff_id']}")
         print(f"  Status: {diff['status']}")
         print(f"  Commit message: {diff.get('commit_message', 'N/A')}")

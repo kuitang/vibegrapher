@@ -1,0 +1,174 @@
+{
+  "test_timestamp": "2025-08-27T06:19:52.089905",
+  "mock_enabled": true,
+  "test_scenarios": [
+    {
+      "scenario": "comment_addition_patch",
+      "prompt": "Add a comment explaining what this function does",
+      "expected_type": "patch",
+      "actual_type": "patch",
+      "success": true,
+      "diff_id": "generated-diff-id",
+      "content_preview": null,
+      "message_count": 5,
+      "openai_response_present": true,
+      "messages": [
+        {
+          "id": "session-comment_addition_patch-1756275592_event_1",
+          "message_type": "stream_event",
+          "stream_event_type": "agent_updated_stream_event",
+          "stream_sequence": 1,
+          "has_tool_calls": false,
+          "has_tool_outputs": false,
+          "has_event_data": true
+        },
+        {
+          "id": "session-comment_addition_patch-1756275592_event_2",
+          "message_type": "stream_event",
+          "stream_event_type": "run_item_stream_event",
+          "stream_sequence": 2,
+          "has_tool_calls": false,
+          "has_tool_outputs": false,
+          "has_event_data": true
+        },
+        {
+          "id": "session-comment_addition_patch-1756275592_event_3",
+          "message_type": "stream_event",
+          "stream_event_type": "run_item_stream_event",
+          "stream_sequence": 3,
+          "has_tool_calls": false,
+          "has_tool_outputs": false,
+          "has_event_data": true
+        }
+      ]
+    },
+    {
+      "scenario": "explain_code_text",
+      "prompt": "What does this function do?",
+      "expected_type": "text",
+      "actual_type": "text",
+      "success": true,
+      "diff_id": null,
+      "content_preview": "This code defines a simple Python application with a main function that prints 'Ready for vibecoding",
+      "message_count": 2,
+      "openai_response_present": true,
+      "messages": [
+        {
+          "id": "session-explain_code_text-1756275598_event_1",
+          "message_type": "stream_event",
+          "stream_event_type": "agent_updated_stream_event",
+          "stream_sequence": 1,
+          "has_tool_calls": false,
+          "has_tool_outputs": false,
+          "has_event_data": true
+        },
+        {
+          "id": "session-explain_code_text-1756275598_event_2",
+          "message_type": "stream_event",
+          "stream_event_type": "run_item_stream_event",
+          "stream_sequence": 2,
+          "has_tool_calls": false,
+          "has_tool_outputs": false,
+          "has_event_data": true
+        }
+      ]
+    },
+    {
+      "scenario": "add_docstring_patch",
+      "prompt": "Add a docstring to this function",
+      "expected_type": "patch",
+      "actual_type": "patch",
+      "success": true,
+      "diff_id": "generated-diff-id",
+      "content_preview": null,
+      "message_count": 5,
+      "openai_response_present": true,
+      "messages": [
+        {
+          "id": "session-add_docstring_patch-1756275600_event_1",
+          "message_type": "stream_event",
+          "stream_event_type": "agent_updated_stream_event",
+          "stream_sequence": 1,
+          "has_tool_calls": false,
+          "has_tool_outputs": false,
+          "has_event_data": true
+        },
+        {
+          "id": "session-add_docstring_patch-1756275600_event_2",
+          "message_type": "stream_event",
+          "stream_event_type": "run_item_stream_event",
+          "stream_sequence": 2,
+          "has_tool_calls": false,
+          "has_tool_outputs": false,
+          "has_event_data": true
+        },
+        {
+          "id": "session-add_docstring_patch-1756275600_event_3",
+          "message_type": "stream_event",
+          "stream_event_type": "run_item_stream_event",
+          "stream_sequence": 3,
+          "has_tool_calls": false,
+          "has_tool_outputs": false,
+          "has_event_data": true
+        }
+      ]
+    }
+  ],
+  "data_compatibility": {
+    "id": {
+      "present": true,
+      "type": "str"
+    },
+    "session_id": {
+      "present": true,
+      "type": "str"
+    },
+    "role": {
+      "present": true,
+      "type": "str"
+    },
+    "message_type": {
+      "present": true,
+      "type": "str"
+    },
+    "stream_event_type": {
+      "present": true,
+      "type": "str"
+    },
+    "stream_sequence": {
+      "present": true,
+      "type": "int"
+    },
+    "iteration": {
+      "present": true,
+      "type": "int"
+    },
+    "created_at": {
+      "present": true,
+      "type": "str"
+    },
+    "event_data": {
+      "present": true,
+      "type": "dict"
+    },
+    "tool_calls": {
+      "present": true,
+      "type": "NoneType"
+    },
+    "tool_outputs": {
+      "present": true,
+      "type": "NoneType"
+    },
+    "handoffs": {
+      "present": true,
+      "type": "NoneType"
+    }
+  },
+  "json_serializable": true,
+  "summary": {
+    "total_scenarios": 3,
+    "successful_scenarios": 3,
+    "success_rate_percent": 100.0,
+    "all_passed": true
+  }
+}

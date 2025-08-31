@@ -10,7 +10,6 @@ export function useDiffRecovery(projectId: string | undefined) {
   const actions = useAppStore((state) => state.actions)
   const hasHydrated = useAppStore((state) => state.hasHydrated)
   const currentReviewDiff = useAppStore((state) => state.currentReviewDiff)
-  const showDiffReviewModal = useAppStore((state) => state.showDiffReviewModal)
   const showCommitMessageModal = useAppStore((state) => state.showCommitMessageModal)
 
   useEffect(() => {
@@ -38,7 +37,7 @@ export function useDiffRecovery(projectId: string | undefined) {
     }
 
     checkPendingDiffs()
-  }, [projectId, hasHydrated]) // Only run when project changes or after hydration
+  }, [projectId, hasHydrated, actions, currentReviewDiff, showCommitMessageModal]) // Only run when project changes or after hydration
 
   // Also listen for diff events from WebSocket
   useEffect(() => {

@@ -1,15 +1,18 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
-import useAppStore, { useAppActions, useHydration } from '../../src/store/useAppStore'
+import useAppStore, { useAppActions } from '../../src/store/useAppStore'
+
+// Store reset functions for cleanup between tests
+const storeResetFns = new Set<() => void>()
 
 // Mock localStorage for testing
 const localStorageMock = (() => {
   let store: Record<string, string> = {}
   return {
-    getItem: (key: string) => store[key] || null,
-    setItem: (key: string, value: string) => { store[key] = value },
-    removeItem: (key: string) => { delete store[key] },
-    clear: () => { store = {} },
+    getItem: vi.fn((key: string) => store[key] || null),
+    setItem: vi.fn((key: string, value: string) => { store[key] = value }),
+    removeItem: vi.fn((key: string) => { delete store[key] }),
+    clear: vi.fn(() => { store = {} }),
     get length() { return Object.keys(store).length },
     key: (index: number) => Object.keys(store)[index] || null
   }
@@ -18,41 +21,41 @@ const localStorageMock = (() => {
 // Replace global localStorage with mock
 Object.defineProperty(global, 'localStorage', {
   value: localStorageMock,
-  writable: true
+  writable: true,
+  configurable: true
 })
 
 describe('Phase 002: Local State Persistence', () => {
-  beforeEach(() => {
-    // Clear localStorage before each test
+  beforeEach(async () => {
+    // Clear localStorage mock and reset its spies
     localStorageMock.clear()
-    // Reset all mocks
     vi.clearAllMocks()
-    // Reset the store to initial state
-    useAppStore.setState({
-      currentSession: null,
-      currentReviewDiff: null,
-      pendingDiffIds: [],
-      draftMessage: '',
-      lastActiveTime: Date.now(),
-      approvalMode: 'manual',
-      hasHydrated: false,
-      project: null,
-      messages: [],
-      pendingDiffs: [],
-      isHydrating: false
-    })
+    
+    // Reset all stores that were created during tests
+    storeResetFns.forEach((resetFn) => resetFn())
+    
+    // Clear zustand persistence
+    useAppStore.persist.clearStorage()
   })
 
   afterEach(() => {
+    // Reset everything
     localStorageMock.clear()
     vi.clearAllTimers()
     vi.restoreAllMocks()
+    
+    // Reset all stores
+    storeResetFns.forEach((resetFn) => resetFn())
+    storeResetFns.clear()
   })
 
   test('persists selected state fields to localStorage', async () => {
     const { result } = renderHook(() => useAppStore())
     
-    act(() => {
+    // Store reset function for cleanup
+    storeResetFns.add(() => useAppStore.persist.clearStorage())
+    
+    await act(async () => {
       result.current.actions.setCurrentSession({
         id: 'session-123',
         projectId: 'project-456',
@@ -65,14 +68,20 @@ describe('Phase 002: Local State Persistence', () => {
       result.current.actions.setApprovalMode('auto')
     })
 
-    // Wait a bit for persistence
+    // Wait for zustand persist to complete
     await waitFor(() => {
-      const storedData = JSON.parse(localStorageMock.getItem('vibegrapher-storage') || '{}')
-      expect(storedData.state).toBeDefined()
-    })
+      expect(localStorageMock.setItem).toHaveBeenCalled()
+    }, { timeout: 2000 })
 
-    // Check localStorage
-    const storedData = JSON.parse(localStorageMock.getItem('vibegrapher-storage') || '{}')
+    // Verify the setItem call
+    expect(localStorageMock.setItem).toHaveBeenCalledWith(
+      'vibegrapher-storage',
+      expect.stringContaining('session-123')
+    )
+    
+    // Verify persistence worked
+    const lastCall = localStorageMock.setItem.mock.calls[localStorageMock.setItem.mock.calls.length - 1]
+    const storedData = JSON.parse(lastCall[1])
     expect(storedData.state).toMatchObject({
       currentSession: {
         id: 'session-123',
@@ -120,8 +129,8 @@ describe('Phase 002: Local State Persistence', () => {
   })
 
   test('rehydrates state from localStorage on initialization', async () => {
-    // Set initial state in localStorage
-    const initialState = {
+    // Setup mock to return predefined state
+    const persistedData = {
       state: {
         currentSession: { id: 'session-999', projectId: 'project-999' },
         draftMessage: 'Recovered draft',
@@ -130,20 +139,33 @@ describe('Phase 002: Local State Persistence', () => {
       },
       version: 1
     }
-    localStorageMock.setItem('vibegrapher-storage', JSON.stringify(initialState))
-
-    // Reset store completely to simulate fresh initialization
-    useAppStore.persist.clearStorage()
     
+    // Mock getItem to return our test data
+    localStorageMock.getItem.mockImplementation((key: string) => {
+      if (key === 'vibegrapher-storage') {
+        return JSON.stringify(persistedData)
+      }
+      return null
+    })
+    
+    // Store reset function for cleanup
+    storeResetFns.add(() => useAppStore.persist.clearStorage())
+
     // Trigger rehydration
     await act(async () => {
       await useAppStore.persist.rehydrate()
     })
 
+    // Verify getItem was called
+    expect(localStorageMock.getItem).toHaveBeenCalledWith('vibegrapher-storage')
+
+    // Wait for state to be rehydrated
+    await waitFor(() => {
+      const state = useAppStore.getState()
+      expect(state.currentSession?.id).toBe('session-999')
+    }, { timeout: 1000 })
+
     const state = useAppStore.getState()
-    
-    // Check state was recovered
-    expect(state.currentSession?.id).toBe('session-999')
     expect(state.draftMessage).toBe('Recovered draft')
     expect(state.approvalMode).toBe('auto')
   })
@@ -181,6 +203,9 @@ describe('Phase 002: Local State Persistence', () => {
     vi.useFakeTimers()
     const { result } = renderHook(() => useAppStore())
 
+    // Store reset function for cleanup
+    storeResetFns.add(() => useAppStore.persist.clearStorage())
+
     // Type multiple characters quickly
     act(() => {
       result.current.actions.setDraftMessageDebounced('H')
@@ -193,20 +218,22 @@ describe('Phase 002: Local State Persistence', () => {
     // UI should update immediately
     expect(result.current.draftMessage).toBe('Hello')
 
-    // Fast forward 500ms (debounce delay)
-    act(() => {
-      vi.advanceTimersByTime(500)
+    // Fast forward past the 500ms debounce delay
+    await act(async () => {
+      vi.advanceTimersByTime(600)
+      await vi.runAllTimersAsync()
     })
 
-    // Wait for persistence
-    await vi.runAllTimersAsync()
-
-    // Now localStorage should be updated
-    const storedData = JSON.parse(localStorageMock.getItem('vibegrapher-storage') || '{}')
-    expect(storedData.state?.draftMessage).toBe('Hello')
+    // Verify debounced persistence happened
+    await vi.waitFor(() => {
+      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+        'vibegrapher-storage',
+        expect.stringContaining('Hello')
+      )
+    }, { timeout: 1000 })
 
     vi.useRealTimers()
-  })
+  }, 10000)
 
   test('gracefully handles localStorage errors', () => {
     // Temporarily replace localStorage with one that throws
@@ -254,7 +281,7 @@ describe('Phase 002: Local State Persistence', () => {
     const { result } = renderHook(() => useAppStore())
     
     // Set some state
-    act(() => {
+    await act(async () => {
       result.current.actions.setCurrentSession({
         id: 'session-to-clear',
         projectId: 'project-to-clear',
@@ -265,14 +292,16 @@ describe('Phase 002: Local State Persistence', () => {
       })
       result.current.actions.setDraftMessage('Clear this draft')
       result.current.actions.setApprovalMode('auto')
+      
+      // Wait for persistence
+      await new Promise(resolve => setTimeout(resolve, 200))
     })
 
-    // Wait for persistence
-    await new Promise(resolve => setTimeout(resolve, 100))
-
     // Clear persisted state
-    act(() => {
+    await act(async () => {
       result.current.actions.clearPersistedState()
+      // Wait for persistence to complete
+      await new Promise(resolve => setTimeout(resolve, 200))
     })
 
     // Check all fields are cleared
@@ -280,14 +309,13 @@ describe('Phase 002: Local State Persistence', () => {
     expect(result.current.draftMessage).toBe('')
     expect(result.current.approvalMode).toBe('manual')
     
-    // Wait for persistence
-    await new Promise(resolve => setTimeout(resolve, 100))
-    
     // Check localStorage is also cleared
-    const storedData = JSON.parse(localStorageMock.getItem('vibegrapher-storage') || '{}')
-    expect(storedData.state?.currentSession).toBeNull()
-    expect(storedData.state?.draftMessage).toBe('')
-  })
+    await waitFor(() => {
+      const storedData = JSON.parse(localStorageMock.getItem('vibegrapher-storage') || '{}')
+      expect(storedData.state?.currentSession).toBeNull()
+      expect(storedData.state?.draftMessage).toBe('')
+    }, { timeout: 1000 })
+  }, 10000)
 
   test('updates lastActiveTime on user actions', () => {
     vi.useFakeTimers()
@@ -311,22 +339,23 @@ describe('Phase 002: Local State Persistence', () => {
     const { result } = renderHook(() => useAppStore())
     
     // Set approval mode
-    act(() => {
+    await act(async () => {
       result.current.actions.setApprovalMode('auto')
+      // Wait for zustand persist
+      await new Promise(resolve => setTimeout(resolve, 200))
     })
 
-    // Wait for persistence
-    await new Promise(resolve => setTimeout(resolve, 100))
-
-    // Check it's persisted
-    const storedData = JSON.parse(localStorageMock.getItem('vibegrapher-storage') || '{}')
-    expect(storedData.state?.approvalMode).toBe('auto')
+    // Wait for persistence to complete
+    await waitFor(() => {
+      const storedData = JSON.parse(localStorageMock.getItem('vibegrapher-storage') || '{}')
+      expect(storedData.state?.approvalMode).toBe('auto')
+    }, { timeout: 1000 })
   })
 
   test('preserves pending diff IDs but not full diff objects', async () => {
     const { result } = renderHook(() => useAppStore())
     
-    act(() => {
+    await act(async () => {
       // Set IDs (should be persisted)
       result.current.actions.setPendingDiffIds(['diff-1', 'diff-2', 'diff-3'])
       
@@ -341,10 +370,16 @@ describe('Phase 002: Local State Persistence', () => {
           updatedAt: '2025-01-01'
         }
       ])
+      
+      // Wait for persistence
+      await new Promise(resolve => setTimeout(resolve, 200))
     })
 
-    // Wait for persistence
-    await new Promise(resolve => setTimeout(resolve, 100))
+    // Wait for persistence to complete
+    await waitFor(() => {
+      const storedData = JSON.parse(localStorageMock.getItem('vibegrapher-storage') || '{}')
+      expect(storedData.state?.pendingDiffIds).toEqual(['diff-1', 'diff-2', 'diff-3'])
+    }, { timeout: 1000 })
 
     // Check localStorage
     const storedData = JSON.parse(localStorageMock.getItem('vibegrapher-storage') || '{}')

@@ -1,7 +1,7 @@
 import asyncio
+import contextlib
 import logging
 from datetime import datetime
-from typing import Dict, Optional, Set
 
 import socketio
 
@@ -13,13 +13,15 @@ class SocketIOManager:
         self.sio = socketio.AsyncServer(
             async_mode="asgi",
             cors_allowed_origins="*",
-            logger=False,
-            engineio_logger=False,
+            logger=True,
+            engineio_logger=True,
+            ping_timeout=60,
+            ping_interval=25,
         )
-        self.app: Optional[socketio.ASGIApp] = None
+        self.app: socketio.ASGIApp | None = None
         self.connections: int = 0
-        self.project_rooms: Dict[str, Set[str]] = {}
-        self.heartbeat_task: Optional[asyncio.Task] = None
+        self.project_rooms: dict[str, set[str]] = {}
+        self.heartbeat_task: asyncio.Task | None = None
 
     def create_app(self, app) -> socketio.ASGIApp:
         """Wrap FastAPI app with Socket.io"""
@@ -61,7 +63,7 @@ class SocketIOManager:
                 return
 
             # Add to project room
-            self.sio.enter_room(sid, f"project_{project_id}")
+            await self.sio.enter_room(sid, f"project_{project_id}")
 
             # Track in our rooms dict
             if project_id not in self.project_rooms:
@@ -85,22 +87,56 @@ class SocketIOManager:
         project_id: str,
         message_id: str,
         role: str,
-        agent: Optional[str],
-        content: str,
-        patch_preview: Optional[str],
-        iteration: int,
-        token_usage: Optional[dict],
+        message_type: str = "stream_event",
+        content: str | None = None,
+        # Streaming fields
+        stream_event_type: str | None = None,
+        stream_sequence: int | None = None,
+        event_data: dict | None = None,
+        # Tool tracking
+        tool_calls: list[dict] | None = None,
+        tool_outputs: list[dict] | None = None,
+        handoffs: list[dict] | None = None,
+        # Token usage (typed)
+        usage_input_tokens: int | None = None,
+        usage_output_tokens: int | None = None,
+        usage_total_tokens: int | None = None,
+        usage_cached_tokens: int | None = None,
+        usage_reasoning_tokens: int | None = None,
+        # Legacy fields
+        agent: str | None = None,
+        iteration: int | None = None,
+        token_usage: dict | None = None,
+        patch_preview: str | None = None,
     ) -> None:
-        """Emit conversation message event"""
+        """Emit comprehensive conversation message event with all ConversationMessage fields"""
         data = {
+            # Core fields
             "message_id": message_id,
             "session_id": session_id,
             "role": role,
-            "agent": agent,
+            "message_type": message_type,
             "content": content,
-            "patch_preview": patch_preview,
+            # Streaming metadata
+            "stream_event_type": stream_event_type,
+            "stream_sequence": stream_sequence,
+            "event_data": event_data,
+            # Tool tracking
+            "tool_calls": tool_calls,
+            "tool_outputs": tool_outputs,
+            "handoffs": handoffs,
+            # Token usage (typed)
+            "usage_input_tokens": usage_input_tokens,
+            "usage_output_tokens": usage_output_tokens,
+            "usage_total_tokens": usage_total_tokens,
+            "usage_cached_tokens": usage_cached_tokens,
+            "usage_reasoning_tokens": usage_reasoning_tokens,
+            # Legacy fields for backward compatibility
+            "agent": agent,
             "iteration": iteration,
             "token_usage": token_usage,
+            "patch_preview": patch_preview,
+            # Timestamp
             "created_at": datetime.now().isoformat(),
         }
         await self.emit_to_project(project_id, "conversation_message", data)
@@ -117,7 +153,7 @@ class SocketIOManager:
         project_id: str,
         test_name: str,
         status: str,
-        output: Optional[str],
+        output: str | None,
     ) -> None:
         """Emit test completion event"""
         data = {
@@ -129,7 +165,7 @@ class SocketIOManager:
         await self.emit_to_project(project_id, "test_completed", data)
 
     async def emit_token_usage(
-        self, session_id: str, project_id: str, message_id: Optional[str], usage: dict
+        self, session_id: str, project_id: str, message_id: str | None, usage: dict
     ) -> None:
         """Emit token usage event"""
         data = {
@@ -163,10 +199,8 @@ class SocketIOManager:
         """Stop heartbeat task"""
         if self.heartbeat_task:
             self.heartbeat_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self.heartbeat_task
-            except asyncio.CancelledError:
-                pass
             self.heartbeat_task = None
             logger.info("Heartbeat task stopped")
 

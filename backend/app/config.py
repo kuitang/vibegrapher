@@ -1,5 +1,4 @@
 import os
-from typing import List
 
 from pydantic_settings import BaseSettings
 
@@ -13,13 +12,15 @@ class Settings(BaseSettings):
     cors_origins: str = os.getenv("CORS_ORIGINS", "*")
     port: int = int(os.getenv("PORT", "8000"))
     host: str = os.getenv("HOST", "0.0.0.0")
-    media_path: str = os.getenv("MEDIA_PATH", "/app/media" if os.path.exists("/app/media") else "media")
+    media_path: str = os.getenv(
+        "MEDIA_PATH", "/app/media" if os.path.exists("/app/media") else "media"
+    )
     environment: str = os.getenv("ENVIRONMENT", "development")
 
     class Config:
         env_file = ".env"
 
-    def get_cors_origins(self) -> List[str]:
+    def get_cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",")]
 
     def is_production(self) -> bool:
@@ -27,6 +28,10 @@ class Settings(BaseSettings):
 
     def is_preview(self) -> bool:
         return self.environment == "preview"
+
+    @property
+    def debug(self) -> bool:
+        return self.environment == "development"
 
 
 settings = Settings()

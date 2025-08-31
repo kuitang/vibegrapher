@@ -7,14 +7,35 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 export interface Message {
+  // Core fields
   id: string
   role: 'user' | 'assistant' | 'system'
-  content: string | any
-  agent_type?: 'vibecoder' | 'evaluator'
+  content: string | Record<string, unknown>
+  
+  // Streaming fields (Phase 2)
+  message_type?: string
+  stream_event_type?: string | null
+  stream_sequence?: number | null
+  event_data?: Record<string, unknown> | null
+  
+  // Tool tracking
+  tool_calls?: Array<Record<string, unknown>> | null
+  tool_outputs?: Array<Record<string, unknown>> | null
+  handoffs?: Array<Record<string, unknown>> | null
+  
+  // Token usage (typed)
+  usage_input_tokens?: number | null
+  usage_output_tokens?: number | null
+  usage_total_tokens?: number | null
+  usage_cached_tokens?: number | null
+  usage_reasoning_tokens?: number | null
+  
+  // Legacy fields
+  agent_type?: string
   iteration?: number
   session_id?: string
   timestamp: string
-  token_usage?: any
+  token_usage?: Record<string, unknown>
 }
 
 export interface Session {
@@ -43,7 +64,7 @@ interface SessionStore {
   setError: (error: string | null) => void
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_URL = import.meta.env.VITE_API_URL
 
 export const useSessionStore = create<SessionStore>()(
   persist(
@@ -155,15 +176,79 @@ export const useSessionStore = create<SessionStore>()(
           return
         }
 
-        // Otherwise clear the session for new project
+        // Clear state and try to fetch existing session
         set({
           session: null,
           messages: [],
-          error: null
+          error: null,
+          isLoading: true
         })
         
-        // TODO: In the future, could fetch existing sessions from API
-        // For now, just clear state when switching projects
+        try {
+          // Create session (will return existing if available)
+          const sessionResponse = await fetch(`${API_URL}/projects/${projectId}/sessions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          })
+          
+          if (sessionResponse.ok) {
+            const session = await sessionResponse.json()
+            console.log('[SessionStore] Restored session:', session)
+            
+            // Fetch existing messages for this session
+            const messagesResponse = await fetch(`${API_URL}/sessions/${session.id}/messages`)
+            if (messagesResponse.ok) {
+              const apiMessages = await messagesResponse.json()
+              console.log(`[SessionStore] Loaded ${apiMessages.length} existing messages`)
+              
+              // Convert API messages to frontend format
+              const messages = apiMessages.map((msg: any) => ({
+                id: msg.id,
+                role: msg.role,
+                content: msg.content || '',
+                message_type: msg.message_type,
+                stream_event_type: msg.stream_event_type,
+                stream_sequence: msg.stream_sequence,
+                event_data: msg.event_data,
+                tool_calls: msg.tool_calls,
+                tool_outputs: msg.tool_outputs,
+                handoffs: msg.handoffs,
+                usage_input_tokens: msg.usage_input_tokens,
+                usage_output_tokens: msg.usage_output_tokens,
+                usage_total_tokens: msg.usage_total_tokens,
+                usage_cached_tokens: msg.usage_cached_tokens,
+                usage_reasoning_tokens: msg.usage_reasoning_tokens,
+                agent_type: msg.agent_type || 'unknown',
+                iteration: msg.iteration,
+                session_id: msg.session_id,
+                timestamp: msg.created_at,
+                token_usage: msg.token_usage
+              }))
+              
+              set({ 
+                session,
+                messages,
+                isLoading: false
+              })
+            } else {
+              console.log('[SessionStore] Failed to load messages, starting with empty state')
+              set({ 
+                session,
+                messages: [],
+                isLoading: false
+              })
+            }
+          } else {
+            console.log('[SessionStore] Failed to restore session, will auto-create later')
+            set({ isLoading: false })
+          }
+        } catch (error) {
+          console.error('[SessionStore] Error restoring session:', error)
+          set({ 
+            error: error instanceof Error ? error.message : 'Failed to restore session',
+            isLoading: false
+          })
+        }
       },
 
       setSession: (session) => set({ session }),
